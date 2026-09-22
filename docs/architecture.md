@@ -98,4 +98,3 @@ Kubernetes prima di un requisito operativo reale.
 - [PostgreSQL: partizionamento](https://www.postgresql.org/docs/17/ddl-partitioning.html)
 - [PostGIS: indici spaziali](https://postgis.net/documentation/faq/spatial-indexes/)
 - [DuckDB: Parquet e pushdown](https://duckdb.org/docs/current/data/parquet/overview)
-

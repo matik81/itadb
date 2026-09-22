@@ -53,4 +53,3 @@ Dependabot propone aggiornamenti; audit dipendenze settimanale. Richiedere i con
 una revisione sulle PR, vietare force push, abilitare segnalazioni private, secret scanning
 e push protection dove disponibili. Le impostazioni effettivamente applicate sono registrate
 in docs/validation.md: un file YAML non prova che una protezione GitHub sia abilitata.
-

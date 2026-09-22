@@ -60,4 +60,3 @@ singolo worker di acquisizione. Il lock locale non garantisce una quota globale 
 - [ISTAT: SDMX e limiti](https://www.istat.it/classificazioni-e-strumenti/web-services-sdmx/)
 - [ISTAT: endpoint](https://esploradati.istat.it/SDMXWS/)
 - [Eurostat: query SDMX 2.1](https://ec.europa.eu/eurostat/web/user-guides/data-browser/api-data-access/api-detailed-guidelines/sdmx2-1/data-query)
-

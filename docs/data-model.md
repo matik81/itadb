@@ -50,4 +50,3 @@ non significa storage WORM contro amministratori privilegiati.
 Prima di importare territori reali: implementare vincoli anti-sovrapposizione temporale,
 mapping fusioni/scissioni, versioni di gerarchie, controlli di validità dei codici nel periodo
 osservato e convenzioni delle serie. La presenza delle colonne non attesta questi controlli.
-

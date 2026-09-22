@@ -33,4 +33,3 @@ Aggiorna lockfile se cambiano dipendenze; contratto OpenAPI e tipi client se cam
 Una pipeline deve dimostrare idempotenza, tracciabilità e mancata pubblicazione in caso
 di errori. Una modifica DB deve dimostrare integrità e piano di query su dati adeguati.
 Segnala limiti e lavoro futuro; non dichiarare performance 1:1 senza benchmark.
-

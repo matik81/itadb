@@ -73,6 +73,7 @@ jobs:
       - run: npm ci
       - run: npm run api:types && git diff --exit-code -- src/generated/api.ts
       - run: npm run typecheck
+      - run: npm run format:check
       - run: npm test
       - run: npm run build
   compose:

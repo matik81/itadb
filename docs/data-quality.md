@@ -43,4 +43,3 @@ ipotesi modellistiche, errori e bias vanno pubblicati insieme ai risultati.
 La coerenza statistica non rende uno scenario una previsione certa o una stima causale.
 Prima di rilasciare microdati sintetici servono valutazioni di rischio di re-identificazione
 e di disclosure, anche in assenza di corrispondenza intenzionale con individui reali.
-

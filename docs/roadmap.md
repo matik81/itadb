@@ -30,4 +30,3 @@ valutazione disclosure e formato di distribuzione concordato.
 Collegamenti e dinamiche documentati, confronto baseline/intervento, sensibilità ai parametri
 e comunicazione dei limiti causali. La complessità del modello cresce solo dopo validazione
 del passo precedente. Non è previsto un agente LLM per ogni individuo.
-

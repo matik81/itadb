@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from alembic import op
+from sqlalchemy import text
 
 revision = "0001"
 down_revision = None
@@ -12,7 +13,9 @@ depends_on = None
 
 def upgrade() -> None:
     sql = (Path(__file__).parents[1] / "sql" / "0001_foundation.sql").read_text(encoding="utf-8")
-    op.get_bind().exec_driver_sql(sql)
+    # Compile literal percent signs in PostgreSQL format() correctly for psycopg.
+    # TextClause also supports Alembic's offline SQL generation.
+    op.execute(text(sql))
 
 
 def downgrade() -> None:

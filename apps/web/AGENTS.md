@@ -1,4 +1,5 @@
 # Web app
+
 - Leggi i tipi src/generated/api.ts, generati da OpenAPI; non editarli a mano.
 - Mai mostrare dati mock come fallback di una richiesta fallita.
 - Mostra fonte, periodo, licenza, limiti e marcatura demo in prossimità dei dati.

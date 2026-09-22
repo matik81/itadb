@@ -55,4 +55,3 @@ Nessuna scrittura, SQL arbitrario, ricerca individuale o download massivo via AP
 Le API pubbliche di lettura non richiedono login nella v0.1. Prima della produzione definire
 fair-use, caching, budget di risorse e monitoraggio. Export grandi saranno job asincroni
 con manifest e URL firmati, non una pagina JSON senza limite.
-

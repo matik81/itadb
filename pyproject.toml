@@ -41,4 +41,3 @@ packages = ["itadb"]
 [[tool.mypy.overrides]]
 module = ["duckdb.*"]
 ignore_missing_imports = true
-
