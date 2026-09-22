@@ -79,6 +79,7 @@ uv run pytest -m "not integration"
 uv run itadb export-openapi
 npm --prefix apps/web run api:types
 npm --prefix apps/web run typecheck
+npm --prefix apps/web run format:check
 npm --prefix apps/web test
 npm --prefix apps/web run build
 ```

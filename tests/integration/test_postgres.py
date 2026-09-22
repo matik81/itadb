@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -37,6 +38,8 @@ def test_end_to_end_idempotency_read_only_and_immutability(settings: Settings) -
             db.execute("UPDATE stats.observation SET value=9 WHERE release_id=%s", (release,))
         with pytest.raises(psycopg.errors.RaiseException):
             db.execute("DELETE FROM catalog.release WHERE id=%s", (release,))
+        with pytest.raises(psycopg.errors.RaiseException):
+            db.execute("UPDATE geo.territory SET name='Changed' WHERE scheme='ITADB_DEMO'")
         plan = db.execute(
             "EXPLAIN (FORMAT JSON) SELECT * FROM stats.observation WHERE release_id=%s", (release,)
         ).fetchone()[0]
@@ -76,3 +79,21 @@ def test_failed_quality_gate_records_run_without_publishing(settings: Settings) 
             > 0
         )
     assert list((settings.data_dir / "quarantine").glob("*.json"))
+
+
+def test_draft_releases_are_private_and_can_be_removed(settings: Settings) -> None:
+    draft = uuid4()
+    with psycopg.connect(settings.admin_database_url) as db:
+        db.execute(
+            """INSERT INTO catalog.release
+            (id,dataset_id,reference_period,retrieved_at,upstream_url,raw_sha256,
+             transform_version,contract_sha256,license_url,status,row_count)
+            VALUES (%s,'demo_population','2025-01-01',now(),'https://example.org',%s,
+                    %s,%s,'https://example.org/license','draft',0)""",
+            (draft, "a" * 64, str(draft), "b" * 64),
+        )
+    with TestClient(create_app(settings)) as client:
+        assert client.get(f"/v1/releases/{draft}").status_code == 404
+    with psycopg.connect(settings.admin_database_url) as db:
+        db.execute("DELETE FROM catalog.release WHERE id=%s", (draft,))
+        assert db.execute("SELECT 1 FROM catalog.release WHERE id=%s", (draft,)).fetchone() is None

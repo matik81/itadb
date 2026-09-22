@@ -67,3 +67,19 @@ def test_archive_is_content_addressed_and_detects_corruption(tmp_path: Path) -> 
     path.write_bytes(b"corruption")
     with pytest.raises(ValueError, match="modified"):
         archive_file(FIXTURE, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [
+        "territory_code,territory_name,period,population\n",
+        "territory_code,territory_name,period,population\n"
+        "DEMO001,Alfa,2025-01-01,1\nDEMO002,Beta,2026-01-01,2\n",
+        "territory_code,territory_name,period,total\nDEMO001,Alfa,2025-01-01,1\n",
+    ],
+)
+def test_empty_mixed_period_and_schema_drift_are_rejected(tmp_path: Path, contents: str) -> None:
+    source = tmp_path / "bad.csv"
+    source.write_text(contents)
+    with pytest.raises(QualityError):
+        normalize_demo(source, tmp_path / "output.parquet", CONTRACT)

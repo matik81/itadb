@@ -28,6 +28,10 @@ Queste directory sono ignorate da Git e non vengono pubblicate. I lockfile sono 
 La verifica TLS iniziale falliva con il trust store predefinito di Node/uv. È stata risolta
 per processo tramite `NODE_USE_SYSTEM_CA=1` e `uv --system-certs`, usando le CA Windows.
 Non sono state disabilitate verifiche TLS né cambiate le execution policy di PowerShell.
+Per un comando uv che possa risincronizzare dipendenze usare il flag anche con `run`
+(`uv --system-certs run ...`). Requests/pip-audit usa un trust store separato: configurare
+`REQUESTS_CA_BUNDLE` con un bundle approvato dal sistema se si desidera eseguire l'audit
+localmente; il workflow Linux lo ha completato correttamente.
 
 ## Da installare per sviluppare agevolmente
 

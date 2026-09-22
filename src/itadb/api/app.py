@@ -21,6 +21,12 @@ from itadb.api.repository import PostgresRepository, Repository
 from itadb.config import Settings
 
 logger = logging.getLogger("itadb.api")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+logger.propagate = False
 
 
 def repository(request: Request) -> Repository:
