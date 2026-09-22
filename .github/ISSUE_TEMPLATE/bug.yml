@@ -1,0 +1,14 @@
+name: Difetto
+description: Segnala un comportamento riproducibile
+body:
+  - type: textarea
+    id: expected
+    attributes: {label: Comportamento atteso e osservato}
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes: {label: Passi per riprodurre, description: Non includere dati personali o credenziali.}
+    validations: {required: true}
+  - type: input
+    id: version
+    attributes: {label: Versione o commit}

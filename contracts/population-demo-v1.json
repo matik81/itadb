@@ -1,0 +1,11 @@
+{
+  "name": "population-demo", "version": "1.0.0", "is_demo": true,
+  "encoding": "utf-8", "format": "csv", "delimiter": ",",
+  "columns": ["territory_code", "territory_name", "period", "population"],
+  "key": ["territory_code", "period"],
+  "territory_scheme": "ITADB_DEMO", "territory_valid_from": "2025-01-01",
+  "unit": "persons", "series": "population_total",
+  "rules": ["nonempty", "unique_key", "nonnegative_integer", "single_period", "valid_date", "demo_codes"],
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "limitations": "Invented values and territories. Not official Italian statistics."
+}

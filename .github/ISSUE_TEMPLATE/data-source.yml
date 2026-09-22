@@ -1,0 +1,18 @@
+name: Proposta di fonte
+description: Proponi una fonte verificabile
+body:
+  - type: input
+    id: provider
+    attributes: {label: Ente e URL ufficiale}
+    validations: {required: true}
+  - type: textarea
+    id: scope
+    attributes: {label: Dataset, dimensioni, unità, territorio e periodo}
+    validations: {required: true}
+  - type: textarea
+    id: license
+    attributes: {label: Licenza e limiti di accesso o redistribuzione}
+    validations: {required: true}
+  - type: textarea
+    id: quality
+    attributes: {label: Verifiche proposte e limiti noti}

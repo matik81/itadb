@@ -1,0 +1,46 @@
+# Qualità, riproducibilità e limiti
+
+## Gate implementati sul dataset demo
+
+Intestazione esatta; almeno una riga; codici nel namespace demo; nomi non vuoti; data ISO
+valida e compatibile con il vintage demo; conteggi interi non negativi entro int64;
+chiave territorio/periodo unica; un solo periodo. DuckDB normalizza in Parquet con tipi
+espliciti. Dopo COPY il numero di osservazioni deve coincidere con quello validato.
+I gate sono implementati dall'adapter demo, non da un motore generico che interpreti
+qualsiasi JSON. Il contratto è versionato e incluso nell'identità della release.
+
+Gli errori bloccano la pubblicazione; un QualityError produce report di quarantena e run
+fallito. Errori tecnici conservano il codice del tipo di eccezione nel run. La transazione
+fa rollback di tutti i dati di servizio della release. Un file Parquet eventualmente
+prodotto prima del rollback è un artefatto orfano, mai una release pubblicata.
+
+L'identità è deterministica su dataset + SHA-256 originale + versione trasformazione +
+SHA-256 contratto. Retry identici non duplicano osservazioni; ogni tentativo ha run distinto.
+Lock di file protegge i file sullo stesso host, advisory lock transazionale protegge la
+pubblicazione tra host. La v0.1 presuppone che le definizioni di dimensione siano curate
+da un solo flusso amministrativo; onboarding parallelo richiederà lock anche sulle dimensioni.
+
+Un crash di processo può lasciare un run `running`: un reconciler operativo, non ancora
+implementato, dovrà identificarlo tramite timeout e verificare transazione/artefatti.
+Non promettiamo exactly-once su sistemi distribuiti: la pubblicazione DB è atomica e
+idempotente, il filesystem non partecipa alla transazione PostgreSQL.
+
+## Gate richiesti per dati reali
+
+- Schema e DSD; domini e codelist; copertura territoriale e temporale attesa.
+- Unità e scale, valute/prezzi correnti o costanti, definizioni delle categorie.
+- Riconciliazione con totali ufficiali, disaggregazioni, tolleranze documentate.
+- Variazioni anomale tra release e revisione delle differenze, senza correggere automaticamente.
+- Distinzione tra osservato, stimato, mancante e soppresso; preservare i flag upstream.
+- Geometrie valide, SRID, copertura e versione dei confini.
+
+## Gate richiesti per la sintesi
+
+Margini territoriali, distribuzioni congiunte, composizione familiare, vincoli logici e
+copertura. Validazione su statistiche non usate nella calibrazione; confronto tra seed e
+quantificazione dell'incertezza. I margini non determinano univocamente le correlazioni:
+ipotesi modellistiche, errori e bias vanno pubblicati insieme ai risultati.
+La coerenza statistica non rende uno scenario una previsione certa o una stima causale.
+Prima di rilasciare microdati sintetici servono valutazioni di rischio di re-identificazione
+e di disclosure, anche in assenza di corrispondenza intenzionale con individui reali.
+

@@ -1,0 +1,2 @@
+# Shared project configuration. No personal credentials, model lock or permission override.
+project_doc_max_bytes = 32768
