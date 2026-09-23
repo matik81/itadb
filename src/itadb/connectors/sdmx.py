@@ -1,3 +1,4 @@
+import re
 import ssl
 import time
 from dataclasses import dataclass
@@ -82,8 +83,33 @@ class SdmxConnector:
             raise ValueError("A bounded flow, key and period range are required")
         url = f"{self.source.base_url}/data/{quote(flow, safe=',')}/{quote(key, safe='.+')}"
         params = {"startPeriod": start, "endPeriod": end}
+        return self._fetch(url, params, "application/vnd.sdmx.data+csv;version=1.0", "csv")
+
+    def fetch_structure(
+        self, resource: str, agency: str, identifier: str, version: str, references: str = "none"
+    ) -> AcquiredArtifact:
+        """Archive one explicitly identified dataflow or DSD with bounded references."""
+        if resource not in {"dataflow", "datastructure"} or references not in {"none", "all"}:
+            raise ValueError("Choose dataflow/datastructure and references none/all")
+        if any(
+            not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*", part)
+            or part.lower() in {"all", "latest"}
+            for part in (agency, identifier, version)
+        ):
+            raise ValueError("Explicit agency, identifier and version are required")
+        path = "/".join(quote(part, safe="") for part in (resource, agency, identifier, version))
+        return self._fetch(
+            f"{self.source.base_url}/{path}",
+            {"references": references},
+            "application/vnd.sdmx.structure+xml;version=2.1",
+            "xml",
+        )
+
+    def _fetch(
+        self, url: str, params: dict[str, str], accept: str, expected_format: str
+    ) -> AcquiredArtifact:
         headers = {
-            "Accept": "application/vnd.sdmx.data+csv;version=1.0",
+            "Accept": accept,
             "User-Agent": "itadb/0.1 (+https://github.com/matik81/itadb)",
         }
         client = self.client or httpx.Client(
@@ -119,9 +145,9 @@ class SdmxConnector:
                         if response.status_code != 200:
                             raise ValueError("Expected synchronous HTTP 200; narrow the query")
                         content_type = response.headers.get("content-type", "").lower()
-                        if "csv" not in content_type:
+                        if expected_format not in content_type:
                             raise ValueError(
-                                "Provider did not return SDMX-CSV; inspect its DSD/format"
+                                f"Provider did not return SDMX-{expected_format}; inspect format"
                             )
                         size = 0
                         with temporary.open("wb") as output:

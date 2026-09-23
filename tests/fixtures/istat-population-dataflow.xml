@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf-8'?>
+<message:Structure xmlns:common="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common" xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:structure="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure">
+  <message:Header>
+    <message:ID>IDREF247</message:ID>
+    <message:Test>false</message:Test>
+    <message:Prepared>2026-09-23T01:33:00.1167527+02:00</message:Prepared>
+    <message:Sender id="Unknown" />
+    <message:Receiver id="Unknown" />
+  </message:Header>
+  <message:Structures>
+    <structure:Dataflows>
+      <structure:Dataflow id="22_289_DF_DCIS_POPRES1_1" agencyID="IT1" version="1.0" isFinal="true">
+        <common:Annotations>
+          <common:Annotation id="DDBDataflow">
+            <common:AnnotationTitle>51869465DFA262742FBD910A10D29DDE</common:AnnotationTitle>
+            <common:AnnotationType>DDBDataflow</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="LAST_UPDATE">
+            <common:AnnotationTitle>2026-03-31T08:03:43.724Z</common:AnnotationTitle>
+            <common:AnnotationType>LAST_UPDATE</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="LAYOUT_ROW">
+            <common:AnnotationTitle>REF_AREA</common:AnnotationTitle>
+            <common:AnnotationType>LAYOUT_ROW</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="LAYOUT_COLUMN">
+            <common:AnnotationTitle>SEX</common:AnnotationTitle>
+            <common:AnnotationType>LAYOUT_COLUMN</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="LAYOUT_FILTER">
+            <common:AnnotationTitle>FREQ,DATA_TYPE,AGE,MARITAL_STATUS,TIME_PERIOD</common:AnnotationTitle>
+            <common:AnnotationType>LAYOUT_FILTER</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="NOT_DISPLAYED">
+            <common:AnnotationTitle>NOTE_REF_AREA</common:AnnotationTitle>
+            <common:AnnotationType>NOT_DISPLAYED</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="CRITERIA_SELECTION">
+            <common:AnnotationTitle>PartialAllOptimized</common:AnnotationTitle>
+            <common:AnnotationType>CRITERIA_SELECTION</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="METADATA_URL">
+            <common:AnnotationType>METADATA_URL</common:AnnotationType>
+            <common:AnnotationText xml:lang="en">https://esploradati.istat.it/RefMeta/template/GenericMetadataTemplate.html?nodeId=DW&amp;metadataSetId=MS_ISTAT_TOPMETA2&amp;reportId=DCIS_POPRES1&amp;lang=en&amp;BaseUrlMDA=https://esploradati.istat.it/METADATA_API</common:AnnotationText>
+            <common:AnnotationText xml:lang="it">https://esploradati.istat.it/RefMeta/template/GenericMetadataTemplate.html?nodeId=DW&amp;metadataSetId=MS_ISTAT_TOPMETA2&amp;reportId=DCIS_POPRES1&amp;lang=it&amp;BaseUrlMDA=https://esploradati.istat.it/METADATA_API</common:AnnotationText>
+          </common:Annotation>
+        </common:Annotations>
+        <common:Name xml:lang="en">Italy, regions, provinces</common:Name>
+        <common:Name xml:lang="it">Italia, regioni, province</common:Name>
+        <structure:Structure>
+          <Ref id="DCIS_POPRES1" version="1.0" agencyID="IT1" package="datastructure" class="DataStructure" />
+        </structure:Structure>
+      </structure:Dataflow>
+    </structure:Dataflows>
+  </message:Structures>
+</message:Structure>
