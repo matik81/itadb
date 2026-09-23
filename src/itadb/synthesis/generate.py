@@ -10,9 +10,10 @@ from pathlib import Path
 
 import duckdb
 
+from itadb.synthesis.demography import cohort_reference_year
 from itadb.synthesis.models import Calibration
 
-ALGORITHM_VERSION = "constrained-reconstruction/2.0.0"
+ALGORITHM_VERSION = "constrained-reconstruction/3.0.0"
 
 
 def check_feasibility(c: Calibration, large_size: int) -> None:
@@ -31,6 +32,7 @@ def check_feasibility(c: Calibration, large_size: int) -> None:
 
 def generate(c: Calibration, seed: int, large_size: int, directory: Path) -> None:
     check_feasibility(c, large_size)
+    cohort_year = cohort_reference_year(c.population_reference)
     directory.mkdir(parents=True, exist_ok=False)
     rng = random.Random(seed)
     male_counts = c.male_by_age
@@ -76,11 +78,14 @@ def generate(c: Calibration, seed: int, large_size: int, directory: Path) -> Non
         con.execute("SET memory_limit='256MB'")
         con.execute("SET threads=1")
         con.execute(
-            """CREATE TABLE p AS SELECT *, 'synthetic'::VARCHAR AS data_kind
+            """CREATE TABLE p AS SELECT person_id, household_id,
+            CASE WHEN age < 100 THEN ? - age END::SMALLINT AS birth_year,
+            CASE WHEN age = 100 THEN ? - age END::SMALLINT AS birth_year_upper_bound,
+            sex, reference_adult, 'synthetic'::VARCHAR AS data_kind
             FROM read_csv(?, header=true, columns={'person_id':'BIGINT',
             'household_id':'BIGINT','age':'SMALLINT','sex':'VARCHAR',
             'reference_adult':'BOOLEAN'})""",
-            [str(people_csv)],
+            [cohort_year, cohort_year, str(people_csv)],
         )
         con.execute(
             """CREATE TABLE h AS SELECT *, 'synthetic'::VARCHAR AS data_kind

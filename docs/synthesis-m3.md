@@ -7,9 +7,13 @@ non un prodotto statistico certificato, una previsione o un modello causale.
 
 La [revisione umana di progetto](reviews/m3-human-review.md) accetta questa
 prima versione e consente l'avvio di M4. Il riferimento unico è
-**`m3-reference/1`: classe 6+ = 6, seed 1701**; le altre repliche sono
+**classe 6+ = 6, seed 1701**; le altre repliche sono
 sensibilità. Vale la [graduatoria di fedeltà](model-fidelity.md): età/sesso,
 geografia, poi composizione familiare.
+La revisione v3 conserva queste scelte e introduce coorti di nascita stabili
+([ADR 0011](adr/0011-stable-birth-cohorts.md)). Il riferimento v2
+`m3-reference/1` rimane storico; il riferimento v3 è registrato
+[separatamente](reviews/m3-birth-year-reference.md).
 
 ## Input ammessi e riferimenti
 
@@ -50,7 +54,51 @@ L'input conserva totale e maschi per età; le femmine sono la differenza,
 dopo aver verificato sul CSV originale che maschi + femmine = totale.
 Non serve arrotondare né stimare la distribuzione sesso/età. Ogni aggregazione
 successiva in fasce d'età conserva la stessa uguaglianza con ISTAT.
-`age=100` significa **100+**, non un'età puntuale.
+La cella di calibrazione 100 significa **100+**, non un'età puntuale.
+
+### Proprietà individuali e anno di nascita
+
+Il Parquet v3 conserva sette campi:
+
+| Campo | Tipo | Significato |
+|---|---|---|
+| `person_id` | BIGINT | Identificativo univoco all'interno della replica |
+| `household_id` | BIGINT, nullable | Famiglia virtuale; null per il residuo non assegnato |
+| `birth_year` | SMALLINT, nullable | Anno di nascita sintetico per le classi iniziali 0–99 |
+| `birth_year_upper_bound` | SMALLINT, nullable | Ultimo anno di nascita possibile per la classe iniziale 100+ |
+| `sex` | VARCHAR | M/F, secondo le categorie di calibrazione |
+| `reference_adult` | BOOLEAN | Un adulto di riferimento per famiglia, senza ruolo di parentela |
+| `data_kind` | VARCHAR | Sempre `synthetic` |
+
+Esattamente uno dei due campi di nascita è valorizzato; entrambi restano
+stabili. L'età non viene memorizzata: al 1° gennaio Y, **prima dei compleanni
+dell'anno**, si calcola `Y - birth_year - 1`. È la convenzione annuale
+`year-start-cohort/1`, non una ricostruzione di compleanni osservati.
+Al riferimento 2022: età 0 → nascita 2021, età 30 → 1991, età 99 → 1922.
+Per 100+: nascita esatta null, limite superiore 1921.
+
+```python
+from itadb.synthesis.demography import age_at_year_start
+
+age_at_year_start(2022, birth_year=1991)  # AnnualAge(30, False)
+age_at_year_start(2023, birth_year=1991)  # AnnualAge(31, False)
+age_at_year_start(2023, birth_year=None, birth_year_upper_bound=1921)
+# AnnualAge(101, True): almeno 101 anni, senza età puntuale inventata
+```
+
+`years` è l'età secondo la convenzione; quando `is_lower_bound=True` è solo
+un limite inferiore. Un individuo inizialmente di 99 anni diventa di 100
+anni esatti secondo questa regola, distinto dalla classe che avanza a 101+.
+Il calcolo non modifica i record, non assegna compleanni infra-annuali e
+non simula sopravvivenza, nuovi nati o cambiamenti delle famiglie. I conteggi
+degli anni successivi non sono calibrazioni su nuove osservazioni.
+
+Manifest e report contengono `person_model`: versione dello schema, regola,
+formula, data iniziale, classe aperta, natura sintetica e razionale.
+Il verificatore controlla i due campi e ricostruisce indipendentemente l'età
+alla data iniziale per riconciliare gli stessi conteggi ISTAT dell'input.
+
+### Assegnazione familiare e controlli
 
 Ogni famiglia ha la cardinalità dichiarata e un adulto di riferimento;
 tutti i minori sono assegnati a una famiglia con almeno un adulto.
@@ -70,7 +118,8 @@ I cinque seed sono fissati in [`m3-experiment-v1.json`](../contracts/m3-experime
 Vengono conservate tutte le 15 repliche. Il seed cambia l'assegnazione alle
 famiglie e l'ordine dei record, mantenendo identica la congiunta demografica.
 La CLI continua a produrre le 15 repliche: per il riferimento si usa soltanto
-`size-6-seed-1701` del run identificato nella revisione. Nessuna alternativa
+`size-6-seed-1701` del run identificato nella revisione della rispettiva versione.
+Nessuna alternativa
 è adottata implicitamente e nessuna scelta è dichiarata più vera statisticamente.
 
 M3 fissa la regione nell'input, ma i Parquet non assegnano province o comuni
@@ -131,12 +180,14 @@ seed e parametri. Il commit e lo stato dirty sono registrati nel manifest;
 gli hash dei sorgenti descrivono anche esecuzioni precedenti al commit.
 Le revisioni producono un nuovo hash, senza sovrascrivere esperimenti.
 
-Questa revisione usa input `m3-input/2`, rapporto `m3-report/2`, algoritmo
-`constrained-reconstruction/2.0.0` e audit `parquet-independent-audit/2.0.0`.
+Questa revisione usa input `m3-input/2`, schema persone `m3-persons/3`,
+rapporto `m3-report/3`, algoritmo `constrained-reconstruction/3.0.0` e
+audit `parquet-independent-audit/3.0.0`.
 Il contratto delle fonti e quello dei seed restano v1: gli originali e i parametri
-non cambiano. Gli esperimenti v1 con congiunta fuori calibrazione restano
-storici immutabili; per verificarli serve l'implementazione registrata
-(per l'ultimo v1, commit `a722563`). La CLI v2 rifiuta versioni incompatibili
+non cambiano. Gli esperimenti v1 con congiunta fuori calibrazione e quelli
+v2 con `age` materializzato restano storici immutabili; per verificarli
+serve l'implementazione registrata (ultimo v1: commit `a722563`; riferimento
+v2: commit `ca8ac10`). La CLI v3 rifiuta versioni incompatibili
 con un messaggio esplicito; una nuova sintesi crea una directory distinta.
 
 Un lock serializza i retry sullo stesso host; il rename della directory sullo

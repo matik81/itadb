@@ -17,10 +17,11 @@ from filelock import FileLock
 from itadb.pipeline.storage import archive_file, atomic_json, sha256_file
 from itadb.pipeline.validate import QualityError
 from itadb.synthesis.audit import AUDIT_VERSION, audit
+from itadb.synthesis.demography import person_model_metadata
 from itadb.synthesis.generate import ALGORITHM_VERSION, check_feasibility, generate
 from itadb.synthesis.models import Experiment, PilotInput
 
-REPORT_VERSION = "m3-report/2"
+REPORT_VERSION = "m3-report/3"
 
 
 def implementation(root: Path) -> dict[str, str]:
@@ -117,6 +118,12 @@ def verify_run(directory: Path) -> dict[str, Any]:
     if files["input.json"] != descriptor["input_sha256"]:
         raise ValueError("Input differs from experiment identity")
     report = json.loads((directory / "report.json").read_text(encoding="utf-8"))
+    expected_person_model = person_model_metadata(inputs.calibration.population_reference)
+    if (
+        descriptor.get("person_model") != expected_person_model
+        or report.get("person_model") != expected_person_model
+    ):
+        raise ValueError("Person schema or birth year policy differs from the supported model")
     if (
         manifest.get("data_kind") != "synthetic"
         or manifest.get("public_release") is not False
@@ -178,6 +185,7 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
             "experiment": experiment.model_dump(),
             "algorithm": ALGORITHM_VERSION,
             "audit": AUDIT_VERSION,
+            "person_model": person_model_metadata(inputs.calibration.population_reference),
             "implementation": implementation(root),
             "runtime": {
                 "python": platform.python_version(),
@@ -216,6 +224,7 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
                     replicates.append({"seed": seed, "large_household_size": size, "audit": result})
             report = {
                 "schema_version": REPORT_VERSION,
+                "person_model": descriptor["person_model"],
                 "data_kind": "synthetic",
                 "public_release": False,
                 "external_scientific_review": "not_performed",
@@ -231,7 +240,11 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
                     "Sesso per singola età calibrato esattamente: "
                     "errore zero non costituisce validazione fuori calibrazione",
                     "Famiglie casuali con almeno un adulto; parentela e coppie non inferite",
-                    "100 indica 100 anni e più; non è un'età puntuale",
+                    "Anno di nascita sintetico; età al 1° gennaio prima dei compleanni "
+                    "dell'anno = anno simulato - birth_year - 1",
+                    "Per 100+ birth_year è nullo: birth_year_upper_bound conserva "
+                    "l'ultimo anno possibile, senza stimare la coda delle età",
+                    "Nessun compleanno infra-annuale, mortalità o dinamica familiare modellati",
                     "Tutti i minori assegnati a famiglie; "
                     "residuo adulto non identificato come convivenze",
                     "Dimensione 6+ ipotetica; nessuna stima della sua distribuzione reale",
@@ -249,7 +262,13 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
                 "Controlli SQL indipendenti, 202 celle sesso/età calibrate esattamente, "
                 "incertezza e limiti: report.json.\n"
                 "Non sono disponibili statistiche osservate per validazione fuori calibrazione.\n"
-                "Età 100 = 100+. household_id nullo = residuo non assegnato.\n"
+                "birth_year è una coorte sintetica stabile. Al 1° gennaio Y, prima "
+                "dei compleanni: età = Y - birth_year - 1.\n"
+                "Per la classe iniziale 100+, birth_year è nullo e "
+                "birth_year_upper_bound è l'ultimo anno possibile: l'età resta "
+                "un limite inferiore, che avanza negli anni (100+, 101+, ...).\n"
+                "Non si modellano compleanni, mortalità o dinamiche familiari.\n"
+                "household_id nullo = residuo non assegnato.\n"
                 "La revisione scientifica esterna e la valutazione disclosure "
                 "non sono state svolte.\n"
                 "I microdati non sono autorizzati alla distribuzione.\n",

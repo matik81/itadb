@@ -1,5 +1,6 @@
 """Independent read-back audit: SQL over exported Parquet, no generator imports."""
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -8,11 +9,12 @@ import duckdb
 from itadb.pipeline.validate import QualityError
 from itadb.synthesis.models import PilotInput
 
-AUDIT_VERSION = "parquet-independent-audit/2.0.0"
+AUDIT_VERSION = "parquet-independent-audit/3.0.0"
 
 
 def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any]:
     c = inputs.calibration
+    cohort_year = date.fromisoformat(c.population_reference).year - 1
     checks: dict[str, bool] = {}
 
     def gate(name: str, passed: bool) -> None:
@@ -31,7 +33,8 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
                 [
                     ("person_id", "BIGINT"),
                     ("household_id", "BIGINT"),
-                    ("age", "SMALLINT"),
+                    ("birth_year", "SMALLINT"),
+                    ("birth_year_upper_bound", "SMALLINT"),
                     ("sex", "VARCHAR"),
                     ("reference_adult", "BOOLEAN"),
                     ("data_kind", "VARCHAR"),
@@ -47,6 +50,24 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
                 [(row[0], row[1]) for row in con.execute(f"DESCRIBE {table}").fetchall()]
                 == expected,
             )
+        gate(
+            "birth_year_domains",
+            con.execute(
+                """SELECT count(*) FROM persons WHERE NOT coalesce(
+                (birth_year_upper_bound IS NULL AND birth_year BETWEEN ? AND ?)
+                OR (birth_year IS NULL AND birth_year_upper_bound = ?), false)""",
+                [cohort_year - 99, cohort_year, cohort_year - 100],
+            ).fetchall()[0][0]
+            == 0,
+        )
+        # Independently reconstruct the reference age from the stored cohort. The
+        # open cohort yields its lower bound, used only as the 100+ calibration cell.
+        con.execute(
+            """CREATE TEMP TABLE calibrated_persons AS SELECT *,
+            ? - coalesce(birth_year, birth_year_upper_bound) AS age FROM persons""",
+            [cohort_year],
+        )
+        con.execute("CREATE OR REPLACE TEMP VIEW persons AS SELECT * FROM calibrated_persons")
         n, ids, lowest, highest = con.execute(
             "SELECT count(*),count(DISTINCT person_id),min(person_id),max(person_id) FROM persons"
         ).fetchall()[0]
