@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Annotated
+from uuid import UUID
 
 import typer
 import uvicorn
@@ -9,6 +10,7 @@ from itadb.api.app import create_app
 from itadb.config import Settings
 from itadb.connectors.sdmx import SOURCES, SdmxConnector
 from itadb.pipeline.istat_population import check_population_sample
+from itadb.pipeline.publish_istat import ingest_istat_population
 from itadb.pipeline.runner import ingest_demo
 
 app = typer.Typer(no_args_is_help=True, help="Itadb data operations. Run from the repository root.")
@@ -85,6 +87,36 @@ def demo() -> None:
             )
         )
     )
+
+
+@app.command("ingest-istat-population")
+def publish_istat(
+    acquisition: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    structure: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    dataflow: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    license_evidence: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    onboarding_contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-population-regions-v1.json"
+    ),
+    publication_contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-population-publication-v1.json"
+    ),
+    supersedes: Annotated[UUID | None, typer.Option()] = None,
+    revision_reason: Annotated[str | None, typer.Option()] = None,
+) -> None:
+    """Pubblica il campione verificato; nuove revisioni richiedono predecessore e motivo."""
+    release = ingest_istat_population(
+        Settings(),
+        acquisition,
+        structure,
+        dataflow,
+        onboarding_contract,
+        publication_contract,
+        license_evidence,
+        supersedes,
+        revision_reason,
+    )
+    typer.echo(json.dumps({"release_id": str(release)}))
 
 
 @app.command()

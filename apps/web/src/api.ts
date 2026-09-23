@@ -1,9 +1,10 @@
 import type { components } from './generated/api';
 
-export type Release = components['schemas']['Release'];
+export type Release = components['schemas']['ReleaseV2'];
 export type Source = components['schemas']['Source'];
-export type Page = components['schemas']['ObservationPage'];
+export type Page = components['schemas']['ObservationPageV2'];
 export type Quality = components['schemas']['Quality'];
+export type Artifact = components['schemas']['Artifact'];
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(
   /\/$/,
   '',

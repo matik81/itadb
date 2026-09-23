@@ -1,6 +1,35 @@
 {
   "components": {
     "schemas": {
+      "Artifact": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "release_id",
+          "kind",
+          "sha256",
+          "byte_size"
+        ],
+        "title": "Artifact",
+        "type": "object"
+      },
       "Observation": {
         "properties": {
           "period": {
@@ -102,6 +131,153 @@
           "next_cursor"
         ],
         "title": "ObservationPage",
+        "type": "object"
+      },
+      "ObservationPageV2": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationV2"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "ObservationPageV2",
+        "type": "object"
+      },
+      "ObservationV2": {
+        "properties": {
+          "level": {
+            "enum": [
+              "country",
+              "region",
+              "province",
+              "municipality"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "parent_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Code"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "scheme": {
+            "title": "Scheme",
+            "type": "string"
+          },
+          "series_code": {
+            "title": "Series Code",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "observed",
+              "estimated",
+              "missing",
+              "suppressed",
+              "demo",
+              "unflagged_upstream"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "territory_code": {
+            "title": "Territory Code",
+            "type": "string"
+          },
+          "territory_id": {
+            "title": "Territory Id",
+            "type": "integer"
+          },
+          "territory_name": {
+            "title": "Territory Name",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "upstream_note": {
+            "title": "Upstream Note",
+            "type": "string"
+          },
+          "upstream_status": {
+            "title": "Upstream Status",
+            "type": "string"
+          },
+          "upstream_unit": {
+            "title": "Upstream Unit",
+            "type": "string"
+          },
+          "upstream_unit_multiplier": {
+            "title": "Upstream Unit Multiplier",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "release_id",
+          "series_code",
+          "unit",
+          "territory_id",
+          "territory_code",
+          "territory_name",
+          "scheme",
+          "period",
+          "value",
+          "status",
+          "level",
+          "parent_code",
+          "upstream_status",
+          "upstream_note",
+          "upstream_unit",
+          "upstream_unit_multiplier"
+        ],
+        "title": "ObservationV2",
         "type": "object"
       },
       "Problem": {
@@ -252,6 +428,179 @@
           "row_count"
         ],
         "title": "Release",
+        "type": "object"
+      },
+      "ReleaseV2": {
+        "properties": {
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          },
+          "contract_sha256": {
+            "title": "Contract Sha256",
+            "type": "string"
+          },
+          "dataset_id": {
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_demo": {
+            "title": "Is Demo",
+            "type": "boolean"
+          },
+          "license_url": {
+            "title": "License Url",
+            "type": "string"
+          },
+          "limitations": {
+            "title": "Limitations",
+            "type": "string"
+          },
+          "metadata_sha256": {
+            "title": "Metadata Sha256",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "raw_sha256": {
+            "title": "Raw Sha256",
+            "type": "string"
+          },
+          "reference_period": {
+            "format": "date",
+            "title": "Reference Period",
+            "type": "string"
+          },
+          "retrieved_at": {
+            "format": "date-time",
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "revision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision Reason"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "series_code": {
+            "title": "Series Code",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "supersedes_release_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Release Id"
+          },
+          "territory_snapshot": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Territory Snapshot"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "transform_version": {
+            "title": "Transform Version",
+            "type": "string"
+          },
+          "upstream_last_update": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Last Update"
+          },
+          "upstream_published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Published At"
+          },
+          "upstream_url": {
+            "title": "Upstream Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "dataset_id",
+          "title",
+          "limitations",
+          "source_id",
+          "is_demo",
+          "reference_period",
+          "retrieved_at",
+          "published_at",
+          "upstream_url",
+          "raw_sha256",
+          "transform_version",
+          "contract_sha256",
+          "license_url",
+          "row_count",
+          "metadata_sha256",
+          "upstream_last_update",
+          "upstream_published_at",
+          "supersedes_release_id",
+          "revision_reason",
+          "territory_snapshot",
+          "series_code",
+          "attribution"
+        ],
+        "title": "ReleaseV2",
         "type": "object"
       },
       "Source": {
@@ -732,6 +1081,415 @@
         "summary": "Sources",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/v2/observations": {
+      "get": {
+        "description": "Keep release, series and period fixed across pages. Country totals overlap regions.",
+        "operationId": "observations_v2_v2_observations_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "series",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "title": "Series",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationPageV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Observations V2",
+        "tags": [
+          "statistics v2"
+        ]
+      }
+    },
+    "/v2/releases": {
+      "get": {
+        "operationId": "releases_v2_v2_releases_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReleaseV2"
+                  },
+                  "title": "Response Releases V2 V2 Releases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Releases V2",
+        "tags": [
+          "catalog v2"
+        ]
+      }
+    },
+    "/v2/releases/{release_id}": {
+      "get": {
+        "operationId": "release_v2_v2_releases__release_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Release V2",
+        "tags": [
+          "catalog v2"
+        ]
+      }
+    },
+    "/v2/releases/{release_id}/artifacts": {
+      "get": {
+        "operationId": "artifacts_v2_v2_releases__release_id__artifacts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Artifact"
+                  },
+                  "title": "Response Artifacts V2 V2 Releases  Release Id  Artifacts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Artifacts V2",
+        "tags": [
+          "catalog v2"
+        ]
+      }
+    },
+    "/v2/releases/{release_id}/quality": {
+      "get": {
+        "operationId": "quality_v2_v2_releases__release_id__quality_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Quality"
+                  },
+                  "title": "Response Quality V2 V2 Releases  Release Id  Quality Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Quality V2",
+        "tags": [
+          "quality v2"
+        ]
+      }
+    },
+    "/v2/sources": {
+      "get": {
+        "operationId": "sources_v2_v2_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Source"
+                  },
+                  "title": "Response Sources V2 V2 Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Sources V2",
+        "tags": [
+          "catalog v2"
         ]
       }
     }

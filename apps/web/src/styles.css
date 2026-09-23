@@ -183,6 +183,15 @@ select {
   border-color: #dea19d;
   color: #852a24;
 }
+.official {
+  background: #edf7f2;
+  border-color: #a3cdbc;
+  color: #205a46;
+}
+.revision {
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
 .error p {
   margin: 0.4rem 0;
 }

@@ -135,10 +135,129 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/observations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Observations V2
+         * @description Keep release, series and period fixed across pages. Country totals overlap regions.
+         */
+        get: operations["observations_v2_v2_observations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Releases V2 */
+        get: operations["releases_v2_v2_releases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/releases/{release_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Release V2 */
+        get: operations["release_v2_v2_releases__release_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/releases/{release_id}/artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Artifacts V2 */
+        get: operations["artifacts_v2_v2_releases__release_id__artifacts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/releases/{release_id}/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quality V2 */
+        get: operations["quality_v2_v2_releases__release_id__quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources V2 */
+        get: operations["sources_v2_v2_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Artifact */
+        Artifact: {
+            /** Byte Size */
+            byte_size: number;
+            /** Kind */
+            kind: string;
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+            /** Sha256 */
+            sha256: string;
+        };
         /** Observation */
         Observation: {
             /**
@@ -177,6 +296,60 @@ export interface components {
             items: components["schemas"]["Observation"][];
             /** Next Cursor */
             next_cursor: number | null;
+        };
+        /** ObservationPageV2 */
+        ObservationPageV2: {
+            /** Items */
+            items: components["schemas"]["ObservationV2"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+        };
+        /** ObservationV2 */
+        ObservationV2: {
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "country" | "region" | "province" | "municipality";
+            /** Parent Code */
+            parent_code: string | null;
+            /**
+             * Period
+             * Format: date
+             */
+            period: string;
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+            /** Scheme */
+            scheme: string;
+            /** Series Code */
+            series_code: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "estimated" | "missing" | "suppressed" | "demo" | "unflagged_upstream";
+            /** Territory Code */
+            territory_code: string;
+            /** Territory Id */
+            territory_id: number;
+            /** Territory Name */
+            territory_name: string;
+            /** Unit */
+            unit: string;
+            /** Upstream Note */
+            upstream_note: string;
+            /** Upstream Status */
+            upstream_status: string;
+            /** Upstream Unit */
+            upstream_unit: string;
+            /** Upstream Unit Multiplier */
+            upstream_unit_multiplier: string;
+            /** Value */
+            value: string | null;
         };
         /** Problem */
         Problem: {
@@ -252,6 +425,67 @@ export interface components {
             title: string;
             /** Transform Version */
             transform_version: string;
+            /** Upstream Url */
+            upstream_url: string;
+        };
+        /** ReleaseV2 */
+        ReleaseV2: {
+            /** Attribution */
+            attribution: string | null;
+            /** Contract Sha256 */
+            contract_sha256: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Demo */
+            is_demo: boolean;
+            /** License Url */
+            license_url: string;
+            /** Limitations */
+            limitations: string;
+            /** Metadata Sha256 */
+            metadata_sha256: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Raw Sha256 */
+            raw_sha256: string;
+            /**
+             * Reference Period
+             * Format: date
+             */
+            reference_period: string;
+            /**
+             * Retrieved At
+             * Format: date-time
+             */
+            retrieved_at: string;
+            /** Revision Reason */
+            revision_reason: string | null;
+            /** Row Count */
+            row_count: number;
+            /** Series Code */
+            series_code: string;
+            /** Source Id */
+            source_id: string;
+            /** Supersedes Release Id */
+            supersedes_release_id: string | null;
+            /** Territory Snapshot */
+            territory_snapshot: string | null;
+            /** Title */
+            title: string;
+            /** Transform Version */
+            transform_version: string;
+            /** Upstream Last Update */
+            upstream_last_update: string | null;
+            /** Upstream Published At */
+            upstream_published_at: string | null;
             /** Upstream Url */
             upstream_url: string;
         };
@@ -549,6 +783,284 @@ export interface operations {
         };
     };
     sources_v1_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Source"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    observations_v2_v2_observations_get: {
+        parameters: {
+            query: {
+                release_id: string;
+                period: string;
+                series: string;
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationPageV2"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    releases_v2_v2_releases_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseV2"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    release_v2_v2_releases__release_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseV2"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    artifacts_v2_v2_releases__release_id__artifacts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    quality_v2_v2_releases__release_id__quality_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quality"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    sources_v2_v2_sources_get: {
         parameters: {
             query?: never;
             header?: never;

@@ -16,8 +16,17 @@ from psycopg_pool import ConnectionPool, PoolTimeout
 from starlette.responses import Response
 
 from itadb import __version__
-from itadb.api.models import ObservationPage, Problem, Quality, Release, Source
-from itadb.api.repository import PostgresRepository, Repository
+from itadb.api.models import (
+    Artifact,
+    ObservationPage,
+    ObservationPageV2,
+    Problem,
+    Quality,
+    Release,
+    ReleaseV2,
+    Source,
+)
+from itadb.api.repository import PostgresRepository, PostgresRepositoryV2, Repository, RepositoryV2
 from itadb.config import Settings
 
 logger = logging.getLogger("itadb.api")
@@ -37,13 +46,26 @@ def repository(request: Request) -> Repository:
 Repo = Annotated[Repository, Depends(repository)]
 
 
-def create_app(settings: Settings | None = None, repo: Repository | None = None) -> FastAPI:
+def repository_v2(request: Request) -> RepositoryV2:
+    result: RepositoryV2 = request.app.state.repository_v2
+    return result
+
+
+RepoV2 = Annotated[RepositoryV2, Depends(repository_v2)]
+
+
+def create_app(
+    settings: Settings | None = None,
+    repo: Repository | None = None,
+    repo_v2: RepositoryV2 | None = None,
+) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         if repo is not None:
             application.state.repository = repo
+            application.state.repository_v2 = repo_v2 or repo
             yield
             return
         pool = ConnectionPool(
@@ -56,6 +78,7 @@ def create_app(settings: Settings | None = None, repo: Repository | None = None)
         )
         pool.open(wait=False)
         application.state.repository = PostgresRepository(pool)
+        application.state.repository_v2 = PostgresRepositoryV2(pool)
         try:
             yield
         finally:
@@ -136,8 +159,9 @@ def create_app(settings: Settings | None = None, repo: Repository | None = None)
         return {"status": "ok", "version": __version__}
 
     @app.get("/health/ready", tags=["health"])
-    def ready(db: Repo) -> dict[str, str]:
+    def ready(db: Repo, db_v2: RepoV2) -> dict[str, str]:
         db.ping()
+        db_v2.ping()
         return {"status": "ready"}
 
     @app.get("/v1/sources", response_model=list[Source], tags=["catalog"])
@@ -192,6 +216,71 @@ def create_app(settings: Settings | None = None, repo: Repository | None = None)
         Pass next_cursor as after. A null next_cursor means the last page.
         Unknown series or periods return an empty page; unknown releases return 404.
         """
+        if db.release(release_id) is None:
+            raise HTTPException(404, "Published release not found")
+        rows = db.observations(release_id, series, period, after, limit + 1)
+        return {
+            "items": rows[:limit],
+            "next_cursor": rows[limit - 1]["territory_id"] if len(rows) > limit else None,
+        }
+
+    @app.get("/v2/sources", response_model=list[Source], tags=["catalog v2"])
+    def sources_v2(db: RepoV2) -> object:
+        return db.sources()
+
+    @app.get("/v2/releases", response_model=list[ReleaseV2], tags=["catalog v2"])
+    def releases_v2(db: RepoV2, limit: Annotated[int, Query(ge=1, le=100)] = 50) -> object:
+        return db.releases(limit)
+
+    @app.get(
+        "/v2/releases/{release_id}",
+        response_model=ReleaseV2,
+        tags=["catalog v2"],
+        responses={404: {"model": Problem}},
+    )
+    def release_v2(release_id: UUID, db: RepoV2) -> object:
+        item = db.release(release_id)
+        if item is None:
+            raise HTTPException(404, "Published release not found")
+        return item
+
+    @app.get(
+        "/v2/releases/{release_id}/quality",
+        response_model=list[Quality],
+        tags=["quality v2"],
+        responses={404: {"model": Problem}},
+    )
+    def quality_v2(release_id: UUID, db: RepoV2) -> object:
+        if db.release(release_id) is None:
+            raise HTTPException(404, "Published release not found")
+        return db.quality(release_id)
+
+    @app.get(
+        "/v2/releases/{release_id}/artifacts",
+        response_model=list[Artifact],
+        tags=["catalog v2"],
+        responses={404: {"model": Problem}},
+    )
+    def artifacts_v2(release_id: UUID, db: RepoV2) -> object:
+        if db.release(release_id) is None:
+            raise HTTPException(404, "Published release not found")
+        return db.artifacts(release_id)
+
+    @app.get(
+        "/v2/observations",
+        response_model=ObservationPageV2,
+        tags=["statistics v2"],
+        responses={404: {"model": Problem}},
+    )
+    def observations_v2(
+        db: RepoV2,
+        release_id: UUID,
+        period: date,
+        series: Annotated[str, Query(pattern=r"^[a-z][a-z0-9_]{0,63}$")],
+        after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> object:
+        """Keep release, series and period fixed across pages. Country totals overlap regions."""
         if db.release(release_id) is None:
             raise HTTPException(404, "Published release not found")
         rows = db.observations(release_id, series, period, after, limit + 1)

@@ -1,9 +1,10 @@
 # Primo campione ISTAT: popolazione residente regionale
 
 Verifica del 23 settembre 2026, fuso Europe/Rome (acquisizioni il 22 settembre in UTC).
-Stato: **onboarding verificato**, con controllo offline e provenienza conservata.
+Stato: **pubblicato nello stack locale**, consultabile via API v2 e web app.
 Contratto: [istat-population-regions-v1.json](../../contracts/istat-population-regions-v1.json).
-Piano: [onboarding](../plans/m1-istat-population.md).
+Contratto di pubblicazione: [istat-population-publication-v1.json](../../contracts/istat-population-publication-v1.json).
+Piani: [onboarding](../plans/m1-istat-population.md) e [pubblicazione](../plans/m1-publication.md).
 
 ## Fonte, significato e perimetro
 
@@ -124,9 +125,54 @@ la query qui documentata è selettiva e il gate accetta al massimo 100 kB e 21 r
 Le nuove acquisizioni potrebbero avere hash diversi per aggiornamenti upstream o
 timestamp dei metadati: verificare la nuova evidenza senza sostituire la precedente.
 
-## Limiti di questo incremento
+## Pubblicazione in DB/API/web
 
-Il controllo opera offline e non pubblica nel database. API e web app continuano
-a esporre la demo. La pubblicazione ufficiale richiede migrazione, adapter e
-verifiche di integrazione nel passaggio successivo. Nessuna ricostruzione storica
-dei territori, benchmark nazionale o popolazione sintetica è stata realizzata.
+Dopo migrazioni e configurazione del ruolo reader, usare gli stessi manifest e
+l'originale della pagina di licenza, conservato durante la verifica:
+
+```powershell
+& $uvPath run itadb ingest-istat-population --acquisition $sample.manifest --structure $dsd.manifest --dataflow $flow.manifest --license-evidence PERCORSO_HTML_LICENZA
+```
+
+Nel Compose eseguire il comando con `docker compose run --rm pipeline itadb ...`
+e percorsi interni all'archivio `/app/data`. Gli originali acquisiti sul filesystem
+Windows vanno prima trasferiti nell'archivio del worker, conservando bytes, hash
+e manifest. Tutti i worker di uno stesso catalogo devono condividere l'archivio.
+La copia già presente in questa installazione è nel volume `itadb_evidence`;
+gli input sono registrati in `/app/data/state/m1-official-inputs.json`.
+
+Il contratto verifica il checksum della pagina licenza già revisionata. Una nuova
+pagina scaricata può avere bytes differenti: non aggiornare il checksum alla cieca;
+revisionare l'evidenza e versionare i contratti prima della pubblicazione.
+
+La pipeline ricalcola i gate sugli originali, crea Parquet/Zstandard e carica
+21 righe via COPY. Controlla nuovamente somma e conteggio in PostgreSQL, registra
+12 artefatti e pubblica in transazione. Retry identici riusano la stessa release.
+Un errore conserva run e quarantena senza pubblicare dati parziali.
+Le API v2 preservano `unflagged_upstream` e mostrano il livello territoriale;
+la web app esplicita la sovrapposizione tra regioni e controllo nazionale.
+
+Per dati o metadati cambiati, indicare `--supersedes UUID_CORRENTE` e
+`--revision-reason "Motivazione revisionata"`. Un predecessore obsoleto viene
+rifiutato. La release precedente resta immutabile e consultabile. L'identità
+ignora il solo Header di risposta SDMX, non gli aggiornamenti semantici.
+
+I contratti nel repository usano terminatori LF. La versione 1.0.1 del contratto
+di pubblicazione fissa il checksum portabile dell'onboarding; l'adeguamento
+rispetto alla prima pubblicazione Windows è registrato come revisione con
+valori invariati. Gli originali dei contratti precedenti restano tra gli artefatti.
+
+La release corrente verificata nello stack locale è
+[`eaef6df9-96db-58bd-9b9d-9e203d89d030`](http://localhost:8080/api/v2/releases/eaef6df9-96db-58bd-9b9d-9e203d89d030),
+successiva a `4d602369-9057-57a0-9942-9d0ac9bcb91e`. Tutti i 21 valori e gli
+attributi upstream sono stati confrontati tra API e CSV originale; i 72 controlli
+qualità sono passati. [Registro della verifica](../validation.md#pubblicazione-istat-locale-23-settembre-2026).
+
+## Limiti del perimetro M1
+
+La validità territoriale attestata è solo `[2024-01-01,2024-01-02)`, con gerarchia
+Italia/regioni e namespace versionato. Il DB impedisce sovrapposizioni e date
+fuori validità. Confini, crosswalk e fusioni/scissioni su altri periodi restano
+in M2; non sono dedotti da questa selezione. La data di pubblicazione upstream
+rimane non accertata. Nessuna prova di prestazioni su scala nazionale o di
+popolazione sintetica è stata eseguita.
