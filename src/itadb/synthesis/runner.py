@@ -169,11 +169,12 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
         experiment = Experiment.model_validate(experiment.model_dump())
         for size in experiment.large_household_sizes:
             check_feasibility(inputs.calibration, size)
-        stage = root / "state" / f"m3-attempt-{attempt}"
-        stage.mkdir(parents=True)
-        atomic_json(stage / "input.json", inputs.model_dump(mode="json"))
+        # Hash the exact bytes before staging: successful retries need no new attempt directory.
+        input_bytes = (
+            json.dumps(inputs.model_dump(mode="json"), indent=2, ensure_ascii=False) + "\n"
+        ).encode("utf-8")
         descriptor = {
-            "input_sha256": sha256_file(stage / "input.json"),
+            "input_sha256": hashlib.sha256(input_bytes).hexdigest(),
             "experiment": experiment.model_dump(),
             "algorithm": ALGORITHM_VERSION,
             "audit": AUDIT_VERSION,
@@ -190,12 +191,17 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
         ).hexdigest()
         target = root / "curated" / "m3" / run_id
         target.parent.mkdir(parents=True, exist_ok=True)
-        with FileLock(str(root / "state" / f"m3-{run_id}.lock"), timeout=60):
+        state = root / "state"
+        state.mkdir(parents=True, exist_ok=True)
+        with FileLock(str(state / f"m3-{run_id}.lock"), timeout=60):
             if target.exists():
                 progress("Retry: verifica integrale degli artefatti esistenti")
                 verify_run(target)
                 progress("Esito: esperimento identico riutilizzato")
                 return target
+            stage = state / f"m3-attempt-{attempt}"
+            stage.mkdir()
+            (stage / "input.json").write_bytes(input_bytes)
             replicates: list[dict[str, Any]] = []
             total = len(experiment.seeds) * len(experiment.large_household_sizes)
             for size in experiment.large_household_sizes:
