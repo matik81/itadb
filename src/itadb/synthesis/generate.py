@@ -1,4 +1,4 @@
-"""Integer reconstruction with conditional independence and constrained random allocation.
+"""Exact demographic reconstruction and constrained random household allocation.
 
 This is a deliberately limited baseline, not an implementation of a published IPU model.
 All persons and household membership are virtual; no donor microdata are accepted.
@@ -10,31 +10,9 @@ from pathlib import Path
 
 import duckdb
 
-from itadb.synthesis.models import BANDS, Calibration
+from itadb.synthesis.models import Calibration
 
-ALGORITHM_VERSION = "constrained-reconstruction/1.0.0"
-
-
-def integer_joint(c: Calibration, rng: random.Random) -> list[int]:
-    """Hamilton allocation of males within each age band; females are complements.
-
-    The real-valued table is the independent (maximum entropy) solution given the
-    two margins. Integer arithmetic avoids floating point drift and preserves both.
-    Randomness only resolves equal remainders, without consulting held-out cells.
-    """
-    result = [0] * 101
-    for male, (start, end) in zip(c.male_by_band, BANDS, strict=True):
-        total = sum(c.age_counts[start:end])
-        if total == 0:
-            continue
-        for age in range(start, end):
-            result[age] = c.age_counts[age] * male // total
-        candidates = list(range(start, end))
-        rng.shuffle(candidates)
-        candidates.sort(key=lambda age: c.age_counts[age] * male % total, reverse=True)
-        for age in candidates[: male - sum(result[start:end])]:
-            result[age] += 1
-    return result
+ALGORITHM_VERSION = "constrained-reconstruction/2.0.0"
 
 
 def check_feasibility(c: Calibration, large_size: int) -> None:
@@ -55,7 +33,7 @@ def generate(c: Calibration, seed: int, large_size: int, directory: Path) -> Non
     check_feasibility(c, large_size)
     directory.mkdir(parents=True, exist_ok=False)
     rng = random.Random(seed)
-    male_counts = integer_joint(c, rng)
+    male_counts = c.male_by_age
     adults: list[tuple[int, str]] = []
     minors: list[tuple[int, str]] = []
     for age, total in enumerate(c.age_counts):

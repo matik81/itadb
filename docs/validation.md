@@ -2,6 +2,59 @@
 
 ## M3 — sintesi pilota
 
+### Revisione v2 — sesso ed età esattamente uguali a ISTAT
+
+Verifiche del 23 settembre 2026, dopo la richiesta di corrispondenza 1:1.
+[Metodo attuale](adr/0009-exact-demographic-calibration.md) e
+[procedura](synthesis-m3.md). Gli esiti v1 più sotto sono storici.
+
+- `uv sync --locked`, Ruff check/format e mypy: passati.
+- **160 test Python non integration passati**, di cui **56 M3**. Coperti
+  conteggi esatti, zeri, tutto M/tutto F, classe 100+, seed/scenari,
+  input incoerenti, versioni storiche, conservazione delle release, retry,
+  quarantena e ricalcolo dei report. Lo scambio di sesso tra due età che
+  lascia invariati i margini per fascia viene rilevato dal nuovo audit.
+- **15/15 repliche ufficiali rigenerate** dagli otto originali già archiviati,
+  senza nuove acquisizioni. Ogni replica contiene 123.360 record virtuali
+  e 60.468 famiglie; maschi 60.413, femmine 62.947.
+- Confronto diretto del CSV ISTAT originale con i Parquet: **3.030/3.030
+  celle uguali** (202 per replica), errore massimo **0**. Anche TVD ed errore
+  medio di calibrazione sono zero. Maschi di 68 anni: 766; classe 100+:
+  6 maschi e 27 femmine, esattamente come nella fonte.
+- Retry identico e rilettura indipendente completa passati; checksum di
+  tutti i nuovi file invariati. I **102 file dei tre esperimenti precedenti**
+  risultano tutti immutati.
+- Nessuna modifica DB/API/web. Le suite DB e web non sono state rieseguite
+  localmente per questa revisione; la [CI della PR](https://github.com/matik81/itadb/pull/14/checks)
+  verifica Python, PostgreSQL, web e Compose sul commit proposto.
+
+Nuovo esperimento:
+`ee50a4c577b6462db82c909ea54b092ddc8346c4b8d6463286f848e55d3219a0`.
+Input `m3-input/2`, rapporto `m3-report/2`, algoritmo e audit `2.0.0`.
+Manifest con sorgenti effettivi archiviati, commit precedente e working tree
+dirty: il run è stato eseguito prima del commit della revisione.
+
+| Ipotesi dimensione 6+ | Residuo adulto non assegnato | Famiglie con minori, intervallo tra 5 seed | Famiglie solo 65+, intervallo tra 5 seed |
+|---|---:|---:|---:|
+| 6 | 929 | 15.381–15.564 | 8.802–8.927 |
+| 7 | 503 | 15.356–15.429 | 8.731–8.965 |
+| 8 | 77 | 15.248–15.409 | 8.806–8.916 |
+
+La congiunta sesso/età è fissa e calibra ogni replica; **non è più un holdout**.
+La variabilità della tabella riguarda le famiglie del modello. Non sono
+disponibili statistiche osservate inutilizzate per validazione fuori calibrazione;
+il rapporto lo dichiara. Restano da svolgere revisione scientifica esterna
+e valutazione disclosure; nessun microdato è distribuito.
+
+Generazione e audit: **4,78 s** in una singola esecuzione locale, **10.615.513 byte**
+complessivi. Windows AMD64, Python 3.13.15, DuckDB 1.5.5; stesso limite DuckDB
+di 256 MB/un thread, senza misura del picco RAM o capacità nazionale.
+Evidenze locali: `data/curated/m3/HASH/`,
+`data/reports/m3/acceptance-exact-HASH-83f49c2f744c48a29552e24cbd1aa68b.json`,
+log per tentativo, `.tools/m3-exact-progress.log` e `.tools/m3-exact-tests.log`.
+
+### Storico v1 — congiunta sesso/età fuori calibrazione
+
 Verifiche locali del 23 settembre 2026. [Perimetro e procedura](synthesis-m3.md),
 [metodo e revisione](adr/0008-synthesis-pilot.md).
 

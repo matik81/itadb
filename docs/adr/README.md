@@ -13,6 +13,7 @@ Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
 | [0006](0006-istat-publication.md) | Pubblicazione ISTAT, snapshot territoriali, API v2 | Revisioni immutabili, stati fedeli alla fonte e integrità temporale con btree_gist |
 | [0007](0007-m2-coverage.md) | Copertura M2, storia e confini | Copertura esplicita, partizioni disgiunte, derivazioni geografiche tracciate; pyshp per gli originali ISTAT |
 | [0008](0008-synthesis-pilot.md) | Sintesi pilota locale senza microcampione | Ricostruzione vincolata, verifica indipendente dei Parquet, incertezza esplicita; nessuna distribuzione dei record virtuali |
+| [0009](0009-exact-demographic-calibration.md) | Congiunta sesso/età esatta | Tutte le 202 celle ISTAT come vincoli; audit bloccante, nuove versioni immutabili e assenza di holdout dichiarata |
 
 Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
 un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,
