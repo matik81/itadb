@@ -149,7 +149,7 @@ class PostgresRepositoryV2(PostgresRepository):
             "value": "value",
             "status": "CASE status WHEN 'demo' THEN 'Dimostrativo' "
             "WHEN 'missing' THEN 'Mancante' WHEN 'observed' THEN 'Osservato' "
-            "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN 'Senza flag ISTAT' "
+            "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN '—' "
             "WHEN 'estimated' THEN 'Stimato' END",
         }[sort_by]
         conditions = ["release_id=%s", "series_code=%s", "period=%s"]

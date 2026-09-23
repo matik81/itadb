@@ -237,7 +237,7 @@ it('uses the release series and distinguishes national controls, upstream state 
   const table = within(
     screen.getByRole('table', { name: 'Osservazioni della versione selezionata' }),
   );
-  expect(table.getByText('Senza flag ISTAT')).toBeInTheDocument();
+  expect(table.getByText('—')).toBeInTheDocument();
   expect(screen.getByText('Non accertata')).toBeInTheDocument();
   expect(screen.getByText('Correzione del campione di test.')).toBeInTheDocument();
   expect(table.queryByText('Osservato')).not.toBeInTheDocument();

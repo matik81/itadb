@@ -335,11 +335,7 @@ export function App() {
         {release?.dataset_id === 'istat_population_regions' && (
           <div className="notice official">
             <strong>Dati ISTAT · 20 regioni e totale Italia</strong>
-            <span>
-              {' '}
-              Il totale Italia serve al controllo: non va sommato alle regioni. “Senza flag ISTAT”
-              descrive lo stato fornito dalla fonte, senza attribuire un metodo di rilevazione.
-            </span>
+            <span> Il totale Italia serve al controllo: non va sommato alle regioni.</span>
           </div>
         )}
         <div className="workspace">
@@ -407,7 +403,7 @@ export function App() {
                   <option value="">Tutti gli stati</option>
                   <option value="observed">Osservato</option>
                   <option value="estimated">Stimato</option>
-                  <option value="unflagged_upstream">Senza flag ISTAT</option>
+                  <option value="unflagged_upstream">—</option>
                   <option value="missing">Mancante</option>
                   <option value="suppressed">Riservato</option>
                   <option value="demo">Dimostrativo</option>
@@ -483,7 +479,9 @@ export function App() {
                               : number.format(Number(item.value))}
                           </td>
                           <td>
-                            <span className="tag">
+                            <span
+                              className={item.status === 'unflagged_upstream' ? 'muted' : 'tag'}
+                            >
                               {
                                 {
                                   demo: 'Dimostrativo',
@@ -491,7 +489,7 @@ export function App() {
                                   estimated: 'Stimato',
                                   missing: 'Mancante',
                                   suppressed: 'Riservato',
-                                  unflagged_upstream: 'Senza flag ISTAT',
+                                  unflagged_upstream: '—',
                                 }[item.status]
                               }
                             </span>

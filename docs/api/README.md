@@ -80,7 +80,8 @@ curl 'http://localhost:8080/api/v2/observations?release_id=UUID&series=resident_
 ```
 
 `unflagged_upstream` significa che la fonte non ha fornito un flag; non viene
-convertito in `observed`. Le osservazioni v2 aggiungono livello territoriale,
+convertito in `observed`. La web app lo mostra come «—» in tabelle, filtri e schede;
+il valore numerico rimane visibile. Le osservazioni v2 aggiungono livello territoriale,
 codice del padre e attributi upstream. `country` e `region` si sovrappongono:
 il totale Italia non deve essere sommato alle regioni. La paginazione resta
 keyset con `next_cursor`, mantenendo release, serie e periodo costanti.
