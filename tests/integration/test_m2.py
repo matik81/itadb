@@ -5,9 +5,11 @@ from typing import Any
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.rows import dict_row
 from test_istat_publication import _database
 
 from itadb.api.app import create_app
+from itadb.api.repository import PostgresRepositoryV2
 from itadb.config import Settings
 from itadb.pipeline import publish_coverage as publication
 from itadb.pipeline.coverage import Bundle
@@ -88,6 +90,96 @@ def test_publication_api_history_boundaries_and_immutability(
         pytest.raises(psycopg.errors.InsufficientPrivilege),
     ):
         db.execute("SELECT * FROM geo.crosswalk")
+
+
+def test_sorted_filtered_tables_across_pages(
+    settings: Settings, m2_bundle: tuple[Bundle, Path]
+) -> None:
+    bundle, contract = m2_bundle
+    rid = publish_coverage(settings, bundle, contract)
+    with TestClient(create_app(settings)) as client:
+
+        def pages(endpoint: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+            rows = []
+            after = 0
+            for _ in range(20):
+                response = client.get(
+                    endpoint, params={"release_id": str(rid), **params, "limit": 1, "after": after}
+                )
+                assert response.status_code == 200
+                page = response.json()
+                rows.extend(page["items"])
+                if page["next_cursor"] is None:
+                    return rows
+                assert page["next_cursor"] != after
+                after = page["next_cursor"]
+            pytest.fail("Pagination did not terminate")
+
+        base = {"series": "m2_test_total", "period": "2021-01-01", "level": "region"}
+        for field, key in [
+            ("name", "territory_name"),
+            ("code", "territory_code"),
+            ("value", "value"),
+        ]:
+            for direction in ["asc", "desc"]:
+                rows = pages("/v2/observations", {**base, "sort_by": field, "direction": direction})
+                assert len(rows) == 2
+                values = [float(row[key]) if field == "value" else row[key] for row in rows]
+                assert values == sorted(values, reverse=direction == "desc")
+                assert len({row["territory_id"] for row in rows}) == 2
+        rows = pages("/v2/observations", {**base, "sort_by": "name", "search": "r1"})
+        assert [row["territory_code"] for row in rows] == ["R1"]
+        assert pages("/v2/observations", {**base, "search": "%' OR 1=1 --"}) == []
+        assert len(pages("/v2/observations", {**base, "parent_code": "IT", "status": "demo"})) == 2
+        assert pages("/v2/observations", {**base, "parent_code": "R1"}) == []
+        assert pages("/v2/observations", {**base, "status": "missing"}) == []
+        for field, key in [
+            ("date", "effective_date"),
+            ("description", "description"),
+            ("from_code", "from_code"),
+            ("to_code", "to_code"),
+            ("usage", "weight_basis"),
+        ]:
+            for direction in ["asc", "desc"]:
+                rows = pages("/v2/crosswalks", {"sort_by": field, "direction": direction})
+                assert len(rows) == len({row["id"] for row in rows}) == 4
+                values = [row[key] for row in rows]
+                assert values == sorted(values, reverse=direction == "desc")
+        splits = pages("/v2/crosswalks", {"kind": "split", "weight_basis": "structural"})
+        assert len(splits) == 2
+        assert all(row["kind"] == "split" and row["weight_basis"] == "structural" for row in splits)
+        assert pages("/v2/crosswalks", {"kind": "split", "weight_basis": "exact"}) == []
+
+
+def test_sort_cursor_preserves_numeric_ties_and_nulls(settings: Settings) -> None:
+    # A temporary, invented fixture exercises nulls that M2's complete bundle excludes.
+    # No evidence or published observation is modified.
+    with psycopg.connect(settings.admin_database_url, row_factory=dict_row) as db:
+        db.execute("CREATE TEMP TABLE sort_fixture (territory_id bigint, value numeric)")
+        db.execute("INSERT INTO sort_fixture VALUES (9,10),(2,2.5),(7,2.5),(4,NULL),(1,NULL),(3,0)")
+
+        class FixtureRepository(PostgresRepositoryV2):
+            def __init__(self) -> None:
+                pass
+
+            def _query(self, sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+                return list(db.execute(sql, params).fetchall())
+
+        repo = FixtureRepository()
+        for direction, expected in [("asc", [3, 2, 7, 9, 1, 4]), ("desc", [9, 2, 7, 3, 1, 4])]:
+            for size in [1, 2, 3]:
+                actual: list[int] = []
+                after = 0
+                while True:
+                    rows = repo._ordered_page(
+                        "sort_fixture", "territory_id", "TRUE", (), "value", direction, after, size
+                    )
+                    if not rows:
+                        break
+                    actual.extend(row["territory_id"] for row in rows)
+                    after = rows[-1]["territory_id"]
+                    assert len(actual) <= len(expected)
+                assert actual == expected
 
 
 def test_concurrency_revision_and_no_forks(

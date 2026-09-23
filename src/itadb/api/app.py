@@ -285,15 +285,38 @@ def create_app(
         level: Literal["country", "region", "province", "municipality"] | None = None,
         after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
         limit: Annotated[int, Query(ge=1, le=500)] = 100,
+        sort_by: Literal["territory_id", "name", "code", "value", "status"] = "territory_id",
+        direction: Literal["asc", "desc"] = "asc",
+        search: Annotated[str | None, Query(min_length=1, max_length=100)] = None,
+        parent_code: Annotated[str | None, Query(pattern=r"^[A-Za-z0-9_-]{1,32}$")] = None,
+        status: Literal[
+            "observed", "estimated", "missing", "suppressed", "demo", "unflagged_upstream"
+        ]
+        | None = None,
     ) -> object:
         """Keep release, series and period fixed across pages. Country totals overlap regions."""
         if db.release(release_id) is None:
             raise HTTPException(404, "Published release not found")
-        rows = (
-            db.observations(release_id, series, period, after, limit + 1)
-            if level is None
-            else db.observations_at_level(release_id, series, period, level, after, limit + 1)
-        )
+        if sort_by != "territory_id" or direction != "asc" or search or parent_code or status:
+            rows = db.observation_table(
+                release_id,
+                series,
+                period,
+                level,
+                after,
+                limit + 1,
+                sort_by,
+                direction,
+                search,
+                parent_code,
+                status,
+            )
+        else:
+            rows = (
+                db.observations(release_id, series, period, after, limit + 1)
+                if level is None
+                else db.observations_at_level(release_id, series, period, level, after, limit + 1)
+            )
         return {
             "items": rows[:limit],
             "next_cursor": rows[limit - 1]["territory_id"] if len(rows) > limit else None,
@@ -333,10 +356,18 @@ def create_app(
         release_id: UUID,
         after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
         limit: Annotated[int, Query(ge=1, le=500)] = 100,
+        sort_by: Literal["id", "date", "description", "from_code", "to_code", "usage"] = "id",
+        direction: Literal["asc", "desc"] = "asc",
+        kind: Literal["merger", "split", "recode", "transfer"] | None = None,
+        weight_basis: Literal["exact", "structural"] | None = None,
     ) -> object:
         if db.release(release_id) is None:
             raise HTTPException(404, "Published release not found")
-        rows = db.crosswalks(release_id, after, limit + 1)
+        rows = (
+            db.crosswalk_table(release_id, after, limit + 1, sort_by, direction, kind, weight_basis)
+            if sort_by != "id" or direction != "asc" or kind or weight_basis
+            else db.crosswalks(release_id, after, limit + 1)
+        )
         return {
             "items": rows[:limit],
             "next_cursor": rows[limit - 1]["id"] if len(rows) > limit else None,

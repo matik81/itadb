@@ -18,6 +18,30 @@ class Repository(Protocol):
 
 
 class RepositoryV2(Repository, Protocol):
+    def observation_table(
+        self,
+        release_id: UUID,
+        series: str,
+        period: date,
+        level: str | None,
+        after: int,
+        limit: int,
+        sort_by: str,
+        direction: str,
+        search: str | None,
+        parent_code: str | None,
+        status: str | None,
+    ) -> list[dict[str, Any]]: ...
+    def crosswalk_table(
+        self,
+        release_id: UUID,
+        after: int,
+        limit: int,
+        sort_by: str,
+        direction: str,
+        kind: str | None,
+        weight_basis: str | None,
+    ) -> list[dict[str, Any]]: ...
     def artifacts(self, release_id: UUID) -> list[dict[str, Any]]: ...
     def coverage(self, release_id: UUID) -> list[dict[str, Any]]: ...
     def territories(
@@ -72,6 +96,120 @@ class PostgresRepository:
 
 
 class PostgresRepositoryV2(PostgresRepository):
+    def _ordered_page(
+        self,
+        view: str,
+        identity: str,
+        where: str,
+        params: tuple[Any, ...],
+        column: str,
+        direction: str,
+        after: int,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        # Identifiers/clauses are private constants selected by allowlists below.
+        # Values, including the cursor's identity, are always bound parameters.
+        order, comparison = ("DESC", "<") if direction == "desc" else ("ASC", ">")
+        return self._query(
+            f"""WITH selected AS NOT MATERIALIZED (
+                SELECT *, {column} AS table_sort_value FROM {view} WHERE {where}
+            ), anchor AS (
+                SELECT table_sort_value AS sort_value, {identity} AS row_id
+                FROM selected WHERE {identity}=%s
+            )
+            SELECT o.* FROM selected o
+            WHERE (%s=0 OR EXISTS (
+                SELECT 1 FROM anchor a WHERE
+                (o.table_sort_value IS NULL AND a.sort_value IS NOT NULL)
+                OR o.table_sort_value {comparison} a.sort_value
+                OR (o.table_sort_value IS NOT DISTINCT FROM a.sort_value AND o.{identity}>a.row_id)
+            ))
+            ORDER BY o.table_sort_value {order} NULLS LAST, o.{identity} ASC LIMIT %s""",
+            (*params, after, after, limit),
+        )
+
+    def observation_table(
+        self,
+        release_id: UUID,
+        series: str,
+        period: date,
+        level: str | None,
+        after: int,
+        limit: int,
+        sort_by: str,
+        direction: str,
+        search: str | None,
+        parent_code: str | None,
+        status: str | None,
+    ) -> list[dict[str, Any]]:
+        column = {
+            "territory_id": "territory_id",
+            "name": "territory_name",
+            "code": "territory_code",
+            "value": "value",
+            "status": "CASE status WHEN 'demo' THEN 'Dimostrativo' "
+            "WHEN 'missing' THEN 'Mancante' WHEN 'observed' THEN 'Osservato' "
+            "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN 'Senza flag ISTAT' "
+            "WHEN 'estimated' THEN 'Stimato' END",
+        }[sort_by]
+        conditions = ["release_id=%s", "series_code=%s", "period=%s"]
+        params: list[Any] = [release_id, series, period]
+        for field, value in (("level", level), ("parent_code", parent_code), ("status", status)):
+            if value is not None:
+                conditions.append(f"{field}=%s")
+                params.append(value)
+        if search:
+            conditions.append(
+                "(strpos(lower(territory_name),lower(%s))>0 "
+                "OR strpos(lower(territory_code),lower(%s))>0)"
+            )
+            params.extend([search, search])
+        return self._ordered_page(
+            "api.observations_v2",
+            "territory_id",
+            " AND ".join(conditions),
+            tuple(params),
+            column,
+            direction,
+            after,
+            limit,
+        )
+
+    def crosswalk_table(
+        self,
+        release_id: UUID,
+        after: int,
+        limit: int,
+        sort_by: str,
+        direction: str,
+        kind: str | None,
+        weight_basis: str | None,
+    ) -> list[dict[str, Any]]:
+        column = {
+            "id": "id",
+            "date": "effective_date",
+            "description": "description",
+            "from_code": "from_code",
+            "to_code": "to_code",
+            "usage": "weight_basis",
+        }[sort_by]
+        conditions = ["release_id=%s"]
+        params: list[Any] = [release_id]
+        for field, value in (("kind", kind), ("weight_basis", weight_basis)):
+            if value is not None:
+                conditions.append(f"{field}=%s")
+                params.append(value)
+        return self._ordered_page(
+            "api.crosswalks_v2",
+            "id",
+            " AND ".join(conditions),
+            tuple(params),
+            column,
+            direction,
+            after,
+            limit,
+        )
+
     def ping(self) -> None:
         self._query("SELECT metadata_sha256,series_code FROM api.releases_v2 LIMIT 0")
 

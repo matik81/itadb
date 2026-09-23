@@ -18,7 +18,8 @@ a {
   text-underline-offset: 4px;
 }
 button,
-select {
+select,
+input {
   font: inherit;
 }
 button,
@@ -396,6 +397,90 @@ footer {
   text-decoration: underline;
   text-underline-offset: 4px;
   text-align: left;
+}
+.type-icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  color: #426178;
+}
+.territory-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.territory-value-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.metric-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #12694f;
+}
+.table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5ecf1;
+  background: #f8fafc;
+}
+.table-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #426178;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.table-filters select,
+.table-filters input {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.65rem;
+  background: white;
+  border: 1px solid #bbcbd8;
+  border-radius: 5px;
+  color: #172c42;
+}
+.table-filters button {
+  min-height: 44px;
+  font-size: 0.8rem;
+}
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+.sort-button span {
+  color: #12694f;
+  font-size: 1rem;
+}
+th[aria-sort='ascending'],
+th[aria-sort='descending'] {
+  color: #12694f;
+}
+.history-kind {
+  display: block;
+  margin-top: 0.4rem;
+  color: #576e82;
+  font-size: 0.8rem;
 }
 .territory-detail {
   width: min(1120px, calc(100% - 2rem));

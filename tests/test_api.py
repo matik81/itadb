@@ -89,3 +89,35 @@ def test_readiness_detects_db_failure_without_leaking_details() -> None:
 
 def test_openapi_export_is_current() -> None:
     assert json.loads(Path("docs/api/openapi.json").read_text()) == create_app().openapi()
+
+
+def test_table_queries_reject_unknown_fields_directions_and_filters() -> None:
+    with TestClient(create_app(repo=MemoryRepository())) as client:
+        for endpoint, base, invalid in [
+            (
+                "/v2/observations",
+                {"release_id": str(RID), "series": "population_total", "period": "2025-01-01"},
+                [
+                    {"sort_by": "value; DROP TABLE"},
+                    {"direction": "descending"},
+                    {"parent_code": "' OR 1=1"},
+                    {"status": "unknown"},
+                    {"search": "x" * 101},
+                    {"search": ""},
+                ],
+            ),
+            (
+                "/v2/crosswalks",
+                {"release_id": str(RID)},
+                [
+                    {"sort_by": "description; DROP TABLE"},
+                    {"direction": "ascending"},
+                    {"kind": "unknown"},
+                    {"weight_basis": "unknown"},
+                ],
+            ),
+        ]:
+            for query in invalid:
+                response = client.get(endpoint, params={**base, **query})
+                assert response.status_code == 422
+                assert response.headers["content-type"] == "application/problem+json"
