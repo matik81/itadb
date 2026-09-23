@@ -95,7 +95,9 @@ leggibile al proprio UUID; il client può seguire il predecessore dichiarato.
 Gli artefatti sono un inventario di provenienza; l'API non espone percorsi del
 filesystem né serve download arbitrari. Le viste v2 e il ruolo reader escludono
 sempre draft, artefatti e verifiche non pubblicati. La readiness verifica anche
-la presenza dello schema v2.
+la presenza e i permessi reader su tutte le viste v2, incluse copertura,
+territori, crosswalk e confini, senza scandire dati. Uno schema precedente a M2
+o una vista mancante produce 503 su `/health/ready`; `/health/live` resta indipendente.
 
 ## M2 — copertura e geografie
 

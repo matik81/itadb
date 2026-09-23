@@ -73,6 +73,15 @@ di test; le tre release precedenti e i conteggi sono stati conservati anche dopo
 due upgrade consecutivi. Il rapporto è `data/reports/m2-backup-restore.json`.
 Originali e artefatti M2 sono nel volume condiviso `itadb_evidence`.
 
+La revisione correttiva 0005 ripete i controlli di contesto degli eventi e di
+contenimento geometrico immediatamente prima della pubblicazione. Non modifica
+le revisioni applicate o le evidenze pubblicate. Aggiornare anche la pipeline:
+le nuove pubblicazioni dichiarano la politica geometrica nel dettaglio del gate;
+senza questa informazione il DB rifiuta la pubblicazione. Il backup pre-0005 e
+il suo ripristino isolato sono registrati in `data/reports/m2-review-backup-restore.json`.
+Per recuperare usare il backup in un nuovo DB e il codice corrispondente, oppure
+una correzione forward; non eliminare volumi o forzare un downgrade.
+
 Per le attività lunghe usare `scripts/run_logged.py --label "Fase" -- COMANDO`:
 output seguito in tempo reale, heartbeat ogni dieci secondi, durata e codice
 finale nel log `.tools/m2-progress.log`. Non passare credenziali negli argomenti
