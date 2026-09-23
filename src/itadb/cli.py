@@ -17,6 +17,9 @@ from itadb.pipeline.publish_istat import ingest_istat_population
 from itadb.pipeline.runner import ingest_demo
 from itadb.synthesis.inputs import prepare_inputs
 from itadb.synthesis.models import Experiment
+from itadb.synthesis.national_inputs import prepare_national_inputs
+from itadb.synthesis.national_models import NationalReference, ResourceBudget
+from itadb.synthesis.national_runner import run_national, verify_national
 from itadb.synthesis.runner import run_pilot, verify_run
 
 app = typer.Typer(no_args_is_help=True, help="Itadb data operations. Run from the repository root.")
@@ -210,4 +213,47 @@ def synthesize_m3(
 def verify_m3(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
     """Rilegge i Parquet e ricalcola tutti i gate e i rapporti indipendenti M3."""
     result = verify_run(run)
+    typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
+
+
+@app.command("fetch-m4")
+def fetch_m4(
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m4-national-v1.json"
+    ),
+) -> None:
+    """Acquisisce gli originali nazionali fissati, con riuso e controllo checksum."""
+    typer.echo(str(acquire_inventory(Settings().data_dir, contract, "istat-m4-national", "m4")))
+
+
+@app.command("synthesize-m4")
+def synthesize_m4(
+    inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m4-national-v1.json"
+    ),
+    reference: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/m4-reference-v1.json"
+    ),
+    budget: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/m4-budget-v1.json"
+    ),
+) -> None:
+    """Genera o riprende lo snapshot nazionale locale, verificando ogni checkpoint."""
+    root = Settings().data_dir
+    directory = run_national(
+        root,
+        prepare_national_inputs(root, inputs, contract),
+        NationalReference.model_validate_json(reference.read_bytes()),
+        ResourceBudget.model_validate_json(budget.read_bytes()),
+    )
+    typer.echo(
+        json.dumps({"snapshot": str(directory), "data_kind": "synthetic", "public_release": False})
+    )
+
+
+@app.command("verify-m4")
+def verify_m4(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
+    """Verifica integrità, vincoli comunali e rapporto statistico/disclosure nazionale."""
+    result = verify_national(run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))

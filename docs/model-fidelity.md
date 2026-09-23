@@ -1,6 +1,6 @@
 # Priorità di fedeltà del modello
 
-Versione 2, aggiornata il 23 settembre 2026 per le coorti di nascita stabili.
+Versione 3, aggiornata il 24 settembre 2026 per il riferimento nazionale M4.
 La graduatoria adottata nella versione 1 dalla revisione umana M3 resta invariata.
 La graduatoria è una decisione di progetto evolutiva: orienta lavoro e
 valutazione delle versioni, senza attribuire uguale affidabilità a tutti gli
@@ -80,8 +80,18 @@ fonti o metodo richiedono motivazione e una versione distinta con confronto
 alla precedente. Per cambiare la graduatoria si registra la decisione con
 l'utente; non si riscrivono retroattivamente i criteri delle release passate.
 
-Il rapporto di fedeltà e il riferimento unico dovranno essere rappresentati
-anche nei metadati eseguibili di M4. Questa policy non dichiara già implementati
-i controlli territoriali o gli attributi futuri. L'accettazione di un modello
-di lavoro non equivale a una certificazione statistica o a un'autorizzazione
-alla distribuzione dei microdati.
+## Applicazione nazionale M4
+
+`m4-reference/1` conserva l'ordine delle priorità, seed 1701 e classe 6+ = 6,
+con input 2024/2025. Il manifest contiene priorità, riferimento, regola temporale,
+versioni e assunzioni; il rapporto confronta 1.594.992 celle comunali esatte,
+geografia coerente e classi familiari comunali. Il residuo è 560.159 adulti.
+La nascita sintetica stabile e la classe aperta conservano la convenzione M3.
+
+La composizione casuale è ora limitata allo stesso comune. Non si trasferisce
+l'accettazione del pilota a una certificazione di relazioni familiari nazionali.
+Il [rapporto M4](reviews/m4-disclosure.md) confronta i due perimetri e distingue
+calibrazione, statistiche del modello e validazione esterna non svolta.
+La graduatoria non cambia; i nuovi attributi di M5 richiederanno una posizione
+esplicita e una nuova versione. La distribuzione pubblica dei microdati rimane
+subordinata alle condizioni della governance.

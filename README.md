@@ -7,7 +7,7 @@ coerenti con evidenze demografiche, sociali ed economiche. Gli agenti non sarann
 persone reali. Questo repository parte dal fondamento: dati territoriali aggregati,
 provenienza esplicita e passaggi di elaborazione riproducibili.
 
-## Stato: evidenze M2 e sintesi pilota locale M3, versione 0.1
+## Stato: evidenze M2 e sintesi locale nazionale M4, versione 0.1
 
 Il percorso dimostrativo importa tre territori **fittizi**, archivia il file originale,
 produce Parquet e verifiche, pubblica una versione immutabile in PostgreSQL e la espone
@@ -60,7 +60,21 @@ come prima versione e consente l'avvio di [M4](docs/plans/m4-national-synthesis.
 La [graduatoria di fedeltà](docs/model-fidelity.md) privilegia **età/sesso,
 geografia, composizione familiare**, in quest'ordine, ed evolve con il progetto.
 In M3 la composizione familiare casuale vincolata è accettata; l'assegnazione
-provinciale/comunale e la scala nazionale restano da implementare in M4.
+provinciale/comunale è assente dal pilota storico e viene implementata da M4.
+
+[M4](docs/synthesis-m4.md) genera e verifica **58.943.464 persone virtuali** e
+**26.670.169 famiglie**, al riferimento comune 2024/2025, in 7.896 comuni.
+Le 1.594.992 celle comunali sesso/età e le classi familiari sono esatte;
+province/UTS, regioni e Italia riconciliano con i dati pubblicati. I 107 batch
+producono Parquet immutabili, checkpoint verificati e ripresa dopo interruzione.
+`fetch-m4`, `synthesize-m4` e `verify-m4` gestiscono il percorso locale.
+Prove effettive a 1M, 10M e volume nazionale misurano RAM/disco/tempo;
+il run nazionale ha richiesto circa tre minuti, con circa 1,09 GiB di picco RSS
+su questa macchina, senza estrapolazioni dal pilota.
+Restano espliciti 560.159 adulti non assegnati e l'assenza di validazione
+esterna delle composizioni familiari. La [valutazione disclosure](docs/reviews/m4-disclosure.md)
+mantiene i microdati locali e prepara solo 400 aggregati regionali decennali;
+nessuna pubblicazione automatica, API di microdati o certificazione statistica.
 
 ## Stack e motivazione
 
@@ -147,7 +161,7 @@ apps/web/                 web app e tipi generati dall'OpenAPI
 src/itadb/api/            API pubbliche di sola lettura
 src/itadb/connectors/     interfacce e acquisizione ISTAT/Eurostat
 src/itadb/pipeline/       archivio, trasformazioni, verifiche, pubblicazione
-src/itadb/synthesis/      pilota sintetico locale e verifica indipendente
+src/itadb/synthesis/      sintesi M3/M4 locale e verifica indipendente
 migrations/              DDL PostgreSQL/PostGIS versionato con Alembic
 contracts/               contratti di dati versionati
 infra/                   container e proxy
@@ -164,6 +178,7 @@ AGENTS.md                 istruzioni principali per Codex
 - [Uso delle API](docs/api/README.md), [esercizio e sicurezza](docs/operations.md)
 - [Roadmap verificabile](docs/roadmap.md), [decisioni architetturali](docs/adr/README.md)
 - [Priorità di fedeltà](docs/model-fidelity.md), [revisione M3](docs/reviews/m3-human-review.md), [piano M4](docs/plans/m4-national-synthesis.md)
+- [Sintesi nazionale M4 e misure](docs/synthesis-m4.md), [valutazione disclosure](docs/reviews/m4-disclosure.md)
 - [Contribuire](CONTRIBUTING.md), [governance](GOVERNANCE.md), [sicurezza](SECURITY.md)
 - [Lavorare con Codex](docs/codex.md), [registro delle verifiche](docs/validation.md)
 

@@ -69,12 +69,19 @@ Batch territoriali, snapshot colonnari e output aggregati; prova a 1M, 10M e vol
 Uscita: budget misurati di RAM/disco/tempo, checkpoint e recupero, convalida statistica,
 valutazione disclosure e formato di distribuzione concordato.
 
-**Pronto per l'avvio, non ancora implementato**. Il [piano M4](plans/m4-national-synthesis.md)
-parte dall'inventario del riferimento temporale comune più recente utilizzabile
-e dalla fedeltà geografica: M3 non assegna province o comuni agli individui.
-Seguono configurazione del riferimento unico, batch riproducibili, recupero
-e prove progressive. Il limite M3 di 200.000 persone non è una capacità nazionale;
-la revisione umana non sostituisce l'implementazione o le misure di M4.
+**Implementata e verificata nel perimetro locale**: [M4](synthesis-m4.md) adotta
+il riferimento 2024/2025 e genera 58.943.464 persone virtuali in 7.896 comuni,
+107 province/UTS e 20 regioni. Le congiunte sesso/età e le classi familiari
+comunali riconciliano con i livelli superiori. Checkpoint, ripresa, audit
+indipendente e prove effettive 1M/10M/nazionale passano entro i budget.
+[Misure, identità e test](validation.md#m4--scala-nazionale-11).
+
+La [valutazione statistica e disclosure](reviews/m4-disclosure.md) documenta
+rarità, ipotesi e limiti. Formati implementati: Parquet per microdati locali,
+JSON per soli aggregati regionali; ambito e formato sono sottoposti alla
+revisione della PR. Nessun dataset viene pubblicato da questa milestone.
+La revisione scientifica esterna e la distribuzione pubblica dei microdati
+rimangono condizioni separate, non dichiarate concluse dal completamento tecnico.
 
 ## M5 — lavoro, servizi e scenari
 Collegamenti e dinamiche documentati, confronto baseline/intervento, sensibilità ai parametri

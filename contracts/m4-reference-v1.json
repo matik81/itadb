@@ -1,0 +1,7 @@
+{
+  "schema_version": "m4-reference/1",
+  "seed": 1701,
+  "large_household_size": 6,
+  "priorities": ["sex_age", "geography", "households"],
+  "distribution": "local_microdata_aggregate_package"
+}
