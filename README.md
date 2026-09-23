@@ -39,14 +39,22 @@ filtra tipo di variazione e utilizzo. Icone accanto ai nomi distinguono regioni,
 province e comuni; nelle schede identificano persone, famiglie e abitazioni.
 
 [M3](docs/synthesis-m3.md) aggiunge un pilota locale della Valle d'Aosta:
-123.360 persone virtuali per replica, 60.468 famiglie, cinque seed e tre
-ipotesi sulla classe familiare 6+. `fetch-m3`, `synthesize-m3` e `verify-m3`
+123.360 persone virtuali per replica e 60.468 famiglie. Il riferimento unico
+adottato usa **6 componenti per la classe 6+ e seed 1701**; cinque seed e tre
+dimensioni restano prove di sensibilità. `fetch-m3`, `synthesize-m3` e `verify-m3`
 gestiscono input ISTAT fissati, Parquet immutabili, controlli indipendenti,
 calibrazione esatta delle 202 celle sesso/età e sensibilità familiare. Il rapporto
 dichiara l'assenza di validazione fuori calibrazione, residuo non assegnato e
 limiti. I record sintetici non sono dati osservati e
 non vengono pubblicati nelle API o nella web app. Revisione scientifica
 esterna e valutazione disclosure restano necessarie per distribuirli.
+
+La [revisione umana di progetto](docs/reviews/m3-human-review.md) accetta M3
+come prima versione e consente l'avvio di [M4](docs/plans/m4-national-synthesis.md).
+La [graduatoria di fedeltà](docs/model-fidelity.md) privilegia **età/sesso,
+geografia, composizione familiare**, in quest'ordine, ed evolve con il progetto.
+In M3 la composizione familiare casuale vincolata è accettata; l'assegnazione
+provinciale/comunale e la scala nazionale restano da implementare in M4.
 
 ## Stack e motivazione
 
@@ -149,6 +157,7 @@ AGENTS.md                 istruzioni principali per Codex
 - [Fonti e protocollo di onboarding](docs/sources.md), [quality gate](docs/data-quality.md)
 - [Uso delle API](docs/api/README.md), [esercizio e sicurezza](docs/operations.md)
 - [Roadmap verificabile](docs/roadmap.md), [decisioni architetturali](docs/adr/README.md)
+- [Priorità di fedeltà](docs/model-fidelity.md), [revisione M3](docs/reviews/m3-human-review.md), [piano M4](docs/plans/m4-national-synthesis.md)
 - [Contribuire](CONTRIBUTING.md), [governance](GOVERNANCE.md), [sicurezza](SECURITY.md)
 - [Lavorare con Codex](docs/codex.md), [registro delle verifiche](docs/validation.md)
 

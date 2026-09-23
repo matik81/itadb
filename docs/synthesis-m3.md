@@ -5,6 +5,12 @@ virtuali** e un residuo esplicito non assegnato a famiglie. Nessuna persona
 virtuale è associata a un individuo reale. È una baseline sperimentale locale,
 non un prodotto statistico certificato, una previsione o un modello causale.
 
+La [revisione umana di progetto](reviews/m3-human-review.md) accetta questa
+prima versione e consente l'avvio di M4. Il riferimento unico è
+**`m3-reference/1`: classe 6+ = 6, seed 1701**; le altre repliche sono
+sensibilità. Vale la [graduatoria di fedeltà](model-fidelity.md): età/sesso,
+geografia, poi composizione familiare.
+
 ## Input ammessi e riferimenti
 
 Il contratto [`istat-m3-valle-aosta-v1.json`](../contracts/istat-m3-valle-aosta-v1.json)
@@ -52,11 +58,24 @@ L'appartenenza è casuale. Non vengono inferiti parentela, coppie, occupazione,
 abitazioni o collegamenti a persone reali. Il residuo con `household_id=null`
 è adulto per costruzione: non è una stima della popolazione in convivenze.
 
-I tre scenari assumono che ogni famiglia 6+ abbia 6, 7 oppure 8 componenti.
+Il modello di riferimento assume che **ogni famiglia 6+ abbia 6 componenti**:
+è il minimo della categoria osservata, scelto senza ipotizzare una media
+della coda. Non stima la vera distribuzione delle famiglie numerose. Il
+residuo di 929 adulti rimane visibile e non viene assorbito artificiosamente.
+Il seed di riferimento **1701** è il primo già fissato, senza selezione in
+base ai risultati. Razionale, identità e checksum sono nella revisione umana.
+
+Gli scenari 7 e 8 componenti e gli altri seed sono analisi di sensibilità.
 I cinque seed sono fissati in [`m3-experiment-v1.json`](../contracts/m3-experiment-v1.json).
 Vengono conservate tutte le 15 repliche. Il seed cambia l'assegnazione alle
 famiglie e l'ordine dei record, mantenendo identica la congiunta demografica.
-Nessuno scenario è indicato come più vero.
+La CLI continua a produrre le 15 repliche: per il riferimento si usa soltanto
+`size-6-seed-1701` del run identificato nella revisione. Nessuna alternativa
+è adottata implicitamente e nessuna scelta è dichiarata più vera statisticamente.
+
+M3 fissa la regione nell'input, ma i Parquet non assegnano province o comuni
+alle persone o alle famiglie. La seconda priorità della graduatoria richiede
+quindi input e controlli territoriali aggiuntivi in M4.
 
 Il verificatore SQL indipendente rilegge i Parquet: schema consentito, domini,
 unicità degli ID, integrità dei riferimenti, cardinalità, adulto per famiglia,
@@ -75,8 +94,9 @@ celle demografiche disponibili sono già usate. Le statistiche familiari del
 modello non dispongono di una congiunta osservata di confronto: non sono validate.
 
 I risultati hanno stato `completed_experiment`, `synthetic`, `public_release=false`
-e `statistical_acceptance=experimental_not_certified`. La revisione scientifica
-umana esterna **non è stata svolta**. La revisione indipendente implementata è
+e `statistical_acceptance=experimental_not_certified`. La revisione umana di
+progetto è conclusa con accettazione iniziale; la revisione scientifica
+esterna **non è stata svolta**. La revisione indipendente implementata è
 un controllo software degli artefatti. Distribuzione di microdati e integrazione
 nelle API restano bloccate in attesa di revisione scientifica e disclosure.
 
@@ -139,3 +159,7 @@ certificare le altre caratteristiche del modello.
 Servono ancora dati sulla composizione familiare e sulle convivenze, verifica
 scientifica esterna e analisi disclosure per un rilascio dei microdati. La
 scala nazionale 1:1 è M4: nessuna estrapolazione del tempo del pilota la dimostra.
+L'allocazione familiare attuale è accettata per l'avvio di M4; il suo miglioramento
+non è un prerequisito per iniziare quel lavoro. Il [piano M4](plans/m4-national-synthesis.md)
+prevede prima la verifica delle fonti più recenti compatibili e la distribuzione
+geografica; il riferimento 2021/2022 rimane quello storico verificato di M3.
