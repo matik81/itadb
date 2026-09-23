@@ -11,6 +11,7 @@ RUN groupadd --gid 10001 itadb && useradd --uid 10001 --gid itadb --create-home 
 WORKDIR /app
 COPY --from=builder --chown=itadb:itadb /app/.venv /app/.venv
 COPY --chown=itadb:itadb alembic.ini ./
+COPY --chown=itadb:itadb uv.lock ./
 COPY --chown=itadb:itadb migrations ./migrations
 COPY --chown=itadb:itadb scripts ./scripts
 COPY --chown=itadb:itadb contracts ./contracts

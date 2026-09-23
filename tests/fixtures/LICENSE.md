@@ -1,6 +1,6 @@
 # Fixture
 
-`population-demo.csv` e i conteggi inventati in `istat-population-invented.csv`
+`population-demo.csv`, `m3-invented.json` e i conteggi inventati in `istat-population-invented.csv`
 sono dedicati al pubblico dominio con
 [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/legalcode).
 Nella demo anche nomi e codici sono inventati. Nella fixture ISTAT i codici sono

@@ -53,10 +53,17 @@ upstream e la v1 continua a servire le release compatibili: [ADR 0006](adr/0006-
   di colonne e gruppi di righe. Preferire file da circa 128–512 MiB come ipotesi di prova,
   senza una partizione per persona/comune o una miriade di file piccoli.
 
-## Popolazione sintetica 1:1: progetto della fase successiva
+## Sintesi pilota M3 e futura popolazione nazionale 1:1
+
+Il [pilota M3](synthesis-m3.md) implementa un batch locale per una sola regione,
+senza nuove dipendenze o schema DB. `src/itadb/synthesis/` separa input ammessi,
+generatore, verificatore SQL dei Parquet e archivio degli esperimenti.
+La CLI non pubblica record virtuali nelle viste delle osservazioni ufficiali.
+Limite rigido: 200.000 residenti e 100.000 famiglie; output immutabile, seed,
+provenienza e sensibilità registrati. [ADR 0008](adr/0008-synthesis-pilot.md).
 
 L'individuo statistico non è un agente LLM e non richiede un processo per persona.
-La generazione dovrà essere vettorizzata, per blocchi territoriali, riproducibile con seed
+La generazione nazionale dovrà essere vettorizzata, per blocchi territoriali, riproducibile con seed
 e versioni di input/algoritmo. Vietata la ricostruzione o associazione a identità reali.
 
 Entità previste:

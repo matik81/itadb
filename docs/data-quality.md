@@ -80,3 +80,20 @@ ipotesi modellistiche, errori e bias vanno pubblicati insieme ai risultati.
 La coerenza statistica non rende uno scenario una previsione certa o una stima causale.
 Prima di rilasciare microdati sintetici servono valutazioni di rischio di re-identificazione
 e di disclosure, anche in assenza di corrispondenza intenzionale con individui reali.
+
+### Pilota locale M3 implementato
+
+Il [pilota](synthesis-m3.md) riconcilia input 2021/2022 fissati, rifiuta flag,
+dimensioni o provenienza non revisionati e verifica fattibilità prima della
+generazione. Un audit SQL separato rilegge i Parquet e controlla schema, ID,
+riferimenti, cardinalità, adulto per famiglia, minori assegnati, margini esatti
+e residuo dichiarato. Gli errori impediscono il completamento atomico e
+conservano quarantena/tentativo; retry identici verificano tutti gli artefatti.
+
+La congiunta puntuale sesso/età resta fuori dal generatore: il rapporto espone
+TVD ed errori per cella, senza adattare il modello al risultato. Sono riportati
+tutti i seed e gli scenari, con intervalli empirici e deviazione standard.
+Questi controlli certificano integrità del software e conservazione dei margini,
+non accuratezza delle composizioni familiari. La revisione scientifica esterna
+e la valutazione disclosure non sono state eseguite; nessuna release pubblica
+di microdati è consentita dal percorso implementato.

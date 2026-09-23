@@ -8,13 +8,16 @@ import uvicorn
 
 from itadb.api.app import create_app
 from itadb.config import Settings
-from itadb.connectors.m2 import acquire_m2
+from itadb.connectors.m2 import acquire_inventory, acquire_m2
 from itadb.connectors.sdmx import SOURCES, SdmxConnector
 from itadb.pipeline.istat_m2 import build_istat_m2
 from itadb.pipeline.istat_population import check_population_sample
 from itadb.pipeline.publish_coverage import publish_coverage
 from itadb.pipeline.publish_istat import ingest_istat_population
 from itadb.pipeline.runner import ingest_demo
+from itadb.synthesis.inputs import prepare_inputs
+from itadb.synthesis.models import Experiment
+from itadb.synthesis.runner import run_pilot, verify_run
 
 app = typer.Typer(no_args_is_help=True, help="Itadb data operations. Run from the repository root.")
 
@@ -172,3 +175,39 @@ def export_openapi(output: Path = Path("docs/api/openapi.json")) -> None:
     output.write_text(
         json.dumps(create_app().openapi(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+
+
+@app.command("fetch-m3")
+def fetch_m3(
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m3-valle-aosta-v1.json"
+    ),
+) -> None:
+    """Acquisisce il solo inventario aggregato revisionato per il pilota M3."""
+    typer.echo(str(acquire_inventory(Settings().data_dir, contract, "istat-m3-valle-aosta", "m3")))
+
+
+@app.command("synthesize-m3")
+def synthesize_m3(
+    inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m3-valle-aosta-v1.json"
+    ),
+    experiment: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/m3-experiment-v1.json"
+    ),
+) -> None:
+    """Genera e verifica un esperimento locale sintetico; non pubblica microdati."""
+    root = Settings().data_dir
+    config = Experiment.model_validate_json(experiment.read_bytes())
+    result = run_pilot(root, prepare_inputs(root, inputs, contract), config)
+    typer.echo(
+        json.dumps({"experiment": str(result), "data_kind": "synthetic", "public_release": False})
+    )
+
+
+@app.command("verify-m3")
+def verify_m3(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
+    """Rilegge i Parquet e ricalcola tutti i gate e i rapporti indipendenti M3."""
+    result = verify_run(run)
+    typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
