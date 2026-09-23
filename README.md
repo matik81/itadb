@@ -7,7 +7,7 @@ coerenti con evidenze demografiche, sociali ed economiche. Gli agenti non sarann
 persone reali. Questo repository parte dal fondamento: dati territoriali aggregati,
 provenienza esplicita e passaggi di elaborazione riproducibili.
 
-## Stato: copertura territoriale e demografica M2, versione 0.1
+## Stato: evidenze M2 e sintesi pilota locale M3, versione 0.1
 
 Il percorso dimostrativo importa tre territori **fittizi**, archivia il file originale,
 produce Parquet e verifiche, pubblica una versione immutabile in PostgreSQL e la espone
@@ -37,6 +37,15 @@ Le tabelle offrono ordinamento crescente/decrescente sull'intera selezione,
 ricerca nome/codice e filtri per territorio padre e stato del dato; lo storico
 filtra tipo di variazione e utilizzo. Icone accanto ai nomi distinguono regioni,
 province e comuni; nelle schede identificano persone, famiglie e abitazioni.
+
+[M3](docs/synthesis-m3.md) aggiunge un pilota locale della Valle d'Aosta:
+123.360 persone virtuali per replica, 60.468 famiglie, cinque seed e tre
+ipotesi sulla classe familiare 6+. `fetch-m3`, `synthesize-m3` e `verify-m3`
+gestiscono input ISTAT fissati, Parquet immutabili, controlli indipendenti,
+metriche fuori calibrazione e sensibilità. Il rapporto distingue incertezza,
+residuo non assegnato e limiti. I record sintetici non sono dati osservati e
+non vengono pubblicati nelle API o nella web app. Revisione scientifica
+esterna e valutazione disclosure restano necessarie per distribuirli.
 
 ## Stack e motivazione
 
@@ -123,6 +132,7 @@ apps/web/                 web app e tipi generati dall'OpenAPI
 src/itadb/api/            API pubbliche di sola lettura
 src/itadb/connectors/     interfacce e acquisizione ISTAT/Eurostat
 src/itadb/pipeline/       archivio, trasformazioni, verifiche, pubblicazione
+src/itadb/synthesis/      pilota sintetico locale e verifica indipendente
 migrations/              DDL PostgreSQL/PostGIS versionato con Alembic
 contracts/               contratti di dati versionati
 infra/                   container e proxy

@@ -1,5 +1,75 @@
 # Registro delle verifiche
 
+## M3 — sintesi pilota
+
+Verifiche locali del 23 settembre 2026. [Perimetro e procedura](synthesis-m3.md),
+[metodo e revisione](adr/0008-synthesis-pilot.md).
+
+- `uv sync --locked`, Ruff check/format e mypy: passati.
+- Suite Python non integration: **149 passati**, di cui **45 nuovi test M3**.
+  Coprono ricostruzione intera, zeri, limiti, margini impossibili, vincoli
+  familiari, namespace fixture, provenienza, vintage, stati, idempotenza,
+  concorrenza, assenza di completamento dopo errore e corruzione dei Parquet.
+  Un report alterato e nuovamente hashato viene rifiutato dal ricalcolo SQL.
+  La modifica del solo holdout mantiene identici tutti i Parquet.
+- PostgreSQL/PostGIS: **38 test passati** su database dedicato
+  `itadb_m2_test_7a2dfa2ef947`; migrazioni applicate due volte. Nessuna modifica
+  allo schema M3 o ai dati applicativi; database/evidenze di test conservati.
+- Web: `npm ci`, tipi API rigenerati senza diff, typecheck, format check,
+  **17 test passati** e build. OpenAPI esportata senza diff. Nessuna modifica
+  alla UI o al contratto HTTP.
+- Immagine applicativa costruita con il trust store locale già configurato;
+  smoke Linux senza rete passato: generazione della fixture inventata,
+  quattro repliche, retry e verifica indipendente. Container e artefatti
+  conservati in `itadb-m3-smoke-20260923`; log `.tools/m3-docker.log`.
+- Restano warning di deprecazione già presenti da Starlette/AnyIO/Alembic;
+  non sono test saltati. I 38 test esclusi dalla suite rapida sono stati
+  eseguiti nella suite PostgreSQL separata.
+
+Esecuzione ufficiale: inventario di otto originali verificati, compreso il
+nuovo campione ISTAT di 306 celle/26.579 byte. Due richieste esplorative
+ristrette a indicatori familiari aggiuntivi hanno restituito 404: nessun
+risultato da esse entra nel pilota. L'acquisizione demografica e la
+riconciliazione POP21/FAM21 sono riuscite; nessun download massivo.
+
+Esperimento locale completato:
+`3c7ae3377e468b0531ad2078a7efe084b6a081825e6ebc545f32654ff322f3b8`.
+Il manifest registra sorgenti effettivi, lockfile, runtime, commit precedente
+e working tree dirty: l'esecuzione precede il commit della modifica.
+15/15 repliche, ciascuna con 123.360 persone virtuali e 60.468 famiglie,
+tutti i gate strutturali superati e massimo errore di calibrazione **zero**.
+Retry: identità e checksum di **tutti** i file invariati; verifica indipendente
+successiva ricalcolata per tutte le repliche.
+
+| Ipotesi dimensione 6+ | Residuo adulto non assegnato | Famiglie con minori, intervallo tra 5 seed | Famiglie solo 65+, intervallo tra 5 seed |
+|---|---:|---:|---:|
+| 6 | 929 | 15.352–15.523 | 8.810–8.887 |
+| 7 | 503 | 15.324–15.458 | 8.794–8.925 |
+| 8 | 77 | 15.226–15.344 | 8.799–8.968 |
+
+Sono statistiche del **modello**, non osservazioni o intervalli di confidenza.
+La congiunta sesso/età fuori calibrazione ha TVD **0,0209468223**, errore
+assoluto medio **25,5842** e massimo **86 persone per cella** in tutte le
+repliche. Per esempio, tra i maschi di 68 anni la baseline genera 680 contro
+766 osservati. La metrica stabile tra seed riflette l'arrotondamento stabile;
+non elimina il bias dell'ipotesi d'indipendenza entro fascia. Non è stata
+fissata a posteriori una soglia per dichiarare valido il modello.
+
+Misura locale singola: preparazione, generazione e audit in **4,40 s**;
+30 Parquet più input/report/manifest occupano **10.623.302 byte**.
+Windows AMD64, Python 3.13.15, DuckDB 1.5.5, DuckDB a un thread e limite
+256 MB. Il limite DuckDB non è una misura della RAM totale del processo;
+picco RSS, concorrenza di carico e capacità nazionale **non misurati**.
+Nessuna estrapolazione a M4. Evidenze locali escluse da Git:
+`data/curated/m3/HASH/`, `data/reports/m3/acceptance.json`, log per tentativo,
+`.tools/m3-progress.log`, `.tools/m3-integration.log`, `.tools/m3-web.log`.
+
+La revisione indipendente eseguita è software, con rilettura SQL separata.
+**Revisione scientifica umana esterna e valutazione disclosure non eseguite**;
+composizioni familiari non validate rispetto a una congiunta osservata.
+Gli esperimenti restano locali, `experimental_not_certified`, senza
+pubblicazione di microdati nelle API, nel web o nella PR.
+
 Verifica eseguita il 23 settembre 2026. Repository pubblico:
 [matik81/itadb](https://github.com/matik81/itadb).
 

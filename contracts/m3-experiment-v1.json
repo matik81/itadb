@@ -1,0 +1,5 @@
+{
+  "schema_version": "m3-experiment/1",
+  "seeds": [1701, 1702, 1703, 1704, 1705],
+  "large_household_sizes": [6, 7, 8]
+}

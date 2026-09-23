@@ -9,9 +9,14 @@ from itadb.pipeline.storage import atomic_json, sha256_file
 
 
 def acquire_m2(root: Path, contract: Path) -> Path:
+    return acquire_inventory(root, contract, "istat-m2", "m2")
+
+
+def acquire_inventory(root: Path, contract: Path, contract_name: str, prefix: str) -> Path:
+    """Shared bounded archive acquisition for an explicitly selected contract family."""
     spec = json.loads(contract.read_text(encoding="utf-8"))
-    if spec["name"] != "istat-m2" or spec["version"] != "1.0.0":
-        raise ValueError("Unsupported M2 contract")
+    if spec["name"] != contract_name or spec["version"] != "1.0.0":
+        raise ValueError("Unsupported acquisition contract")
     inventory = {}
     for index, (name, source) in enumerate(spec["sources"].items(), 1):
         print(f"Fonte {index}/{len(spec['sources'])}: {name}", flush=True)
@@ -34,7 +39,7 @@ def acquire_m2(root: Path, contract: Path) -> Path:
             result = fetch_static(root, url, min(source["bytes"] * 2, 50_000_000), accept=accept)
             if result.sha256 != checksum or result.path.stat().st_size != source["bytes"]:
                 atomic_json(
-                    root / "quarantine" / f"m2-acquisition-{uuid4()}.json",
+                    root / "quarantine" / f"{prefix}-acquisition-{uuid4()}.json",
                     {"source": name, "published": False, "error_code": "SourceChanged"},
                 )
                 raise ValueError(
@@ -44,6 +49,6 @@ def acquire_m2(root: Path, contract: Path) -> Path:
         else:
             print("Archivio verificato riutilizzato", flush=True)
         inventory[name] = str(found)
-    output = root / "state" / f"m2-inputs-{uuid4()}.json"
+    output = root / "state" / f"{prefix}-inputs-{uuid4()}.json"
     atomic_json(output, inventory)
     return output
