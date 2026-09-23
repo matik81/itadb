@@ -40,6 +40,8 @@ def test_reconstruction_margins_family_rules_and_repeatability(
         assert report["calibration_max_absolute_error"] == 0
         assert report["heldout"]["total_variation_distance"] in [0.15, 0.2]
         cells = report["heldout"]["cells"]
+        assert report["heldout"]["reference_evidence_kind"] == "invented_fixture"
+        assert all("reference" in cell and "observed" not in cell for cell in cells)
         assert (
             sum(abs(r["error"]) for r in cells) / 80
             == report["heldout"]["total_variation_distance"]

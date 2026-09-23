@@ -33,7 +33,7 @@ risultato da esse entra nel pilota. L'acquisizione demografica e la
 riconciliazione POP21/FAM21 sono riuscite; nessun download massivo.
 
 Esperimento locale completato:
-`3c7ae3377e468b0531ad2078a7efe084b6a081825e6ebc545f32654ff322f3b8`.
+`e1e286dd737e18d70f7e13bb98cb208574ba2fee97bc47b423421fd992bd8457`.
 Il manifest registra sorgenti effettivi, lockfile, runtime, commit precedente
 e working tree dirty: l'esecuzione precede il commit della modifica.
 15/15 repliche, ciascuna con 123.360 persone virtuali e 60.468 famiglie,
@@ -55,13 +55,13 @@ repliche. Per esempio, tra i maschi di 68 anni la baseline genera 680 contro
 non elimina il bias dell'ipotesi d'indipendenza entro fascia. Non è stata
 fissata a posteriori una soglia per dichiarare valido il modello.
 
-Misura locale singola: preparazione, generazione e audit in **4,40 s**;
-30 Parquet più input/report/manifest occupano **10.623.302 byte**.
+Misura locale singola: preparazione, generazione e audit in **4,30 s**;
+30 Parquet più input/report/manifest occupano **10.627.232 byte**.
 Windows AMD64, Python 3.13.15, DuckDB 1.5.5, DuckDB a un thread e limite
 256 MB. Il limite DuckDB non è una misura della RAM totale del processo;
 picco RSS, concorrenza di carico e capacità nazionale **non misurati**.
 Nessuna estrapolazione a M4. Evidenze locali escluse da Git:
-`data/curated/m3/HASH/`, `data/reports/m3/acceptance.json`, log per tentativo,
+`data/curated/m3/HASH/`, `data/reports/m3/acceptance-HASH.json`, log per tentativo,
 `.tools/m3-progress.log`, `.tools/m3-integration.log`, `.tools/m3-web.log`.
 
 La revisione indipendente eseguita è software, con rilettura SQL separata.
