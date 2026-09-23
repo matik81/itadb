@@ -4,7 +4,7 @@
 
 | Fonte | Interfaccia | Stato nello scaffold |
 |---|---|---|
-| ISTAT IstatData | SDMX REST, `https://esploradati.istat.it/SDMXWS/rest` | Acquisizione SDMX-CSV limitata; mapping dataset da implementare |
+| ISTAT IstatData | SDMX REST, `https://esploradati.istat.it/SDMXWS/rest` | Campione regionale 2024 acquisito e verificato offline |
 | Eurostat | SDMX 2.1, `https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1` | Stessa interfaccia di acquisizione; mapping da implementare |
 | Fixture Itadb | CSV versionato nel repository | Percorso completo verificabile con dati inventati |
 
@@ -15,6 +15,9 @@ Non assumere che una banca dati consenta una connessione SQL diretta; usare le i
 pubbliche supportate. Un adapter SQL futuro deve usare credenziali read-only, viste curate,
 watermark e query parametrizzate, senza esporre DSN o SQL nell'API pubblica.
 
+Primo contratto reale: [popolazione residente regionale ISTAT](sources/istat-population.md).
+La pagina contiene selezione esatta, licenza, evidenze e comandi riproducibili.
+
 ## Contratto del connettore
 
 `SourceConnector.fetch(flow, key, start, end)` restituisce percorso, checksum e manifest.
@@ -22,6 +25,11 @@ L'implementazione `SdmxConnector` preserva la risposta originale e provenienza, 
 range temporale, rifiuta redirect, formato inatteso, risposte vuote o oltre 100 MB.
 Tre tentativi massimi per problemi transitori; `Retry-After` lungo interrompe il task.
 Non pubblica dati e non converte alla cieca SDMX in osservazioni.
+
+`fetch_structure(resource, agency, identifier, version, references)` archivia un singolo
+dataflow o una DSD esplicitamente versionata, con riferimenti `none` oppure `all`.
+La CLI `fetch-structure` impone un massimo di 20 MB e riusa rate limit e provenienza.
+Il contenuto XML è validato semanticamente dal gate specifico, non dall'acquisizione.
 
 Esempio di sintassi, con valori da ricavare dalla DSD del dataset scelto:
 
@@ -32,7 +40,8 @@ uv run itadb fetch istat --flow AGENCY,FLOW,VERSION --key DIM1.DIM2 \
 ```
 
 Questo esempio contiene segnaposto, non una query ISTAT certificata. I test del connettore
-sono offline. Non è stato eseguito uno scaricamento nazionale.
+sono offline. È stato acquisito un campione di 21 totali regionali/nazionali per un anno,
+documentato sopra; nessun download esteso a comuni, età o serie storiche.
 
 ISTAT dichiara 5 query/minuto per IP e blocchi in caso di superamento. Lo scaffold usa
 15 secondi tra richieste e un file lock condiviso dai processi sullo stesso archivio.

@@ -1,0 +1,243 @@
+{
+  "name": "istat-population-regions",
+  "version": "1.0.0",
+  "stage": "onboarding",
+  "is_demo": false,
+  "source": "istat",
+  "dataflow": {
+    "agency": "IT1",
+    "id": "22_289_DF_DCIS_POPRES1_1",
+    "version": "1.0"
+  },
+  "dsd": {
+    "agency": "IT1",
+    "id": "DCIS_POPRES1",
+    "version": "1.0"
+  },
+  "codelist_agency": "IT1",
+  "codelist_version": "1.0",
+  "dimensions": [
+    {
+      "id": "FREQ",
+      "position": 1,
+      "codelist": "CL_FREQ"
+    },
+    {
+      "id": "REF_AREA",
+      "position": 2,
+      "codelist": "CL_ITTER107"
+    },
+    {
+      "id": "DATA_TYPE",
+      "position": 3,
+      "codelist": "CL_TIPO_DATO15"
+    },
+    {
+      "id": "SEX",
+      "position": 4,
+      "codelist": "CL_SEXISTAT1"
+    },
+    {
+      "id": "AGE",
+      "position": 5,
+      "codelist": "CL_ETA1"
+    },
+    {
+      "id": "MARITAL_STATUS",
+      "position": 6,
+      "codelist": "CL_STATCIV2"
+    }
+  ],
+  "attributes": {
+    "OBS_STATUS": "CL_FLAG",
+    "NOTE_DS": "CL_DS_NOTE",
+    "NOTE_REF_AREA": "CL_POPOLA_NOTE",
+    "NOTE_DATA_TYPE": "CL_POPOLA_NOTE",
+    "NOTE_SEX": "CL_POPOLA_NOTE",
+    "NOTE_AGE": "CL_POPOLA_NOTE",
+    "NOTE_MARITAL_STATUS": "CL_POPOLA_NOTE",
+    "BASE_PER": "CL_BASE_YEAR",
+    "UNIT_MEAS": "CL_UNIT_MEASURE",
+    "UNIT_MULT": "CL_UNIT_MULT"
+  },
+  "selection": {
+    "FREQ": "A",
+    "DATA_TYPE": "JAN",
+    "SEX": "9",
+    "AGE": "TOTAL",
+    "MARITAL_STATUS": "99"
+  },
+  "time_dimension": "TIME_PERIOD",
+  "time_position": 7,
+  "measure": "OBS_VALUE",
+  "reference_year": "2024",
+  "reference_date": "2024-01-01",
+  "request_start": "2024-01-01",
+  "request_end": "2024-01-01",
+  "columns": [
+    "DATAFLOW",
+    "FREQ",
+    "REF_AREA",
+    "DATA_TYPE",
+    "SEX",
+    "AGE",
+    "MARITAL_STATUS",
+    "TIME_PERIOD",
+    "OBS_VALUE",
+    "OBS_STATUS",
+    "NOTE_DS",
+    "NOTE_REF_AREA",
+    "NOTE_DATA_TYPE",
+    "NOTE_SEX",
+    "NOTE_AGE",
+    "NOTE_MARITAL_STATUS",
+    "BASE_PER",
+    "UNIT_MEAS",
+    "UNIT_MULT"
+  ],
+  "territory_scheme": "ISTAT:CL_ITTER107:1.0",
+  "territories": {
+    "IT": "Italia",
+    "ITC1": "Piemonte",
+    "ITC2": "Valle d'Aosta / Vallée d'Aoste",
+    "ITC3": "Liguria",
+    "ITC4": "Lombardia",
+    "ITDA": "Trentino Alto Adige / Südtirol",
+    "ITD3": "Veneto",
+    "ITD4": "Friuli-Venezia Giulia",
+    "ITD5": "Emilia-Romagna",
+    "ITE1": "Toscana",
+    "ITE2": "Umbria",
+    "ITE3": "Marche",
+    "ITE4": "Lazio",
+    "ITF1": "Abruzzo",
+    "ITF2": "Molise",
+    "ITF3": "Campania",
+    "ITF4": "Puglia",
+    "ITF5": "Basilicata",
+    "ITF6": "Calabria",
+    "ITG1": "Sicilia",
+    "ITG2": "Sardegna"
+  },
+  "national_code": "IT",
+  "regional_codes": [
+    "ITC1",
+    "ITC2",
+    "ITC3",
+    "ITC4",
+    "ITDA",
+    "ITD3",
+    "ITD4",
+    "ITD5",
+    "ITE1",
+    "ITE2",
+    "ITE3",
+    "ITE4",
+    "ITF1",
+    "ITF2",
+    "ITF3",
+    "ITF4",
+    "ITF5",
+    "ITF6",
+    "ITG1",
+    "ITG2"
+  ],
+  "expected_rows": 21,
+  "reconciliation_tolerance": 0,
+  "unit": "persons",
+  "unit_policy": {
+    "UNIT_MEAS": [
+      "",
+      "PERS"
+    ],
+    "UNIT_MULT": [
+      "",
+      "0"
+    ]
+  },
+  "allowed_obs_status": [
+    ""
+  ],
+  "status_policy": "unflagged_upstream; not a claim about the statistical estimation method",
+  "allowed_area_notes": {
+    "IT": "",
+    "ITC1": "FILTER__ITC1",
+    "ITC2": "FILTER__ITC2",
+    "ITC3": "FILTER__ITC3",
+    "ITC4": "FILTER__ITC4",
+    "ITD3": "FILTER__ITD3",
+    "ITD4": "FILTER__ITD4",
+    "ITD5": "FILTER__ITD5",
+    "ITDA": "",
+    "ITE1": "FILTER__ITE1",
+    "ITE2": "FILTER__ITE2",
+    "ITE3": "FILTER__ITE3",
+    "ITE4": "FILTER__ITE4",
+    "ITF1": "FILTER__ITF1",
+    "ITF2": "FILTER__ITF2",
+    "ITF3": "FILTER__ITF3",
+    "ITF4": "FILTER__ITF4",
+    "ITF5": "FILTER__ITF5",
+    "ITF6": "FILTER__ITF6",
+    "ITG1": "FILTER__ITG1",
+    "ITG2": "FILTER__ITG2"
+  },
+  "license": {
+    "id": "CC-BY-4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "evidence_url": "https://www.istat.it/dati/open-data/",
+    "reviewed_on": "2026-09-23",
+    "attribution": "Fonte: Istat, Popolazione residente al 1° gennaio, Italia, regioni, province. Selezione e controlli: Itadb.",
+    "evidence_sha256": "5104ea81de8b249fb2cd2f873e5d931e39337ebc3f105cd66bebda20daf8b515",
+    "retrieved_at": "2026-09-22 23:35:01.842432+00:00"
+  },
+  "limitations": [
+    "Solo il 1° gennaio 2024 e i totali selezionati.",
+    "LAST_UPDATE del dataflow non è la data di pubblicazione delle singole osservazioni.",
+    "Nessuna pubblicazione DB/API autorizzata dal solo esito di questo controllo."
+  ],
+  "reviewed_codes": {
+    "CL_FREQ": {
+      "A": "annuale"
+    },
+    "CL_TIPO_DATO15": {
+      "JAN": "popolazione al 1º gennaio"
+    },
+    "CL_SEXISTAT1": {
+      "9": "totale"
+    },
+    "CL_ETA1": {
+      "TOTAL": "totale"
+    },
+    "CL_STATCIV2": {
+      "99": "totale"
+    },
+    "CL_POPOLA_NOTE": {
+      "FILTER__ITC1": "Filtro",
+      "FILTER__ITC2": "Filtro",
+      "FILTER__ITC3": "Filtro",
+      "FILTER__ITC4": "Filtro",
+      "FILTER__ITD3": "Filtro",
+      "FILTER__ITD4": "Filtro",
+      "FILTER__ITD5": "Filtro",
+      "FILTER__ITE1": "Filtro",
+      "FILTER__ITE2": "Filtro",
+      "FILTER__ITE3": "Filtro",
+      "FILTER__ITE4": "Filtro",
+      "FILTER__ITF1": "Filtro",
+      "FILTER__ITF2": "Filtro",
+      "FILTER__ITF3": "Filtro",
+      "FILTER__ITF4": "Filtro",
+      "FILTER__ITF5": "Filtro",
+      "FILTER__ITF6": "Filtro",
+      "FILTER__ITG1": "Filtro",
+      "FILTER__ITG2": "Filtro"
+    },
+    "CL_UNIT_MEASURE": {
+      "PERS": "persone"
+    },
+    "CL_UNIT_MULT": {
+      "0": "Unità"
+    }
+  }
+}
