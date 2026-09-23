@@ -29,6 +29,10 @@ snapshot 2020, 2021 e 2024. Include otto eventi amministrativi, crosswalk,
 confini verificati e derivazioni documentate. La web app seleziona periodo,
 indicatore e livello senza sommare categorie sovrapposte. `fetch-m2`, `check-m2`
 e `ingest-m2` acquisiscono, verificano offline e pubblicano il perimetro revisionato.
+Il nome di una regione, provincia o comune apre una scheda con mappa del confine,
+dato selezionato, periodo, fonte e licenza. La mappa permette zoom e spostamento;
+il GeoJSON si scarica da un collegamento esplicito. Chiudere la scheda conserva
+filtri e pagina della tabella.
 
 ## Stack e motivazione
 
