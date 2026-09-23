@@ -202,3 +202,41 @@ convertiti in dati osservati. Storia territoriale e altri periodi restano in M2.
 M2 è completa per il perimetro dichiarato. Non implica storia amministrativa
 continua, tutti gli anni/indicatori per comune o una validazione statistica
 indipendente. La creazione dei circa 60 milioni di individui virtuali rimane M4.
+
+## Scheda territoriale M2 con mappa — 23 settembre 2026
+
+Il nome del territorio ora apre una scheda nella web app, anziché navigare
+direttamente alla risposta JSON. Il dato mostrato coincide con la riga selezionata;
+fonte, periodo, snapshot, stato upstream e licenza sono visibili. La mappa SVG
+proietta in Mercatore il confine pubblicato, mantiene isole e anelli interni e
+offre zoom, trascinamento e comandi da tastiera. Un collegamento distinto scarica
+una Feature GeoJSON con coordinate originali della risposta API e provenienza.
+Non sono state aggiunte dipendenze, sorgenti esterne, API o migrazioni.
+
+- **16 test web superati**, inclusi proiezione/orientamento, poligoni multipli
+  e anelli interni, geometrie malformate, identità release/territorio, valori
+  mancanti, errore/retry, zoom e download esplicito. TypeScript, Prettier e build
+  superati; ricostruito il frontend nello stack Compose locale.
+- **Playwright 1.63.0 / Chrome 153.0.8010.53**: clic e rendering reale di tutte
+  le 20 regioni dello snapshot 2024, incluse le 52 parti della Sicilia e le 170
+  della Sardegna. Verificata inoltre la scheda famiglie Piemonte 2021, la provincia
+  di Torino e il comune di Reano nella seconda pagina comunale. Chiusura con
+  pulsante/Escape, ritorno del focus, confinamento del Tab e conservazione di
+  filtri, categoria e paginazione verificati nel browser.
+- Provati zoom, frecce, trascinamento mouse, ripristino vista completa e input
+  touch emulato. Download `.geojson` realmente salvato e letto: Feature valida
+  con geometria, territorio, release, snapshot e licenza. Viewport a 1440, 768,
+  390 e 320 px: mappa visibile all'apertura su mobile, nessun overflow orizzontale
+  nel dialog, chiusura disponibile anche dopo lo scorrimento.
+- Risposta confine 503 simulata: dato ancora leggibile, nessuna geometria
+  inventata, retry riuscito. Caricamento rallentato e chiusura anticipata provati:
+  richiesta annullata e apertura successiva della Sicilia corretta. Nessun errore
+  JavaScript; unico errore HTTP nella sessione principale: il 503 introdotto dal test.
+- Evidenze locali fuori Git in `data/reports/`: `m2-map-playwright.json`,
+  `m2-map-progress.log`, `m2-map-trace.zip`, `m2-map-piemonte-desktop.png`,
+  `m2-map-piemonte-mobile.png`, `m2-map-sicilia.png`, `m2-map-sardegna.png`,
+  `m2-map-320-statistic.png`, `m2-map-error-503.png` e
+  `m2-map-piemonte-download.geojson`.
+
+Verifica limitata a Chrome e dispositivi emulati. Il confine è semplificato per
+la consultazione e non è una carta catastale o stradale.

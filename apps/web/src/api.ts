@@ -7,6 +7,8 @@ export type Quality = components['schemas']['Quality'];
 export type Artifact = components['schemas']['Artifact'];
 export type Coverage = components['schemas']['CoverageItem'];
 export type CrosswalkPage = components['schemas']['CrosswalkPage'];
+export type Boundary = components['schemas']['BoundaryItem'];
+export type Observation = components['schemas']['ObservationV2'];
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(
   /\/$/,
   '',

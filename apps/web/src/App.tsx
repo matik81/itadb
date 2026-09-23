@@ -8,8 +8,10 @@ import {
   type Release,
   type Source,
   type Coverage,
+  type Observation,
 } from './api';
 import { TerritorialHistory } from './TerritorialHistory';
+import { TerritoryDetail } from './TerritoryDetail';
 
 const number = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 6 });
 const dateTime = (value: string) => new Date(value).toLocaleString('it-IT');
@@ -29,6 +31,7 @@ export function App() {
   const [coverage, setCoverage] = useState<Coverage[]>([]);
   const [selection, setSelection] = useState('');
   const [level, setLevel] = useState('region');
+  const [territory, setTerritory] = useState<Observation | null>(null);
   const release = releases.find((item) => item.id === selected);
   const isM2 = release?.dataset_id === 'istat_m2';
   const chosen = coverage.find((item) => `${item.period}|${item.series_code}` === selection);
@@ -318,12 +321,15 @@ export function App() {
                         <tr key={item.territory_id}>
                           <td>
                             {isM2 && item.level !== 'country' ? (
-                              <a
-                                href={`${API_BASE}/v2/releases/${release.id}/territories/${item.territory_id}/boundary`}
+                              <button
+                                type="button"
+                                className="territory-link"
+                                aria-haspopup="dialog"
+                                onClick={() => setTerritory(item)}
                               >
                                 {item.territory_name}{' '}
-                                <span className="sr-only">· confine GeoJSON</span>
-                              </a>
+                                <span className="sr-only">· apri scheda e mappa</span>
+                              </button>
                             ) : (
                               item.territory_name
                             )}
@@ -462,6 +468,18 @@ export function App() {
           </aside>
         </div>
         {isM2 && release && <TerritorialHistory key={release.id} releaseId={release.id} />}
+        {territory && release && chosen && (
+          <TerritoryDetail
+            key={`${release.id}-${territory.territory_id}-${chosen.period}-${chosen.series_code}`}
+            observation={territory}
+            coverage={chosen}
+            release={release}
+            sourceName={
+              sources.find((item) => item.id === release.source_id)?.name ?? release.source_id
+            }
+            onClose={() => setTerritory(null)}
+          />
+        )}
         <footer>
           Itadb è un’infrastruttura aperta in costruzione. La popolazione sintetica 1:1 è una fase
           futura; gli agenti non rappresenteranno persone reali.
