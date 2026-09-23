@@ -453,9 +453,12 @@ def publish_coverage(
                         ),
                     )
                 for name, passed in report["checks"].items():
+                    details = {"rows": report["rows"]}
+                    if name == "boundary_hierarchy":
+                        details["parent_boundaries"] = report["geography"]["parent_boundaries"]
                     db.execute(
                         "INSERT INTO catalog.quality_result VALUES (%s,%s,%s,%s)",
-                        (rid, name, passed, Jsonb({"rows": report["rows"]})),
+                        (rid, name, passed, Jsonb(details)),
                     )
                 db.execute(
                     "UPDATE catalog.release SET status='published',published_at=now() WHERE id=%s",

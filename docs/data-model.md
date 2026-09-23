@@ -1,7 +1,7 @@
 # Modello dati della v0.1
 
 Il DDL autorevole è nelle revisioni `migrations/sql/0001_foundation.sql`–
-`0004_coverage_integrity.sql`; l'upgrade è gestito da Alembic.
+`0005_geographic_publication.sql`; l'upgrade è gestito da Alembic.
 Non usare ORM autogenerate come sostituto della revisione delle migrazioni.
 
 ```mermaid
@@ -73,3 +73,8 @@ I pesi sono esatti (1) o strutturali (null), mai quote demografiche inventate.
 Tutte le evidenze pubblicate sono immutabili, comprese geografie prive di osservazioni.
 La pubblicazione ricontrolla contesto, copertura, gerarchia e confini dopo eventuali
 modifiche draft. Gli otto artefatti M2 includono un inventario di 28 originali/manifest.
+La revisione 0005 ricontrolla anche date, livelli, pesi e cardinalità dei crosswalk
+rispetto agli eventi correnti. Ripete il contenimento figlio/padre: esatto per
+confini derivati dall'unione dei figli, tolleranza di area del 2% per confini fonte.
+La politica è nel dettaglio del gate `boundary_hierarchy`; una nuova pubblicazione
+che non la dichiara viene rifiutata. Le release già pubblicate non sono riscritte.

@@ -280,3 +280,31 @@ Le preferenze sono conservate in `apps/web/AGENTS.md`.
 
 Nessuna nuova dipendenza, migrazione o modifica alle evidenze pubblicate.
 Verifica browser limitata a Chrome e viewport emulati.
+
+## Chiusura dei rilievi M2 prima del merge — 23 settembre 2026
+
+Corretti tre rilievi della PR #13: readiness che non controllava le viste M2,
+contesto degli eventi non ricontrollato dopo modifiche draft e contenimento
+geometrico verificato soltanto durante il caricamento. La nuova revisione 0005
+aggiunge i controlli alla pubblicazione senza alterare 0001–0004 o evidenze pubblicate.
+
+- **104 test offline e 38 di integrazione superati**, Ruff/formattazione e mypy
+  superati; OpenAPI e tipi client rigenerati senza cambiamenti al contratto.
+  Tredici casi aggiunti: schema 0002 e singole viste M2 indisponibili, upgrade
+  ripetuto con fingerprint invariati di release, osservazioni, geografie,
+  artefatti e gate; eventi con date, livelli, cardinalità o pesi incoerenti;
+  confini figli e padri alterati dopo il caricamento. I fallimenti lasciano
+  run fallito e quarantena, senza release parziale.
+- Ripetuta la stessa politica geometrica della pipeline: contenimento esatto
+  per unioni dei figli, tolleranza del 2% per confini fonte. Provati uno
+  scostamento ammesso e due rifiutati. La politica è esplicita nel dettaglio
+  del gate `boundary_hierarchy` per le nuove pubblicazioni.
+- Backup pre-0005 ripristinato in `itadb_m2_restore_d81007d8507e`, poi aggiornato
+  due volte: quattro release con identità, hash originali e conteggi conservati.
+  Tre piani `EXPLAIN (ANALYZE, BUFFERS)` delle nuove query su **24.088 confini e
+  15 crosswalk** della release ufficiale: nessuna incoerenza; il controllo
+  geometrico ha richiesto circa **3,57 s** in questa esecuzione locale.
+  È un controllo batch alla pubblicazione, non una query sincrona della web app.
+- Evidenze fuori Git: `data/reports/m2-review-backup-restore.json`,
+  `data/reports/m2-review-query-plans.json`, backup `.tools/backups/itadb-before-0005-*.dump`
+  e log delle operazioni `.tools/m2-progress.log`.

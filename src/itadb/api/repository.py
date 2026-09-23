@@ -211,7 +211,17 @@ class PostgresRepositoryV2(PostgresRepository):
         )
 
     def ping(self) -> None:
-        self._query("SELECT metadata_sha256,series_code FROM api.releases_v2 LIMIT 0")
+        # Resolve every public view and check reader privileges without scanning data.
+        self._query("""SELECT
+            (SELECT metadata_sha256 FROM api.releases_v2 LIMIT 0),
+            (SELECT series_code FROM api.releases_v2 LIMIT 0),
+            (SELECT value FROM api.observations_v2 LIMIT 0),
+            (SELECT passed FROM api.quality_v2 LIMIT 0),
+            (SELECT kind FROM api.artifacts_v2 LIMIT 0),
+            (SELECT series_code FROM api.coverage_v2 LIMIT 0),
+            (SELECT territory_id FROM api.territories_v2 LIMIT 0),
+            (SELECT event_id FROM api.crosswalks_v2 LIMIT 0),
+            (SELECT geom FROM api.boundaries_v2 LIMIT 0)""")
 
     def releases(self, limit: int) -> list[dict[str, Any]]:
         return self._query(

@@ -4,7 +4,10 @@ from typing import Any
 
 import psycopg
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
+from psycopg import sql
 from psycopg.rows import dict_row
 from test_istat_publication import _database
 
@@ -23,6 +26,78 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     return _database(tmp_path, monkeypatch)
+
+
+def test_readiness_rejects_pre_m2_schema(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    old = _database(tmp_path, monkeypatch, "0002")
+    with TestClient(create_app(old)) as client:
+        assert client.get("/health/live").status_code == 200
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        assert "coverage_v2" not in response.text
+    command.upgrade(Config("alembic.ini"), "head")
+    with TestClient(create_app(old)) as client:
+        assert client.get("/health/ready").status_code == 200
+
+
+def test_readiness_requires_each_m2_view(settings: Settings) -> None:
+    with (
+        psycopg.connect(settings.admin_database_url, autocommit=True) as db,
+        TestClient(create_app(settings)) as client,
+    ):
+        assert client.get("/health/ready").status_code == 200
+        for view in ["coverage_v2", "territories_v2", "crosswalks_v2", "boundaries_v2"]:
+            db.execute(
+                sql.SQL("ALTER VIEW api.{} RENAME TO unavailable").format(sql.Identifier(view))
+            )
+            try:
+                assert client.get("/health/live").status_code == 200
+                assert client.get("/health/ready").status_code == 503
+            finally:
+                db.execute(
+                    sql.SQL("ALTER VIEW api.unavailable RENAME TO {}").format(sql.Identifier(view))
+                )
+            assert client.get("/health/ready").status_code == 200
+
+
+def test_upgrade_preserves_published_m2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, m2_bundle: tuple[Bundle, Path]
+) -> None:
+    old = _database(tmp_path, monkeypatch, "0004")
+    bundle, contract = m2_bundle
+    rid = publish_coverage(old, bundle, contract)
+    tables = [
+        "catalog.release",
+        "catalog.coverage",
+        "catalog.artifact",
+        "catalog.quality_result",
+        "stats.observation",
+        "geo.release_territory",
+        "geo.change_event",
+        "geo.crosswalk",
+        "geo.boundary",
+    ]
+
+    def fingerprints() -> list[Any]:
+        with psycopg.connect(old.admin_database_url) as db:
+            return [
+                db.execute(
+                    sql.SQL(
+                        "SELECT count(*), md5(string_agg(row_to_json(t)::text, '' "
+                        "ORDER BY row_to_json(t)::text)) FROM {} t"
+                    ).format(sql.SQL(table))
+                ).fetchone()
+                for table in tables
+            ]
+
+    before = fingerprints()
+    command.upgrade(Config("alembic.ini"), "head")
+    command.upgrade(Config("alembic.ini"), "head")
+    assert fingerprints() == before
+    assert publish_coverage(old, bundle, contract) == rid
+    with TestClient(create_app(old)) as client:
+        assert client.get("/health/ready").status_code == 200
+        assert client.get(f"/v2/releases/{rid}").status_code == 200
 
 
 def test_publication_api_history_boundaries_and_immutability(
@@ -209,6 +284,16 @@ def test_concurrency_revision_and_no_forks(
         "UPDATE catalog.coverage SET scheme='wrong' WHERE release_id=%s",
         "UPDATE geo.release_territory SET snapshot='2030-01-01' WHERE release_id=%s",
         "DELETE FROM geo.boundary WHERE release_id=%s",
+        "UPDATE geo.change_event SET effective_date='2020-01-01' WHERE release_id=%s",
+        "UPDATE geo.change_event SET effective_date='2021-01-02' WHERE release_id=%s",
+        "UPDATE geo.change_event SET kind='recode' WHERE release_id=%s AND kind='merger'",
+        "UPDATE geo.change_event SET kind='transfer' WHERE release_id=%s AND kind='merger'",
+        "UPDATE geo.territory SET level='province' WHERE code='C' AND id IN "
+        "(SELECT territory_id FROM geo.release_territory WHERE release_id=%s)",
+        "UPDATE geo.boundary b SET geom=ST_Translate(b.geom,2,0) FROM geo.territory t "
+        "WHERE b.territory_id=t.id AND t.code='A' AND b.release_id=%s",
+        "UPDATE geo.boundary b SET geom=ST_Translate(b.geom,2,0) FROM geo.territory t "
+        "WHERE b.territory_id=t.id AND t.code='R1' AND b.release_id=%s",
     ],
 )
 def test_database_rechecks_draft_before_publication(
@@ -233,6 +318,47 @@ def test_database_rechecks_draft_before_publication(
     assert called == [True]
     with psycopg.connect(settings.admin_database_url) as db:
         assert db.execute("SELECT count(*) FROM catalog.release").fetchone() == (0,)
+        assert db.execute("SELECT status FROM catalog.pipeline_run").fetchall() == [("failed",)]
+    assert list(settings.data_dir.joinpath("quarantine").glob("coverage-*.json"))
+
+
+@pytest.mark.parametrize(
+    "derived,shift,allowed", [(False, 0.005, True), (False, 0.05, False), (True, 0.005, False)]
+)
+def test_publication_repeats_the_declared_boundary_policy(
+    settings: Settings,
+    m2_bundle: tuple[Bundle, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    derived: bool,
+    shift: float,
+    allowed: bool,
+) -> None:
+    bundle, contract = m2_bundle
+    bundle.derive_parent_boundaries = derived
+    original = publication._load_observations
+    called = []
+
+    def tamper(*args: Any, **kwargs: Any) -> None:
+        original(*args, **kwargs)
+        db, rid = args[:2]
+        # Move the leftmost half-region municipality slightly outside its parent.
+        db.execute(
+            "UPDATE geo.boundary b SET geom=ST_Translate(b.geom,%s,0) "
+            "FROM geo.territory t WHERE b.territory_id=t.id AND t.code='A' "
+            "AND b.release_id=%s",
+            (-shift, rid),
+        )
+        called.append(True)
+
+    monkeypatch.setattr(publication, "_load_observations", tamper)
+    if allowed:
+        publish_coverage(settings, bundle, contract)
+    else:
+        with pytest.raises(psycopg.Error, match="Boundary hierarchy changed before publication"):
+            publish_coverage(settings, bundle, contract)
+        with psycopg.connect(settings.admin_database_url) as db:
+            assert db.execute("SELECT count(*) FROM catalog.release").fetchone() == (0,)
+    assert called == [True]
 
 
 def test_derived_parents_follow_municipal_partition(
