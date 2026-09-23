@@ -514,3 +514,83 @@ aggiunge i controlli alla pubblicazione senza alterare 0001–0004 o evidenze pu
 - Evidenze fuori Git: `data/reports/m2-review-backup-restore.json`,
   `data/reports/m2-review-query-plans.json`, backup `.tools/backups/itadb-before-0005-*.dump`
   e log delle operazioni `.tools/m2-progress.log`.
+
+## M4 — scala nazionale 1:1
+
+Verifiche locali del 24 settembre 2026. Dati e misure sono distinti dalle
+prove precedenti. [Rapporto M4](synthesis-m4.md),
+[dettaglio machine-readable](benchmarks/m4-national-2026-09-24.json).
+
+### Input e output effettivi
+
+- 15 originali fissati e archiviati. Famiglie 31/12/2024, popolazione e
+  geografia 01/01/2025: ultimo riferimento comune verificato dall'inventario.
+- Campione POSAS/SDMX: 612 celle identiche. POSAS nazionale: 805.392 righe;
+  popolazione M/F per singola età, 100+ aperto, totali espliciti.
+- 58.943.464 persone sintetiche; 26.670.169 famiglie; 560.159 adulti non
+  assegnati. 7.896 comuni, 107 province/UTS, 20 regioni.
+- 107 batch, 214 Parquet. Errore nullo su 1.594.992 celle comunali; input
+  riconciliati anche con tutte le congiunte provinciali, regionali e nazionali
+  e con le classi dimensionali delle famiglie ai livelli superiori.
+- Rilettura indipendente successiva e retry nazionale: esito positivo,
+  stesso run e stessi checksum; nessuna nuova directory di snapshot.
+- Diagnostica disclosure: 362.643 celle non vuote comune/sesso/età sotto 5,
+  851.968 persone sintetiche. Pacchetto aggregato: 400 celle regione/sesso/
+  decade, 90+ raggruppato, minimo 483; nessuna distribuzione di microdati.
+
+Snapshot nazionale:
+`data/curated/m4/7a27c844410adf29262477114bfeecc3a55743a454dfd392d4708c8163858eb8`.
+Il manifest registra gli hash dei sorgenti effettivi e il working tree dirty
+precedente al commit. Hash di input, manifest, rapporto e aggregati nel JSON
+delle misure; tutti i dati originali e sintetici restano fuori da Git.
+
+### Benchmark realmente eseguiti
+
+Windows AMD64, Ryzen 9 9900X, 24 CPU logiche, 65.939.009.536 byte RAM;
+Python 3.13.15, DuckDB 1.5.5. Budget preventivi: RSS 8 GiB, directory di lavoro
+40 GiB, tempo 7.200 s; DuckDB 2 GiB e due thread, massimo 5M per batch.
+
+| Prova | Tempo runner monitorato | Picco RSS | Picco disco campionato | Audit indipendente successivo |
+|---|---:|---:|---:|---:|
+| 1M, fixture inventata | 1,58 s | 214,54 MiB | 3,38 MiB | 0,32 s |
+| 10M, fixture inventata con interruzione/ripresa | 8,24 + 10,96 s | 999,50 MiB | 36,81 MiB | 4,40 s |
+| 58.943.464, nazionale calibrato | 177,61 s | 1.114,90 MiB | 239,53 MiB | 28,65 s |
+
+I tempi del runner comprendono generazione, audit inline e completamento
+dei rapporti fino al controllo finale del budget; escludono acquisizione,
+ammissione iniziale e parte della finalizzazione dei metadati. Il comando
+nazionale completo ha impiegato 182,8 s; lo snapshot finale occupa
+251.203.541 byte. Il disco è campionato ogni secondo nella directory di lavoro,
+inclusi gli spill del generatore; archivio raw, precedenti run e log esterni
+sono esclusi. Il picco RSS è quello dell'intero processo, non del solo DuckDB.
+L'audit nazionale successivo ha misurato 603.820.032 byte di picco RSS.
+
+La prova 10M contiene due tentativi: dopo 5M si provoca un'interruzione, poi
+si verificano e riusano i checkpoint e si completano gli altri 5M. Il tempo
+complessivo dello script, compreso audit finale e recupero, è 23,88 s. Non
+viene presentato come tempo di una generazione continua senza interruzioni.
+Una seconda generazione a 10M in una root separata, con ordine dei batch
+invertito, ha prodotto tutti i 10 file identici (17,33 s).
+Il retry nazionale completato ha richiesto 34,3 s compresa la ri-ammissione.
+Queste misure sono locali, su una singola esecuzione per scenario; non sono
+SLA, distribuzioni p95/p99 o stime di prestazioni su altri sistemi.
+
+### Controlli del repository
+
+- `uv sync --locked`, Ruff check/format, mypy per Windows e Linux: passati.
+- Python non integration: **219 passati**, 38 deselected perché eseguiti
+  separatamente; nessun test saltato nel perimetro selezionato.
+- PostgreSQL su database dedicato `itadb_m4_test_7be9191e7d6d`, migrazioni
+  eseguite due volte: **38 passati**, 219 deselected. Nessun volume eliminato.
+- Frontend: `npm.cmd ci` (audit zero vulnerabilità), typecheck, format,
+  **17 test**, build passati. OpenAPI e tipi client rigenerati senza drift.
+- 30 nuovi test coprono parser/zeri dimostrati, dati mancanti/stimati,
+  integrità, coorti, comuni/famiglie, ordine dei batch, recupero, checksum,
+  rapporti/aggregati falsificati e budget superato senza completamento.
+- Warning già presenti: deprecazioni Starlette/AnyIO e configurazione Alembic.
+
+Nessuna nuova dipendenza, migrazione, endpoint o modifica della web app.
+L'esito della CI è consultabile nei controlli della PR. Revisione
+scientifica esterna, dinamiche demografiche, sensibilità nazionale tra seed
+e distribuzione pubblica dei microdati **non eseguite**; non sono implicite
+nella corrispondenza dei conteggi. [Valutazione e limiti](reviews/m4-disclosure.md).

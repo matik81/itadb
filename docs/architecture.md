@@ -53,7 +53,7 @@ upstream e la v1 continua a servire le release compatibili: [ADR 0006](adr/0006-
   di colonne e gruppi di righe. Preferire file da circa 128–512 MiB come ipotesi di prova,
   senza una partizione per persona/comune o una miriade di file piccoli.
 
-## Sintesi pilota M3 e futura popolazione nazionale 1:1
+## Sintesi pilota M3 e popolazione nazionale locale M4
 
 Il [pilota M3](synthesis-m3.md) implementa un batch locale per una sola regione,
 senza nuove dipendenze o schema DB. `src/itadb/synthesis/` separa input ammessi,
@@ -64,10 +64,17 @@ provenienza e sensibilità registrati. [ADR 0008](adr/0008-synthesis-pilot.md).
 Il riferimento M3 adottato usa 6+ = 6 e seed 1701. Le
 [priorità di fedeltà](model-fidelity.md) guidano le evoluzioni: l'assegnazione
 comunale/provinciale non è presente nei record M3 e costituisce un primo
-requisito del [piano M4](plans/m4-national-synthesis.md).
+requisito realizzato da [M4](synthesis-m4.md).
+
+M4 usa DuckDB per espandere le celle e assegnare famiglie nello stesso comune,
+con batch provinciali fino a 5M persone. Il riferimento 2024/2025 genera
+58.943.464 record in 107 batch, con checkpoint e audit separato. Il run misurato
+usa circa 1,09 GiB RSS e 240 MiB per lo snapshot, senza proiezione nazionale
+nel DB. Identità di input/codice/ambiente e rename locale rendono verificabili
+retry e completamento. [ADR 0012](adr/0012-national-territorial-snapshots.md).
 
 L'individuo statistico non è un agente LLM e non richiede un processo per persona.
-La generazione nazionale dovrà essere vettorizzata, per blocchi territoriali, riproducibile con seed
+La generazione nazionale è vettorizzata, per blocchi territoriali, riproducibile con seed
 e versioni di input/algoritmo. Vietata la ricostruzione o associazione a identità reali.
 
 Entità previste:

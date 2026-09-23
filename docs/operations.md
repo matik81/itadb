@@ -102,3 +102,24 @@ Dependabot propone aggiornamenti; audit dipendenze settimanale. Richiedere i con
 una revisione sulle PR, vietare force push, abilitare segnalazioni private, secret scanning
 e push protection dove disponibili. Le impostazioni effettivamente applicate sono registrate
 in docs/validation.md: un file YAML non prova che una protezione GitHub sia abilitata.
+## Snapshot sintetici locali M4
+
+Il percorso [M4](synthesis-m4.md) usa l'archivio locale e non pubblica nel
+database di servizio. Eseguire da root `fetch-m4`, poi `synthesize-m4 --inputs
+INVENTARIO` sotto `scripts/run_logged.py`, conservando il terminale di progresso.
+Budget e riferimento sono in `contracts/m4-budget-v1.json` e
+`contracts/m4-reference-v1.json`. Usare `verify-m4 --run SNAPSHOT` per la rilettura.
+
+Ripetere la stessa sintesi recupera i checkpoint verificati in `data/state/`;
+una directory in `data/curated/m4/` è visibile soltanto dopo il completamento.
+Non cancellare file `pending`, tentativi interrotti, quarantene o checkpoint
+per far passare un retry. Gli hash alterati richiedono un'indagine e una nuova
+root di riproduzione; non una riparazione dello snapshot esistente.
+
+Conservare originali e relativi manifest, codice/lock archiviati e snapshot
+nello stesso piano di backup. Il file lock è locale: non montare questo
+protocollo come coordinatore multi-host. RSS e disco della macchina devono
+avere margine anche per altre applicazioni; il limite DuckDB non equivale
+al picco RSS del processo. Gli ID rappresentano record sintetici; nessun
+microdato deve entrare in Git o nelle API. La sola tabella in `distribution/`
+rispetta il formato aggregato documentato, senza pubblicazione automatica.

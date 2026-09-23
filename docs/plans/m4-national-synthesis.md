@@ -1,93 +1,61 @@
-# M4 — geografia e scala nazionale 1:1
+# M4 — piano e registro di completamento
 
-Stato: **pronto per l'avvio; implementazione M4 non ancora avviata**.
-La [revisione umana M3](../reviews/m3-human-review.md) accetta il modello di
-lavoro iniziale e le sue assunzioni. Il riferimento resta `m3-reference/1`;
-il metodo futuro segue le [priorità di fedeltà](../model-fidelity.md).
+Stato: **implementazione e verifiche locali completate; consegna tramite PR**.
+La richiesta dell'utente autorizza sviluppo, branch dedicato, commit e PR
+riallineata a main. Nessun agente parallelo è stato avviato.
 
-## Verifica di prontezza
+## Risultato conseguito
 
-| Condizione | Evidenza / stato | Conseguenza |
-|---|---|---|
-| Modello iniziale esplicito e unico | Classe 6+ = 6, seed 1701, replica e checksum registrati | Soddisfatta per l'avvio |
-| Fedeltà demografica pilota | 202 celle regionali esatte, 15 repliche, 3.030 confronti con il CSV ISTAT | Soddisfatta nel perimetro M3 |
-| Integrità e riproducibilità | Audit indipendente, retry, quarantena, sorgenti/input immutabili; 160 test Python e CI passati su `ca8ac10` | Base tecnica disponibile |
-| Revisione umana di progetto | Accettazione iniziale delle famiglie casuali e priorità concordate | M3 chiuso nel perimetro accettato |
-| Integrazione della base di lavoro | PR M3 #14 su main; esito di merge da verificare all'apertura del lavoro M4 | Integrare M3 prima di creare il branch M4 da main; non è stata eseguita una fusione da questa revisione |
-| Fonti aggiornate e geografia completa | Ultimo anno comune non ancora verificato; M3 non assegna comuni/province | Primo lavoro di M4, prima di una nuova sintesi territoriale |
-| Scala nazionale | Limite attuale 200.000 residenti / 100.000 famiglie e una sola regione ammessa | Serve implementazione per batch; non basta aumentare i limiti |
-| Revisione scientifica esterna e disclosure | Non svolte | Non bloccano lo sviluppo locale; restano condizioni per la distribuzione |
+Riferimento unico `m4-reference/1`, popolazione 01/01/2025 e famiglie
+31/12/2024: 58.943.464 persone virtuali, 26.670.169 famiglie e residuo
+esplicito di 560.159 adulti. 7.896 comuni, 107 province/UTS, 20 regioni.
+Seed 1701, classe 6+ = 6; priorità M3 conservate. Coorti stabili, 100+ aperto.
 
-**Esito: si può iniziare M4.** Non si può ancora eseguire o dichiarare validata
-una popolazione nazionale con il generatore M3 esistente.
+[Metodo e riproduzione](../synthesis-m4.md),
+[decisione architetturale](../adr/0012-national-territorial-snapshots.md),
+[valutazione statistica/disclosure](../reviews/m4-disclosure.md),
+[misure](../benchmarks/m4-national-2026-09-24.json).
 
-## Risultato osservabile
+## Passi verificati
 
-Una versione di riferimento riproducibile, costruita in batch territoriali,
-con input coerenti e copertura dichiarata. Conteggi sesso/età e geografici
-osservati preservati, aggregazioni comune → provincia/UTS → regione → Italia
-riconciliate e persone senza famiglia incluse nei totali territoriali.
-Una famiglia assegnata appartiene a un solo comune e tutti i suoi componenti
-allo stesso comune. Questo è un requisito M4, non una capacità già verificata.
+1. Inventario selettivo: famiglie disponibili fino al 2024; POSAS 2025 e
+   geografia 2025. Confronto di 612 celle POSAS/SDMX esatto prima del download
+   nazionale. Le richieste SDMX troppo lunghe/non rispondenti sono abbandonate
+   a favore dell'archivio ufficiale POSAS da 8,5 MB, senza rilassare i controlli.
+2. Contratto immutabile di 15 originali. Ammesse tutte le celle comunali,
+   riconciliate con congiunte provinciali, regionali/nazionali e classi
+   familiari di tutti i livelli. Nessun uso implicito di stime o soppressioni.
+3. Generatore vettoriale e audit SQL indipendente: 107 batch, 214 Parquet,
+   1.594.992 celle demografiche comunali esatte. Famiglie nello stesso comune,
+   minori assegnati, residuo incluso nei totali geografici.
+4. Riproducibilità al cambio dell'ordine dei batch; checkpoint, recupero dopo
+   interruzione a 10M, retry nazionale identico, file corrotti rifiutati,
+   fallimenti senza snapshot completo. Originali e tentativi conservati.
+5. Prove effettive 1M, 10M e nazionale entro budget preventivi: 8 GiB RSS,
+   40 GiB disco per prova, due ore. Nazionale: 177,61 s nel runner monitorato,
+   picco RSS 1,09 GiB; audit successivo 28,65 s. Nessuna estrapolazione.
+6. Valutazione statistica e disclosure tecnica, formato Parquet locale e JSON
+   aggregato implementati. 400 celle regionali condivisibili come formato
+   proposto, minimo 483; tutti gli artefatti restano `public_release=false`.
+7. 219 test Python, 38 integrazioni PostgreSQL, 17 test web, Ruff/mypy,
+   typecheck/build/format frontend; OpenAPI e tipi rigenerati senza differenze.
 
-La composizione familiare casuale vincolata resta la prima baseline; migliorarla
-con ruoli o relazioni non è un prerequisito per i primi benchmark. Se diventa
-incompatibile con vincoli locali osservati, quel batch fallisce: si documenta
-una revisione della regola, senza alterare conteggi di età, sesso o geografia.
+## Visibilità e provenienza
 
-## Sequenza di lavoro e criteri di accettazione
+Terminale aperto su `.tools/m4-progress.log`; wrapper con heartbeat, fasi,
+conteggi ed esiti. Log, report di ammissione, checkpoint e misure sono conservati
+localmente e non inclusi in Git. Ryzen 9 9900X, 24 processori logici, circa
+61 GiB RAM; ambiente e hash dei sorgenti effettivi nel manifest. Sorgenti
+archiviati prima del commit, working tree dirty dichiarato.
 
-1. **Fonti e riferimento temporale.** Inventario ristretto di sesso/età,
-   popolazione territoriale e famiglie: anno, livello, categorie, stato,
-   licenza, disponibilità di congiunte e totali. Verificare il più recente
-   riferimento comune utilizzabile, non assumere che ogni tabella arrivi
-   al 2024. Se serve conservare un periodo precedente, motivarlo esplicitamente.
-   Uscita: contratto versionato e riconciliazioni su campione, copertura
-   osservata distinta da stime o disaggregazioni ipotetiche. Niente download
-   nazionale esplorativo senza aver controllato significati e fattibilità.
-2. **Fedeltà geografica e riferimento eseguibile.** Collegare individui e
-   famiglie a codici territoriali e snapshot coerenti; riusare le gerarchie
-   M2 verificate, senza trasferire numeri tra confini diversi per sola etichetta.
-   Conservare tutte le congiunte sesso/età disponibili e i totali dei livelli
-   osservati. Se manca sesso/età comunale, non presentare una distribuzione
-   inferita come osservata. Dichiarare priorità, regole familiari, 6+ = 6 e
-   seed base 1701 in configurazione e manifest del riferimento; separare
-   le prove di sensibilità. Uscita: piccolo campione multicomunale con audit
-   per comune e riconciliazioni dei livelli superiori, anche sul residuo.
-3. **Generazione per batch e recupero.** Identificativi univoci nel run,
-   derivazione deterministica/versionata dei seed territoriali dal seed base,
-   memoria limitata, checkpoint e ripresa dopo interruzione. L'ordine dei
-   batch non deve cambiare i risultati; niente riutilizzo implicito dello
-   stesso flusso casuale per territori diversi. Uscita: retry e ripresa
-   identici, nessun doppione o perdita, fallimenti senza snapshot completo,
-   audit locale e globale su file immutabili.
-4. **Benchmark progressivi.** Prove a 1M, 10M e volume nazionale del periodo
-   scelto. Prima di ogni prova fissare budget RAM/disco/tempo compatibili con
-   l'ambiente, rendere visibili fase/conteggi/tempo e conservare i log.
-   Misurare picco RAM del processo, disco, durata, throughput, costo di audit
-   e ripresa; registrare hardware, versioni, dati e risultato. Distinguere
-   fixture di carico da popolazioni calibrate. Uscita: misure ripetibili e
-   rispetto dei budget; non estrapolare il tempo regionale alla scala nazionale.
-5. **Valutazione e distribuzione.** Rapporto di fedeltà nell'ordine concordato,
-   confronto con M3 e statistiche non usate in calibrazione quando disponibili.
-   La loro assenza deve restare dichiarata. Per completare M4 servono inoltre
-   valutazione statistica, analisi disclosure e formato/ambito di distribuzione
-   concordati secondo roadmap e governance. Eventuali pubblicazioni richiedono
-   i rispettivi esiti di revisione; benchmark riusciti non sono autorizzazione.
+## Confini e chiusura della revisione
 
-## Rischi e decisioni da verificare durante M4
+La PR sottopone alla revisione di progetto il formato e l'ambito di
+condivisione; nessun dataset viene pubblicato automaticamente. La revisione
+scientifica esterna e l'autorizzazione alla distribuzione pubblica dei
+microdati non sono state svolte e restano distinte dal completamento tecnico.
+La composizione familiare casuale non è validata su relazioni osservate;
+questi limiti non vengono trasformati in risultati positivi della milestone.
 
-- Differenze di periodo, universo statistico, confini o stato del dato
-  possono impedire la riconciliazione; nessuna correzione silenziosa.
-- Margini demografici regionali e totali comunali non determinano tutte le
-  correlazioni locali: la fedeltà va riportata alla granularità disponibile.
-- La classe 6+ = 6 è trasferibile come ipotesi iniziale, non come garanzia
-  universale di fattibilità. Dimensioni e vincoli adulto/minore vanno testati
-  su ogni territorio prima dell'allocazione.
-- Una nuova fonte sulle famiglie può giustificare un nuovo riferimento;
-  i conteggi prioritari e gli esperimenti precedenti restano preservati.
-- Microservizi, nuove dipendenze o una proiezione nazionale PostgreSQL non
-  sono prerequisiti automatici: valgono le condizioni misurate dell'architettura.
-
-Questo piano definisce il lavoro successivo. La presente revisione aggiorna
-documentazione e accettazione M3, senza eseguire benchmark o implementare M4.
+Consegna: revisione del diff, commit sul branch `feat/m4-national-synthesis`,
+rebase su `origin/main`, push e PR; controllo della CI della PR.

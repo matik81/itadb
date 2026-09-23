@@ -1,0 +1,490 @@
+{
+  "name": "istat-m4-national",
+  "version": "1.0.0",
+  "population_reference": "2025-01-01",
+  "household_reference": "2024-12-31",
+  "geography_counts": {
+    "country": 1,
+    "region": 20,
+    "province": 107,
+    "municipality": 7896
+  },
+  "attribution": "ISTAT, POSAS al 1 gennaio 2025 e famiglie censuarie al 31 dicembre 2024; CC BY 4.0",
+  "sources": {
+    "license": {
+      "url": "https://www.istat.it/dati/open-data/",
+      "sha256": "67066034daebcb69c272bcd82b962424f4772cd53881c5f4eafee5cf6a6cfbb2",
+      "bytes": 123862
+    },
+    "households_structure": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/DCSS_FAMIGLIE_TV/1.0?references=all",
+      "sha256": "2fcc7849167eb47c7234f7609746fff059dc386251597848a454758b980c7778",
+      "bytes": 9853375
+    },
+    "households_dataflow": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/DF_DCSS_FAMIGLIE_TV_1/1.0?references=none",
+      "sha256": "f0ad4329a61d812bd4c383c9c8fd806be314922833ffce09761701275ca24f7a",
+      "bytes": 4174
+    },
+    "population_structure": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/DCIS_POPRES1/1.0?references=all",
+      "sha256": "ae72237a7de006839e90f1c7024a5347725e1572dcdc50c199ccb63f15950007",
+      "bytes": 10214619
+    },
+    "population_dataflow": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/22_289_DF_DCIS_POPRES1_1/1.0?references=none",
+      "sha256": "64cd45fd4f96fd65577c6c9cebcf61d05c672eea5ed743cb63e02b67233e9b96",
+      "bytes": 3641
+    },
+    "geography": {
+      "url": "https://www.istat.it/storage/cartografia/confini_amministrativi/generalizzati/2025/Limiti01012025_g.zip",
+      "sha256": "d3bbf80b316a801405f6b2f6b0cb6f27daf10b070e83f99e6545acca878eca39",
+      "bytes": 10410520
+    },
+    "municipal_population_dataflow": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/22_289_DF_DCIS_POPRES1_24/1.0?references=none",
+      "sha256": "c83b836ed84db874a4fbd418ff34850313d28cd149f49ccd68909a67c336f79e",
+      "bytes": 3649
+    },
+    "availability": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,DF_DCSS_FAMIGLIE_TV_1,1.0/A.IT.NPHH_AV.TOT+N1+N2+N3+N4+N5+N6_GE.TOT?startPeriod=2021&endPeriod=2025",
+      "sha256": "efb460868f1ff5e0de4ea8ff9b4adc6179c356b03279fe7a945e9f745456dd34",
+      "bytes": 3128
+    },
+    "households": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,DF_DCSS_FAMIGLIE_TV_1,1.0/A..NPHH_AV.TOT+N1+N2+N3+N4+N5+N6_GE.TOT?startPeriod=2024-01-01&endPeriod=2024-01-01",
+      "sha256": "5fb9852a16d1975c269abcab2eb7bb0a1cb4d468f501183e1d4f0d4b02ea8b6b",
+      "bytes": 5793053
+    },
+    "population_parents": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,22_289_DF_DCIS_POPRES1_1,1.0/A.IT+ITC1+ITC2+ITC3+ITC4+ITDA+ITD3+ITD4+ITD5+ITE1+ITE2+ITE3+ITE4+ITF1+ITF2+ITF3+ITF4+ITF5+ITF6+ITG1+ITG2.JAN.1+2+9..99?startPeriod=2025-01-01&endPeriod=2025-01-01",
+      "sha256": "aa2ee9bf62bd8264c37cfebd1c15754fa356b4b245d3dbad8e00713acc54cf53",
+      "bytes": 554588
+    },
+    "population_zip": {
+      "url": "https://demo.istat.it/data/posas/POSAS_2025_it_Comuni.zip",
+      "sha256": "5f549156a3057ca7d4be6dc49cf0e861807ec66e15fda1f9a41fc5aa7271b700",
+      "bytes": 8522158
+    },
+    "population_page": {
+      "url": "https://demo.istat.it/app/?i=POS&a=2025",
+      "sha256": "2b6c742c6256208ce92b505c993a85c60f05c7a736d73557d7018347830e9d2e",
+      "bytes": 64495
+    },
+    "posas_sample": {
+      "url": "https://demo.istat.it/data/posas/POSAS_2025_it_007_Valle_dAosta-Vallee_dAoste.zip",
+      "sha256": "5339b321b268f4a857666228d8895695878dbf088a2d70a41d0debb3df5b95af",
+      "bytes": 59530
+    },
+    "sdmx_sample": {
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,22_289_DF_DCIS_POPRES1_24,1.0/A.007003+007001.JAN.1+2+9..99?startPeriod=2025-01-01&endPeriod=2025-01-01",
+      "sha256": "691c18c2cad0fdbd758d1863ad095cc9578df4aa2b4194287a9b8f0a33ca606a",
+      "bytes": 53991
+    },
+    "province_zip": {
+      "url": "https://demo.istat.it/data/posas/POSAS_2025_it_Province.zip",
+      "sha256": "ac94aa519962a53f194ffeaef7129bb307f6185da8d0e52a6d944e46981c4e2b",
+      "bytes": 261656
+    }
+  },
+  "profiles": {
+    "households": {
+      "columns": [
+        "DATAFLOW",
+        "FREQ",
+        "REF_AREA",
+        "INDICATOR",
+        "NUM_MEMB",
+        "NUM_FR_MENB",
+        "TIME_PERIOD",
+        "OBS_VALUE",
+        "OBS_STATUS",
+        "NOTE_DS",
+        "NOTE_REF_AREA",
+        "NOTE_INDICATOR",
+        "NOTE_NUM_MEMB",
+        "NOTE_NUM_FR_MENB",
+        "NOTE_TIME_PERIOD",
+        "BASE_PER",
+        "UNIT_MEAS",
+        "UNIT_MULT"
+      ],
+      "rows": 55490,
+      "domains": {
+        "DATAFLOW": [
+          "IT1:DF_DCSS_FAMIGLIE_TV_1(1.0)"
+        ],
+        "FREQ": [
+          "A"
+        ],
+        "INDICATOR": [
+          "NPHH_AV"
+        ],
+        "NUM_MEMB": [
+          "N1",
+          "N2",
+          "N3",
+          "N4",
+          "N5",
+          "N6_GE",
+          "TOT"
+        ],
+        "NUM_FR_MENB": [
+          "TOT"
+        ],
+        "TIME_PERIOD": [
+          "2024"
+        ],
+        "OBS_STATUS": [
+          ""
+        ],
+        "NOTE_DS": [
+          ""
+        ],
+        "NOTE_REF_AREA": [
+          "",
+          "005122_N1",
+          "012144_N1",
+          "013256_N1",
+          "018026_N1",
+          "024128_N1",
+          "025075_N1",
+          "028108_N1",
+          "ITTER107_081021_N1",
+          "ITTER107_081025_N1",
+          "ITTER107_099030_N1",
+          "ITTER107_099031_N1",
+          "ITTER107_ITC11_N1",
+          "ITTER107_ITC33_N1",
+          "ITTER107_ITC45_N1",
+          "ITTER107_ITD35_N1",
+          "ITTER107_ITD55_N1",
+          "ITTER107_ITE14_N1",
+          "ITTER107_ITE43_N1",
+          "ITTER107_ITF33_N1",
+          "ITTER107_ITF42_N1",
+          "ITTER107_ITF65_N1",
+          "ITTER107_ITG12_N1",
+          "ITTER107_ITG13_N1",
+          "ITTER107_ITG17_N1",
+          "ITTER107_ITG27_N1",
+          "ITTER113_001317_N1",
+          "ITTER114_001318_N1",
+          "ITTER115_002002_N1",
+          "ITTER119_003166_N1",
+          "ITTER120_004034_N1",
+          "ITTER123_004203_N1",
+          "ITTER124_004213_N1",
+          "ITTER128_006193_N1",
+          "ITTER131_012143_N1",
+          "ITTER134_013255_N1",
+          "ITTER137_015251_N1",
+          "ITTER141_018193_N1",
+          "ITTER145_019107_N1",
+          "ITTER146_019116_N1",
+          "ITTER150_020057_N1",
+          "ITTER151_020073_N1",
+          "ITTER154_022251_N1",
+          "ITTER163_024125_N1",
+          "ITTER164_024126_N1",
+          "ITTER165_024127_N1",
+          "ITTER169_025074_N1",
+          "ITTER172_026096_N1",
+          "ITTER175_034051_N1",
+          "ITTER180_038029_N1",
+          "ITTER181_038030_N1",
+          "ITTER184_041071_N1",
+          "ITTER187_048054_N1",
+          "ITTER190_075098_N1",
+          "ITTER197_096087_N1",
+          "ITTER198_096088_N1",
+          "ITTER202_103079_N1",
+          "ITTER203_022253_N1",
+          "ITTER209_022254_N1",
+          "ITTER213_022252_N1",
+          "ITTER217_022167_N1",
+          "ITTER219_041044_N1",
+          "ITTER221_097008_N1"
+        ],
+        "NOTE_INDICATOR": [
+          "TIPO_DATO_CENS_POP_NPHH_AV_N1"
+        ],
+        "NOTE_NUM_MEMB": [
+          ""
+        ],
+        "NOTE_NUM_FR_MENB": [
+          ""
+        ],
+        "NOTE_TIME_PERIOD": [
+          ""
+        ],
+        "BASE_PER": [
+          ""
+        ],
+        "UNIT_MEAS": [
+          ""
+        ],
+        "UNIT_MULT": [
+          ""
+        ]
+      }
+    },
+    "population_parents": {
+      "columns": [
+        "DATAFLOW",
+        "FREQ",
+        "REF_AREA",
+        "DATA_TYPE",
+        "SEX",
+        "AGE",
+        "MARITAL_STATUS",
+        "TIME_PERIOD",
+        "OBS_VALUE",
+        "OBS_STATUS",
+        "NOTE_DS",
+        "NOTE_REF_AREA",
+        "NOTE_DATA_TYPE",
+        "NOTE_SEX",
+        "NOTE_AGE",
+        "NOTE_MARITAL_STATUS",
+        "BASE_PER",
+        "UNIT_MEAS",
+        "UNIT_MULT"
+      ],
+      "rows": 6426,
+      "domains": {
+        "DATAFLOW": [
+          "IT1:22_289_DF_DCIS_POPRES1_1(1.0)"
+        ],
+        "FREQ": [
+          "A"
+        ],
+        "DATA_TYPE": [
+          "JAN"
+        ],
+        "SEX": [
+          "1",
+          "2",
+          "9"
+        ],
+        "AGE": [
+          "TOTAL",
+          "Y0",
+          "Y1",
+          "Y10",
+          "Y11",
+          "Y12",
+          "Y13",
+          "Y14",
+          "Y15",
+          "Y16",
+          "Y17",
+          "Y18",
+          "Y19",
+          "Y2",
+          "Y20",
+          "Y21",
+          "Y22",
+          "Y23",
+          "Y24",
+          "Y25",
+          "Y26",
+          "Y27",
+          "Y28",
+          "Y29",
+          "Y3",
+          "Y30",
+          "Y31",
+          "Y32",
+          "Y33",
+          "Y34",
+          "Y35",
+          "Y36",
+          "Y37",
+          "Y38",
+          "Y39",
+          "Y4",
+          "Y40",
+          "Y41",
+          "Y42",
+          "Y43",
+          "Y44",
+          "Y45",
+          "Y46",
+          "Y47",
+          "Y48",
+          "Y49",
+          "Y5",
+          "Y50",
+          "Y51",
+          "Y52",
+          "Y53",
+          "Y54",
+          "Y55",
+          "Y56",
+          "Y57",
+          "Y58",
+          "Y59",
+          "Y6",
+          "Y60",
+          "Y61",
+          "Y62",
+          "Y63",
+          "Y64",
+          "Y65",
+          "Y66",
+          "Y67",
+          "Y68",
+          "Y69",
+          "Y7",
+          "Y70",
+          "Y71",
+          "Y72",
+          "Y73",
+          "Y74",
+          "Y75",
+          "Y76",
+          "Y77",
+          "Y78",
+          "Y79",
+          "Y8",
+          "Y80",
+          "Y81",
+          "Y82",
+          "Y83",
+          "Y84",
+          "Y85",
+          "Y86",
+          "Y87",
+          "Y88",
+          "Y89",
+          "Y9",
+          "Y90",
+          "Y91",
+          "Y92",
+          "Y93",
+          "Y94",
+          "Y95",
+          "Y96",
+          "Y97",
+          "Y98",
+          "Y99",
+          "Y_GE100"
+        ],
+        "MARITAL_STATUS": [
+          "99"
+        ],
+        "TIME_PERIOD": [
+          "2025"
+        ],
+        "OBS_STATUS": [
+          ""
+        ],
+        "NOTE_DS": [
+          ""
+        ],
+        "NOTE_REF_AREA": [
+          "",
+          "FILTER__ITC1",
+          "FILTER__ITC2",
+          "FILTER__ITC3",
+          "FILTER__ITC4",
+          "FILTER__ITD3",
+          "FILTER__ITD4",
+          "FILTER__ITD5",
+          "FILTER__ITE1",
+          "FILTER__ITE2",
+          "FILTER__ITE3",
+          "FILTER__ITE4",
+          "FILTER__ITF1",
+          "FILTER__ITF2",
+          "FILTER__ITF3",
+          "FILTER__ITF4",
+          "FILTER__ITF5",
+          "FILTER__ITF6",
+          "FILTER__ITG1",
+          "FILTER__ITG2"
+        ],
+        "NOTE_DATA_TYPE": [
+          ""
+        ],
+        "NOTE_SEX": [
+          ""
+        ],
+        "NOTE_AGE": [
+          ""
+        ],
+        "NOTE_MARITAL_STATUS": [
+          ""
+        ],
+        "BASE_PER": [
+          ""
+        ],
+        "UNIT_MEAS": [
+          ""
+        ],
+        "UNIT_MULT": [
+          ""
+        ]
+      }
+    }
+  },
+  "expected_population": 58943464,
+  "posas": {
+    "member": "POSAS_2025_it_Comuni.csv",
+    "uncompressed_bytes": 46797475,
+    "title": "\"Popolazione residente per età, sesso e stato civile al 1° gennaio 2025\"",
+    "columns": [
+      "Codice comune",
+      "Comune",
+      "Età",
+      "Celibi",
+      "Coniugati",
+      "Divorziati",
+      "Vedovi",
+      "Uniti civilmente",
+      "Maschi già in unione civile (per scioglimento unione)",
+      "Maschi già in unione civile (per decesso del partner)",
+      "Totale maschi",
+      "Nubili",
+      "Coniugate",
+      "Divorziate",
+      "Vedove",
+      "Unite civilmente",
+      "Femmine già in unione civile (per scioglimento unione)",
+      "Femmine già in unione civile (per decesso del partner)",
+      "Totale femmine",
+      "Totale"
+    ],
+    "rows": 805392
+  },
+  "posas_provinces": {
+    "member": "POSAS_2025_it_Province.csv",
+    "uncompressed_bytes": 808817,
+    "title": "\"Popolazione residente per età, sesso e stato civile al 1° gennaio 2025\"",
+    "columns": [
+      "Codice provincia",
+      "Provincia",
+      "Età",
+      "Celibi",
+      "Coniugati",
+      "Divorziati",
+      "Vedovi",
+      "Uniti civilmente",
+      "Maschi già in unione civile (per scioglimento unione)",
+      "Maschi già in unione civile (per decesso del partner)",
+      "Totale maschi",
+      "Nubili",
+      "Coniugate",
+      "Divorziate",
+      "Vedove",
+      "Unite civilmente",
+      "Femmine già in unione civile (per scioglimento unione)",
+      "Femmine già in unione civile (per decesso del partner)",
+      "Totale femmine",
+      "Totale"
+    ],
+    "rows": 10914,
+    "code_column": "Codice provincia"
+  }
+}

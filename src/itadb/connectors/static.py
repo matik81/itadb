@@ -12,7 +12,7 @@ import httpx
 from itadb.connectors.sdmx import SOURCES, AcquiredArtifact, SdmxConnector
 from itadb.pipeline.storage import archive_file, atomic_json
 
-ALLOWED_HOSTS = {"www.istat.it", "esploradati.istat.it", "ec.europa.eu"}
+ALLOWED_HOSTS = {"www.istat.it", "esploradati.istat.it", "demo.istat.it", "ec.europa.eu"}
 
 
 def fetch_static(

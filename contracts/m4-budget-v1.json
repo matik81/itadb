@@ -1,0 +1,8 @@
+{
+  "memory_mb": 2048,
+  "threads": 2,
+  "max_rss_mb": 8192,
+  "max_disk_mb": 40960,
+  "max_seconds": 7200,
+  "max_batch_population": 5000000
+}
