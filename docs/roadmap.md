@@ -23,6 +23,12 @@ Territori storicizzati, fusioni/scissioni e crosswalk, confini verificati, indic
 sesso/età, famiglie e abitazioni. Uscita: test di gerarchia e copertura, riconciliazioni tra
 fonti e vintage, nessuna somma di categorie sovrapposte. Benchmark su volume rappresentativo.
 
+M2 completata per il [perimetro ISTAT revisionato](sources/istat-m2.md): tre
+snapshot geografici, otto eventi, 317 selezioni serie/periodo e 22.678 osservazioni.
+Pubblicazione atomica, API e web, 2.815 riconciliazioni; benchmark PostgreSQL su
+1.024.000 aggregati inventati. Storia continua, tutti gli anni e tutte le variabili
+comunali non sono impliciti in questa copertura. [Verifiche](validation.md).
+
 ## M3 — sintesi pilota
 Area limitata, metodo esplicito (es. IPF/IPU o ricostruzione combinatoria da valutare), input
 ammessi, seed e versioni riproducibili. Vincoli familiari e demografici, metriche fuori

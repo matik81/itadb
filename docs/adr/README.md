@@ -11,6 +11,7 @@ Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
 | 0004 | API read-only/versionate | Nessun SQL pubblico e limiti espliciti; job asincroni per elaborazioni future |
 | 0005 | Demo evidente, SDMX reale solo raw | Nessuna statistica inventata pubblicata come ufficiale; ogni dataflow richiede adapter e gate |
 | [0006](0006-istat-publication.md) | Pubblicazione ISTAT, snapshot territoriali, API v2 | Revisioni immutabili, stati fedeli alla fonte e integrità temporale con btree_gist |
+| [0007](0007-m2-coverage.md) | Copertura M2, storia e confini | Copertura esplicita, partizioni disgiunte, derivazioni geografiche tracciate; pyshp per gli originali ISTAT |
 
 Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
 un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,

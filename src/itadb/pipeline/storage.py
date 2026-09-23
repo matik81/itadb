@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from filelock import FileLock
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -19,7 +21,9 @@ def atomic_json(path: Path, content: dict[str, Any]) -> None:
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
         temporary.write_text(
-            json.dumps(content, indent=2, ensure_ascii=False, default=str) + "\n", encoding="utf-8"
+            json.dumps(content, indent=2, ensure_ascii=False, default=str) + "\n",
+            encoding="utf-8",
+            newline="\n",
         )
         os.replace(temporary, path)
     finally:
@@ -39,11 +43,12 @@ def archive_file(source: Path, root: Path) -> tuple[Path, str]:
         checksum = digest.hexdigest()
         target = root / checksum[:2] / checksum / "payload"
         target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists():
-            if sha256_file(target) != checksum:
-                raise ValueError("Content-addressed archive has been modified")
-        else:
-            os.replace(temporary, target)
+        with FileLock(str(target.parent / ".archive.lock"), timeout=60):
+            if target.exists():
+                if sha256_file(target) != checksum:
+                    raise ValueError("Content-addressed archive has been modified")
+            else:
+                os.replace(temporary, target)
         return target, checksum
     finally:
         temporary.unlink(missing_ok=True)

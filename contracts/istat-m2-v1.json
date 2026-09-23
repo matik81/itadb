@@ -1,0 +1,751 @@
+{
+  "name": "istat-m2",
+  "version": "1.0.0",
+  "derive_parent_boundaries": true,
+  "sources": {
+    "geo2020": {
+      "sha256": "4046cace3d9a5bb9a444d9a1f74338c55b16533d55769da37cde7dd7d022f7cd",
+      "url": "https://www.istat.it/storage/cartografia/confini_amministrativi/generalizzati/Limiti01012020_g.zip",
+      "bytes": 12604908
+    },
+    "geo2021": {
+      "sha256": "b97497688220de1781890271f394c82034c84788778e157399cde93e957dec42",
+      "url": "https://www.istat.it/storage/cartografia/confini_amministrativi/generalizzati/Limiti2021_g.zip",
+      "bytes": 12156012
+    },
+    "geo2024": {
+      "sha256": "c3545d15a15bdb1271db22a5ce5cb21614c72422736cf6b9cd1e6426896be265",
+      "url": "https://www.istat.it/storage/cartografia/confini_amministrativi/generalizzati/2024/Limiti01012024_g.zip",
+      "bytes": 11882341
+    },
+    "events": {
+      "sha256": "29c70c71a93fd68e4f039e9b730d222b954020cd6f2f70f5b248461ab5500f2c",
+      "url": "https://www.istat.it/wp-content/uploads/2026/02/Novita-2026-2017-26febbraio2026.pdf",
+      "bytes": 106802
+    },
+    "license": {
+      "sha256": "67066034daebcb69c272bcd82b962424f4772cd53881c5f4eafee5cf6a6cfbb2",
+      "url": "https://www.istat.it/dati/open-data/",
+      "bytes": 123862
+    },
+    "households": {
+      "sha256": "5819f7577028d4fc00dcfd2b5e168f5a1b54e9d49d8d75c4a42823b28472caa7",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,DF_DCSS_FAMIGLIE_TV_1,1.0/A.IT+ITC1+ITC2+ITC3+ITC4+ITDA+ITD3+ITD4+ITD5+ITE1+ITE2+ITE3+ITE4+ITF1+ITF2+ITF3+ITF4+ITF5+ITF6+ITG1+ITG2.NPHH_AV.TOT+N1+N2+N3+N4+N5+N6_GE.TOT?startPeriod=2021-01-01&endPeriod=2021-01-01",
+      "bytes": 15647
+    },
+    "households_dataflow": {
+      "sha256": "f0ad4329a61d812bd4c383c9c8fd806be314922833ffce09761701275ca24f7a",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/DF_DCSS_FAMIGLIE_TV_1/1.0?references=none",
+      "bytes": 4174
+    },
+    "households_structure": {
+      "sha256": "2fcc7849167eb47c7234f7609746fff059dc386251597848a454758b980c7778",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/DCSS_FAMIGLIE_TV/1.0?references=all",
+      "bytes": 9853375
+    },
+    "dwellings": {
+      "sha256": "4f44a1b0f41762dae9154da349c0c0849f7a01adb34e67858d4fb170539aedc2",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,DF_DCSS_ABITAZIONI_TV_1,1.0/A.IT+ITC1+ITC2+ITC3+ITC4+ITDA+ITD3+ITD4+ITD5+ITE1+ITE2+ITE3+ITE4+ITF1+ITF2+ITF3+ITF4+ITF5+ITF6+ITG1+ITG2.NUM_DW_AV+NUM_OCC_DW_AV+NUM_UNOCC_DW_AV......?startPeriod=2021-01-01&endPeriod=2021-01-01",
+      "bytes": 8000
+    },
+    "dwellings_dataflow": {
+      "sha256": "76acc6148d2dabd91400d27ba6f3a9dbfd995e05a3289b35deb0c4e048cd3676",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/DF_DCSS_ABITAZIONI_TV_1/1.0?references=none",
+      "bytes": 4463
+    },
+    "dwellings_structure": {
+      "sha256": "ad98aa4b6566741a3209bdde024ac454c9ad9e4a46f341f6b23113c6c2d823ad",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/DCSS_ABITAZIONI_TV/1.0?references=all",
+      "bytes": 10058849
+    },
+    "population": {
+      "sha256": "ea14175817c0663b3cf2eed404eebe2c34b00486cb3f28fa53450ffbf7906f5e",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/data/IT1,22_289_DF_DCIS_POPRES1_1,1.0/A.IT+ITC1+ITC2+ITC3+ITC4+ITDA+ITD3+ITD4+ITD5+ITE1+ITE2+ITE3+ITE4+ITF1+ITF2+ITF3+ITF4+ITF5+ITF6+ITG1+ITG2.JAN.1+2+9..99?startPeriod=2024-01-01&endPeriod=2024-01-01",
+      "bytes": 554582
+    },
+    "population_structure": {
+      "sha256": "ae72237a7de006839e90f1c7024a5347725e1572dcdc50c199ccb63f15950007",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/DCIS_POPRES1/1.0?references=all",
+      "bytes": 10214619
+    },
+    "population_dataflow": {
+      "sha256": "64cd45fd4f96fd65577c6c9cebcf61d05c672eea5ed743cb63e02b67233e9b96",
+      "url": "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/22_289_DF_DCIS_POPRES1_1/1.0?references=none",
+      "bytes": 3641
+    }
+  },
+  "region_mapping": {
+    "IT": "IT",
+    "ITC1": "01",
+    "ITC2": "02",
+    "ITC4": "03",
+    "ITDA": "04",
+    "ITD3": "05",
+    "ITD4": "06",
+    "ITC3": "07",
+    "ITD5": "08",
+    "ITE1": "09",
+    "ITE2": "10",
+    "ITE3": "11",
+    "ITE4": "12",
+    "ITF1": "13",
+    "ITF2": "14",
+    "ITF3": "15",
+    "ITF4": "16",
+    "ITF5": "17",
+    "ITF6": "18",
+    "ITG1": "19",
+    "ITG2": "20"
+  },
+  "profiles": {
+    "population": {
+      "period": "2024-01-01",
+      "columns": [
+        "DATAFLOW",
+        "FREQ",
+        "REF_AREA",
+        "DATA_TYPE",
+        "SEX",
+        "AGE",
+        "MARITAL_STATUS",
+        "TIME_PERIOD",
+        "OBS_VALUE",
+        "OBS_STATUS",
+        "NOTE_DS",
+        "NOTE_REF_AREA",
+        "NOTE_DATA_TYPE",
+        "NOTE_SEX",
+        "NOTE_AGE",
+        "NOTE_MARITAL_STATUS",
+        "BASE_PER",
+        "UNIT_MEAS",
+        "UNIT_MULT"
+      ],
+      "expected_rows": 6426,
+      "domains": {
+        "DATAFLOW": [
+          "IT1:22_289_DF_DCIS_POPRES1_1(1.0)"
+        ],
+        "FREQ": [
+          "A"
+        ],
+        "REF_AREA": [
+          "IT",
+          "ITC1",
+          "ITC2",
+          "ITC3",
+          "ITC4",
+          "ITD3",
+          "ITD4",
+          "ITD5",
+          "ITDA",
+          "ITE1",
+          "ITE2",
+          "ITE3",
+          "ITE4",
+          "ITF1",
+          "ITF2",
+          "ITF3",
+          "ITF4",
+          "ITF5",
+          "ITF6",
+          "ITG1",
+          "ITG2"
+        ],
+        "DATA_TYPE": [
+          "JAN"
+        ],
+        "SEX": [
+          "1",
+          "2",
+          "9"
+        ],
+        "AGE": [
+          "TOTAL",
+          "Y0",
+          "Y1",
+          "Y10",
+          "Y11",
+          "Y12",
+          "Y13",
+          "Y14",
+          "Y15",
+          "Y16",
+          "Y17",
+          "Y18",
+          "Y19",
+          "Y2",
+          "Y20",
+          "Y21",
+          "Y22",
+          "Y23",
+          "Y24",
+          "Y25",
+          "Y26",
+          "Y27",
+          "Y28",
+          "Y29",
+          "Y3",
+          "Y30",
+          "Y31",
+          "Y32",
+          "Y33",
+          "Y34",
+          "Y35",
+          "Y36",
+          "Y37",
+          "Y38",
+          "Y39",
+          "Y4",
+          "Y40",
+          "Y41",
+          "Y42",
+          "Y43",
+          "Y44",
+          "Y45",
+          "Y46",
+          "Y47",
+          "Y48",
+          "Y49",
+          "Y5",
+          "Y50",
+          "Y51",
+          "Y52",
+          "Y53",
+          "Y54",
+          "Y55",
+          "Y56",
+          "Y57",
+          "Y58",
+          "Y59",
+          "Y6",
+          "Y60",
+          "Y61",
+          "Y62",
+          "Y63",
+          "Y64",
+          "Y65",
+          "Y66",
+          "Y67",
+          "Y68",
+          "Y69",
+          "Y7",
+          "Y70",
+          "Y71",
+          "Y72",
+          "Y73",
+          "Y74",
+          "Y75",
+          "Y76",
+          "Y77",
+          "Y78",
+          "Y79",
+          "Y8",
+          "Y80",
+          "Y81",
+          "Y82",
+          "Y83",
+          "Y84",
+          "Y85",
+          "Y86",
+          "Y87",
+          "Y88",
+          "Y89",
+          "Y9",
+          "Y90",
+          "Y91",
+          "Y92",
+          "Y93",
+          "Y94",
+          "Y95",
+          "Y96",
+          "Y97",
+          "Y98",
+          "Y99",
+          "Y_GE100"
+        ],
+        "MARITAL_STATUS": [
+          "99"
+        ],
+        "TIME_PERIOD": [
+          "2024"
+        ],
+        "OBS_STATUS": [
+          ""
+        ],
+        "NOTE_DS": [
+          ""
+        ],
+        "NOTE_REF_AREA": [
+          "",
+          "FILTER__ITC1",
+          "FILTER__ITC2",
+          "FILTER__ITC3",
+          "FILTER__ITC4",
+          "FILTER__ITD3",
+          "FILTER__ITD4",
+          "FILTER__ITD5",
+          "FILTER__ITE1",
+          "FILTER__ITE2",
+          "FILTER__ITE3",
+          "FILTER__ITE4",
+          "FILTER__ITF1",
+          "FILTER__ITF2",
+          "FILTER__ITF3",
+          "FILTER__ITF4",
+          "FILTER__ITF5",
+          "FILTER__ITF6",
+          "FILTER__ITG1",
+          "FILTER__ITG2"
+        ],
+        "NOTE_DATA_TYPE": [
+          ""
+        ],
+        "NOTE_SEX": [
+          ""
+        ],
+        "NOTE_AGE": [
+          ""
+        ],
+        "NOTE_MARITAL_STATUS": [
+          ""
+        ],
+        "BASE_PER": [
+          ""
+        ],
+        "UNIT_MEAS": [
+          ""
+        ],
+        "UNIT_MULT": [
+          ""
+        ]
+      }
+    },
+    "households": {
+      "period": "2021-12-31",
+      "columns": [
+        "DATAFLOW",
+        "FREQ",
+        "REF_AREA",
+        "INDICATOR",
+        "NUM_MEMB",
+        "NUM_FR_MENB",
+        "TIME_PERIOD",
+        "OBS_VALUE",
+        "OBS_STATUS",
+        "NOTE_DS",
+        "NOTE_REF_AREA",
+        "NOTE_INDICATOR",
+        "NOTE_NUM_MEMB",
+        "NOTE_NUM_FR_MENB",
+        "NOTE_TIME_PERIOD",
+        "BASE_PER",
+        "UNIT_MEAS",
+        "UNIT_MULT"
+      ],
+      "expected_rows": 147,
+      "domains": {
+        "DATAFLOW": [
+          "IT1:DF_DCSS_FAMIGLIE_TV_1(1.0)"
+        ],
+        "FREQ": [
+          "A"
+        ],
+        "REF_AREA": [
+          "IT",
+          "ITC1",
+          "ITC2",
+          "ITC3",
+          "ITC4",
+          "ITD3",
+          "ITD4",
+          "ITD5",
+          "ITDA",
+          "ITE1",
+          "ITE2",
+          "ITE3",
+          "ITE4",
+          "ITF1",
+          "ITF2",
+          "ITF3",
+          "ITF4",
+          "ITF5",
+          "ITF6",
+          "ITG1",
+          "ITG2"
+        ],
+        "INDICATOR": [
+          "NPHH_AV"
+        ],
+        "NUM_MEMB": [
+          "N1",
+          "N2",
+          "N3",
+          "N4",
+          "N5",
+          "N6_GE",
+          "TOT"
+        ],
+        "NUM_FR_MENB": [
+          "TOT"
+        ],
+        "TIME_PERIOD": [
+          "2021"
+        ],
+        "OBS_STATUS": [
+          ""
+        ],
+        "NOTE_DS": [
+          ""
+        ],
+        "NOTE_REF_AREA": [
+          ""
+        ],
+        "NOTE_INDICATOR": [
+          "TIPO_DATO_CENS_POP_NPHH_AV_N1"
+        ],
+        "NOTE_NUM_MEMB": [
+          ""
+        ],
+        "NOTE_NUM_FR_MENB": [
+          ""
+        ],
+        "NOTE_TIME_PERIOD": [
+          ""
+        ],
+        "BASE_PER": [
+          ""
+        ],
+        "UNIT_MEAS": [
+          ""
+        ],
+        "UNIT_MULT": [
+          ""
+        ]
+      }
+    },
+    "dwellings": {
+      "period": "2021-12-31",
+      "columns": [
+        "DATAFLOW",
+        "FREQ",
+        "REF_AREA",
+        "INDICATOR",
+        "OWNERSHIP_TYPE",
+        "NUMB_ROOM",
+        "USE_FLOOR_SPACEGROUP",
+        "HEATING_SYSTEM_TYPE",
+        "ACCESS_BUILDING",
+        "TYPE_OF_BUILDING",
+        "TIME_PERIOD",
+        "OBS_VALUE",
+        "OBS_STATUS",
+        "NOTE_DS",
+        "NOTE_REF_AREA",
+        "NOTE_INDICATOR",
+        "NOTE_OWNERSHIP_TYPE",
+        "NOTE_NUMB_ROOM",
+        "NOTE_USE_FLOOR_SPACEGROUP",
+        "NOTE_HEATING_SYSTEM_TYPE",
+        "NOTE_ACCESS_BUILDING",
+        "NOTE_TYPE_OF_BUILDING",
+        "NOTE_TIME_PERIOD",
+        "BASE_PER",
+        "UNIT_MEAS",
+        "UNIT_MULT"
+      ],
+      "expected_rows": 63,
+      "domains": {
+        "DATAFLOW": [
+          "IT1:DF_DCSS_ABITAZIONI_TV_1(1.0)"
+        ],
+        "FREQ": [
+          "A"
+        ],
+        "REF_AREA": [
+          "IT",
+          "ITC1",
+          "ITC2",
+          "ITC3",
+          "ITC4",
+          "ITD3",
+          "ITD4",
+          "ITD5",
+          "ITDA",
+          "ITE1",
+          "ITE2",
+          "ITE3",
+          "ITE4",
+          "ITF1",
+          "ITF2",
+          "ITF3",
+          "ITF4",
+          "ITF5",
+          "ITF6",
+          "ITG1",
+          "ITG2"
+        ],
+        "INDICATOR": [
+          "NUM_DW_AV",
+          "NUM_OCC_DW_AV",
+          "NUM_UNOCC_DW_AV"
+        ],
+        "OWNERSHIP_TYPE": [
+          "ALL"
+        ],
+        "NUMB_ROOM": [
+          "TOT"
+        ],
+        "USE_FLOOR_SPACEGROUP": [
+          "ALL"
+        ],
+        "HEATING_SYSTEM_TYPE": [
+          "ALL"
+        ],
+        "ACCESS_BUILDING": [
+          "TOTAL"
+        ],
+        "TYPE_OF_BUILDING": [
+          "TOTAL"
+        ],
+        "TIME_PERIOD": [
+          "2021"
+        ],
+        "OBS_STATUS": [
+          ""
+        ],
+        "NOTE_DS": [
+          ""
+        ],
+        "NOTE_REF_AREA": [
+          ""
+        ],
+        "NOTE_INDICATOR": [
+          "",
+          "TIPO_DATO_CENS_POP_NUM_UNOCC_DW_AV_N1"
+        ],
+        "NOTE_OWNERSHIP_TYPE": [
+          ""
+        ],
+        "NOTE_NUMB_ROOM": [
+          ""
+        ],
+        "NOTE_USE_FLOOR_SPACEGROUP": [
+          ""
+        ],
+        "NOTE_HEATING_SYSTEM_TYPE": [
+          ""
+        ],
+        "NOTE_ACCESS_BUILDING": [
+          ""
+        ],
+        "NOTE_TYPE_OF_BUILDING": [
+          ""
+        ],
+        "NOTE_TIME_PERIOD": [
+          ""
+        ],
+        "BASE_PER": [
+          ""
+        ],
+        "UNIT_MEAS": [
+          ""
+        ],
+        "UNIT_MULT": [
+          ""
+        ]
+      }
+    }
+  },
+  "geographies": {
+    "geo2020": {
+      "snapshot": "2020-01-01",
+      "expected_counts": {
+        "country": 1,
+        "region": 20,
+        "province": 107,
+        "municipality": 7904
+      }
+    },
+    "geo2021": {
+      "snapshot": "2021-12-31",
+      "expected_counts": {
+        "country": 1,
+        "region": 20,
+        "province": 107,
+        "municipality": 7904
+      }
+    },
+    "geo2024": {
+      "snapshot": "2024-01-01",
+      "expected_counts": {
+        "country": 1,
+        "region": 20,
+        "province": 107,
+        "municipality": 7899
+      }
+    }
+  },
+  "events": [
+    {
+      "event_id": "pesaro-2020",
+      "kind": "merger",
+      "effective_date": "2020-07-01",
+      "from_snapshot": "2020-01-01",
+      "to_snapshot": "2021-12-31",
+      "from_codes": [
+        "041032",
+        "041044"
+      ],
+      "to_codes": [
+        "041044"
+      ],
+      "description": "Monteciccardo, Pesaro → Pesaro",
+      "weight_basis": "exact"
+    },
+    {
+      "event_id": "misiliscemi-2021",
+      "kind": "split",
+      "effective_date": "2021-02-20",
+      "from_snapshot": "2020-01-01",
+      "to_snapshot": "2021-12-31",
+      "from_codes": [
+        "081021"
+      ],
+      "to_codes": [
+        "081021",
+        "081025"
+      ],
+      "description": "Trapani → Trapani, Misiliscemi",
+      "weight_basis": "structural"
+    },
+    {
+      "event_id": "montecopiolo-2021",
+      "kind": "transfer",
+      "effective_date": "2021-06-17",
+      "from_snapshot": "2020-01-01",
+      "to_snapshot": "2021-12-31",
+      "from_codes": [
+        "041033"
+      ],
+      "to_codes": [
+        "099030"
+      ],
+      "description": "Montecopiolo → Montecopiolo",
+      "weight_basis": "structural"
+    },
+    {
+      "event_id": "sassofeltrio-2021",
+      "kind": "transfer",
+      "effective_date": "2021-06-17",
+      "from_snapshot": "2020-01-01",
+      "to_snapshot": "2021-12-31",
+      "from_codes": [
+        "041060"
+      ],
+      "to_codes": [
+        "099031"
+      ],
+      "description": "Sassofeltrio → Sassofeltrio",
+      "weight_basis": "structural"
+    },
+    {
+      "event_id": "moransengo-tonengo-2023",
+      "kind": "merger",
+      "effective_date": "2023-01-01",
+      "from_snapshot": "2021-12-31",
+      "to_snapshot": "2024-01-01",
+      "from_codes": [
+        "005079",
+        "005110"
+      ],
+      "to_codes": [
+        "005122"
+      ],
+      "description": "Moransengo, Tonengo → Moransengo-Tonengo",
+      "weight_basis": "exact"
+    },
+    {
+      "event_id": "bardello-2023",
+      "kind": "merger",
+      "effective_date": "2023-01-01",
+      "from_snapshot": "2021-12-31",
+      "to_snapshot": "2024-01-01",
+      "from_codes": [
+        "012009",
+        "012095",
+        "012018"
+      ],
+      "to_codes": [
+        "012144"
+      ],
+      "description": "Bardello, Malgesso, Bregano → Bardello con Malgesso e Bregano",
+      "weight_basis": "exact"
+    },
+    {
+      "event_id": "campospinoso-2023",
+      "kind": "merger",
+      "effective_date": "2023-11-18",
+      "from_snapshot": "2021-12-31",
+      "to_snapshot": "2024-01-01",
+      "from_codes": [
+        "018026",
+        "018002"
+      ],
+      "to_codes": [
+        "018026"
+      ],
+      "description": "Campospinoso, Albaredo Arnaboldi → Campospinoso Albaredo",
+      "weight_basis": "exact"
+    },
+    {
+      "event_id": "uggiate-2024",
+      "kind": "merger",
+      "effective_date": "2024-01-01",
+      "from_snapshot": "2021-12-31",
+      "to_snapshot": "2024-01-01",
+      "from_codes": [
+        "013228",
+        "013199"
+      ],
+      "to_codes": [
+        "013256"
+      ],
+      "description": "Uggiate-Trevano, Ronago → Uggiate con Ronago",
+      "weight_basis": "exact"
+    }
+  ],
+  "boundary_outside_tolerance": 0.02,
+  "boundary_repairs": {
+    "method": "ST_Multi(ST_CollectionExtract(ST_MakeValid(geom),3))",
+    "keys": [
+      "2020-01-01:072001",
+      "2020-01-01:072037",
+      "2020-01-01:072040",
+      "2020-01-01:074",
+      "2020-01-01:074001",
+      "2020-01-01:075",
+      "2020-01-01:075031",
+      "2020-01-01:075072",
+      "2020-01-01:081019",
+      "2020-01-01:087009",
+      "2020-01-01:090",
+      "2020-01-01:090035",
+      "2020-01-01:111",
+      "2020-01-01:111008",
+      "2020-01-01:16",
+      "2020-01-01:20",
+      "2021-12-31:072037",
+      "2021-12-31:072040",
+      "2021-12-31:081019",
+      "2021-12-31:087009",
+      "2024-01-01:072001",
+      "2024-01-01:081019",
+      "2024-01-01:090",
+      "2024-01-01:090035",
+      "2024-01-01:20"
+    ],
+    "max_relative_area_change": 1e-10,
+    "reason": "Auto-intersezioni di anelli nei file originali; audit locale su 25 geometrie, conservazione area entro la precisione numerica."
+  }
+}

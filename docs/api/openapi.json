@@ -30,6 +30,235 @@
         "title": "Artifact",
         "type": "object"
       },
+      "BoundaryItem": {
+        "properties": {
+          "geometry": {
+            "additionalProperties": true,
+            "title": "Geometry",
+            "type": "object"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "simplification_degrees": {
+            "title": "Simplification Degrees",
+            "type": "number"
+          },
+          "territory_id": {
+            "title": "Territory Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "release_id",
+          "territory_id",
+          "geometry",
+          "simplification_degrees"
+        ],
+        "title": "BoundaryItem",
+        "type": "object"
+      },
+      "CoverageItem": {
+        "properties": {
+          "dimensions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Dimensions",
+            "type": "object"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "scheme": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme"
+          },
+          "series_code": {
+            "title": "Series Code",
+            "type": "string"
+          },
+          "territory_snapshot": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Territory Snapshot"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "release_id",
+          "series_code",
+          "title",
+          "unit",
+          "dimensions",
+          "period",
+          "scheme",
+          "territory_snapshot",
+          "row_count"
+        ],
+        "title": "CoverageItem",
+        "type": "object"
+      },
+      "CrosswalkItem": {
+        "properties": {
+          "allocation_weight": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocation Weight"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "evidence_sha256": {
+            "title": "Evidence Sha256",
+            "type": "string"
+          },
+          "from_code": {
+            "title": "From Code",
+            "type": "string"
+          },
+          "from_scheme": {
+            "title": "From Scheme",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "merger",
+              "split",
+              "recode",
+              "transfer"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "to_code": {
+            "title": "To Code",
+            "type": "string"
+          },
+          "to_scheme": {
+            "title": "To Scheme",
+            "type": "string"
+          },
+          "weight_basis": {
+            "enum": [
+              "exact",
+              "structural"
+            ],
+            "title": "Weight Basis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "release_id",
+          "event_id",
+          "kind",
+          "effective_date",
+          "source_url",
+          "evidence_sha256",
+          "description",
+          "from_code",
+          "from_scheme",
+          "to_code",
+          "to_scheme",
+          "allocation_weight",
+          "weight_basis"
+        ],
+        "title": "CrosswalkItem",
+        "type": "object"
+      },
+      "CrosswalkPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CrosswalkItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "CrosswalkPage",
+        "type": "object"
+      },
       "Observation": {
         "properties": {
           "period": {
@@ -635,6 +864,121 @@
         ],
         "title": "Source",
         "type": "object"
+      },
+      "TerritoryItem": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "has_boundary": {
+            "title": "Has Boundary",
+            "type": "boolean"
+          },
+          "level": {
+            "enum": [
+              "country",
+              "region",
+              "province",
+              "municipality"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Code"
+          },
+          "release_id": {
+            "format": "uuid",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "scheme": {
+            "title": "Scheme",
+            "type": "string"
+          },
+          "snapshot": {
+            "format": "date",
+            "title": "Snapshot",
+            "type": "string"
+          },
+          "territory_id": {
+            "title": "Territory Id",
+            "type": "integer"
+          },
+          "valid_from": {
+            "format": "date",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "release_id",
+          "territory_id",
+          "scheme",
+          "code",
+          "name",
+          "level",
+          "valid_from",
+          "valid_to",
+          "parent_code",
+          "snapshot",
+          "has_boundary"
+        ],
+        "title": "TerritoryItem",
+        "type": "object"
+      },
+      "TerritoryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TerritoryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "TerritoryPage",
+        "type": "object"
       }
     }
   },
@@ -1084,6 +1428,83 @@
         ]
       }
     },
+    "/v2/crosswalks": {
+      "get": {
+        "operationId": "crosswalks_v2_v2_crosswalks_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrosswalkPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Crosswalks V2",
+        "tags": [
+          "geography v2"
+        ]
+      }
+    },
     "/v2/observations": {
       "get": {
         "description": "Keep release, series and period fixed across pages. Country totals overlap regions.",
@@ -1117,6 +1538,28 @@
               "pattern": "^[a-z][a-z0-9_]{0,63}$",
               "title": "Series",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "country",
+                    "region",
+                    "province",
+                    "municipality"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
             }
           },
           {
@@ -1381,6 +1824,64 @@
         ]
       }
     },
+    "/v2/releases/{release_id}/coverage": {
+      "get": {
+        "description": "Explicit available selections; published contracts support at most 500 cells.",
+        "operationId": "coverage_v2_v2_releases__release_id__coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CoverageItem"
+                  },
+                  "title": "Response Coverage V2 V2 Releases  Release Id  Coverage Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Coverage V2",
+        "tags": [
+          "coverage v2"
+        ]
+      }
+    },
     "/v2/releases/{release_id}/quality": {
       "get": {
         "operationId": "quality_v2_v2_releases__release_id__quality_get",
@@ -1448,6 +1949,70 @@
         ]
       }
     },
+    "/v2/releases/{release_id}/territories/{territory_id}/boundary": {
+      "get": {
+        "operationId": "boundary_v2_v2_releases__release_id__territories__territory_id__boundary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "territory_id",
+            "required": true,
+            "schema": {
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Territory Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoundaryItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Boundary V2",
+        "tags": [
+          "geography v2"
+        ]
+      }
+    },
     "/v2/sources": {
       "get": {
         "operationId": "sources_v2_v2_sources_get",
@@ -1490,6 +2055,108 @@
         "summary": "Sources V2",
         "tags": [
           "catalog v2"
+        ]
+      }
+    },
+    "/v2/territories": {
+      "get": {
+        "operationId": "territories_v2_v2_territories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "snapshot",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Snapshot",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": true,
+            "schema": {
+              "enum": [
+                "country",
+                "region",
+                "province",
+                "municipality"
+              ],
+              "title": "Level",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerritoryPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Territories V2",
+        "tags": [
+          "geography v2"
         ]
       }
     }

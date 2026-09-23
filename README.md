@@ -7,7 +7,7 @@ coerenti con evidenze demografiche, sociali ed economiche. Gli agenti non sarann
 persone reali. Questo repository parte dal fondamento: dati territoriali aggregati,
 provenienza esplicita e passaggi di elaborazione riproducibili.
 
-## Stato: primo dataset ISTAT pubblicabile, versione 0.1
+## Stato: copertura territoriale e demografica M2, versione 0.1
 
 Il percorso dimostrativo importa tre territori **fittizi**, archivia il file originale,
 produce Parquet e verifiche, pubblica una versione immutabile in PostgreSQL e la espone
@@ -22,6 +22,13 @@ offline i controlli e produce evidenze locali. `itadb ingest-istat-population` p
 una release immutabile con Parquet, metadati e licenza; le API v2 e la web app la espongono.
 Le revisioni richiedono predecessore e motivazione. Il perimetro territoriale è uno
 snapshot alla data verificata, non una ricostruzione storica dei confini.
+
+[M2](docs/sources/istat-m2.md) aggiunge 22.678 osservazioni ufficiali: popolazione
+per sesso/età, famiglie e abitazioni, con 24.091 versioni territoriali nei tre
+snapshot 2020, 2021 e 2024. Include otto eventi amministrativi, crosswalk,
+confini verificati e derivazioni documentate. La web app seleziona periodo,
+indicatore e livello senza sommare categorie sovrapposte. `fetch-m2`, `check-m2`
+e `ingest-m2` acquisiscono, verificano offline e pubblicano il perimetro revisionato.
 
 ## Stack e motivazione
 

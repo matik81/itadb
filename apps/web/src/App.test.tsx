@@ -1,8 +1,88 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { App } from './App';
 
 afterEach(() => vi.unstubAllGlobals());
+it('selects one M2 category, period and level and resets pagination', async () => {
+  const coverage = [
+    {
+      period: '2024-01-01',
+      series_code: 'pop',
+      title: 'Popolazione totale',
+      unit: 'persons',
+      row_count: 21,
+      territory_snapshot: '2024-01-01',
+    },
+    {
+      period: '2021-12-31',
+      series_code: 'hh',
+      title: 'Famiglie totali',
+      unit: 'households',
+      row_count: 8032,
+      territory_snapshot: '2021-12-31',
+    },
+  ];
+  const fetchMock = vi.fn(async (url: string) => ({
+    ok: true,
+    json: async () => {
+      if (url.endsWith('/v2/releases'))
+        return [
+          {
+            id: 'm2',
+            dataset_id: 'istat_m2',
+            title: 'M2',
+            series_code: 'pop',
+            reference_period: '2024-01-01',
+            published_at: '2026-09-23T00:00:00Z',
+            retrieved_at: '2026-09-23T00:00:00Z',
+            raw_sha256: 'a'.repeat(64),
+            is_demo: false,
+          },
+        ];
+      if (url.endsWith('/coverage')) return coverage;
+      if (url.includes('/crosswalks')) return { items: [], next_cursor: null };
+      if (url.includes('/observations'))
+        return {
+          items: [
+            {
+              territory_id: 8,
+              territory_name: 'Regione di test',
+              territory_code: '01',
+              level: 'region',
+              value: '1200',
+              status: 'unflagged_upstream',
+            },
+          ],
+          next_cursor: 8,
+        };
+      return [];
+    },
+  }));
+  vi.stubGlobal('fetch', fetchMock);
+  render(<App />);
+  expect(await screen.findByText('Regione di test')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Successive →' }));
+  await waitFor(() =>
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('after=8'))).toBe(true),
+  );
+  fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: '2021-12-31' } });
+  expect(await screen.findByText('Unità: famiglie')).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) =>
+          url.includes('series=hh') && url.includes('period=2021-12-31') && url.includes('after=0'),
+      ),
+    ).toBe(true),
+  );
+  fireEvent.change(screen.getByLabelText('Livello territoriale'), {
+    target: { value: 'municipality' },
+  });
+  await waitFor(() =>
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('level=municipality'))).toBe(true),
+  );
+  expect(screen.getByText(/non sommare totali e dettagli/)).toBeInTheDocument();
+});
 it('shows a genuine empty catalog without invented statistics', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
   render(<App />);

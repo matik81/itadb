@@ -65,6 +65,26 @@ Compose sono archivi distinti: non presumere che un file locale sia già nel con
 Non utilizzare la fixture `istat-population-invented.csv` nel catalogo applicativo:
 serve esclusivamente ai test isolati. [Procedura ISTAT](sources/istat-population.md).
 
+## Operazioni M2 e avanzamento
+
+Le migrazioni 0003/0004 aggiungono copertura, geografie e controlli alla pubblicazione.
+Prima dell'upgrade locale è stato creato e ripristinato un backup in un nuovo DB
+di test; le tre release precedenti e i conteggi sono stati conservati anche dopo
+due upgrade consecutivi. Il rapporto è `data/reports/m2-backup-restore.json`.
+Originali e artefatti M2 sono nel volume condiviso `itadb_evidence`.
+
+Per le attività lunghe usare `scripts/run_logged.py --label "Fase" -- COMANDO`:
+output seguito in tempo reale, heartbeat ogni dieci secondi, durata e codice
+finale nel log `.tools/m2-progress.log`. Non passare credenziali negli argomenti
+e non registrare payload personali. Su Windows un terminale dedicato può seguire
+`scripts/watch-progress.ps1`. La direttiva è anche in AGENTS.md e nelle istruzioni
+generali locali di Codex.
+
+Il benchmark `scripts/benchmark_m2.py` richiede `ITADB_TEST_DATABASE_URL`, schema
+migrato e catalogo vuoto. Produce solo aggregati inventati su un server di test:
+non usarlo nel catalogo applicativo. Non rimuove evidenze o database. Il rapporto
+misura caricamento, query, dimensione DB, WAL e piano; non è un test di sintesi 1:1.
+
 ## GitHub
 
 Repository pubblico `matik81/itadb`. CI su push main/PR: lint, tipi, unit, contratto OpenAPI,

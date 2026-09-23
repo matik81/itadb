@@ -95,3 +95,25 @@ Gli artefatti sono un inventario di provenienza; l'API non espone percorsi del
 filesystem né serve download arbitrari. Le viste v2 e il ruolo reader escludono
 sempre draft, artefatti e verifiche non pubblicati. La readiness verifica anche
 la presenza dello schema v2.
+
+## M2 — copertura e geografie
+
+| Endpoint GET | Filtri e limiti |
+|---|---|
+| `/v2/releases/{uuid}/coverage` | Massimo 500 selezioni pubblicate: serie, unità, dimensioni, periodo, schema, snapshot e conteggio |
+| `/v2/observations` | Aggiunge `level=country|region|province|municipality`; conservare anche questo filtro tra pagine |
+| `/v2/territories` | `release_id`, `snapshot`, `level` obbligatori; `after`, `limit` da 1 a 500 |
+| `/v2/crosswalks` | `release_id` obbligatorio; `after`, `limit` da 1 a 500; fonte, decorrenza, codici e peso |
+| `/v2/releases/{uuid}/territories/{id}/boundary` | Un MultiPolygon GeoJSON semplificato, 0,001 gradi e massimo 20.000 vertici |
+
+In M2 serie e periodo della release sono la selezione iniziale: leggere `coverage`
+per tutte le combinazioni disponibili. Il conteggio copre tutti i livelli della
+selezione, non solo quello della pagina. Un livello non coperto restituisce una
+pagina vuota; non significa popolazione zero. Totali territoriali e categorie
+totali non vanno sommati ai rispettivi dettagli. Il filtro livello è opzionale
+per compatibilità; la web app M2 lo imposta sempre.
+
+Confine assente o oltre il budget: 404. La forma GeoJSON può essere usata per
+consultazione, non per misure catastali. Crosswalk `structural` ha peso null:
+non autorizza a distribuire i valori dei predecessori. Snapshot e codice da soli
+non sostituiscono lo schema territoriale versionato. [Copertura e derivazioni](../sources/istat-m2.md).

@@ -1,7 +1,7 @@
 # Modello dati della v0.1
 
-Il DDL autorevole è nelle revisioni `migrations/sql/0001_foundation.sql` e
-`0002_istat_publication.sql`; l'upgrade è gestito da Alembic.
+Il DDL autorevole è nelle revisioni `migrations/sql/0001_foundation.sql`–
+`0004_coverage_integrity.sql`; l'upgrade è gestito da Alembic.
 Non usare ORM autogenerate come sostituto della revisione delle migrazioni.
 
 ```mermaid
@@ -21,8 +21,9 @@ erDiagram
 - `catalog.dataset`: significato, limiti e fonte; demo e popolazione regionale ISTAT.
 - `catalog.release`: contenuto originale, checksum del contratto, versione della
   trasformazione, URL, acquisizione, periodo, licenza, conteggio e stato di pubblicazione.
-  Il periodo descrive il campione demo monoperiodo; dataset reali multitemporali richiederanno
-  intervalli di copertura espliciti e un contratto adeguato.
+  Per release M2 (`publication_kind=coverage`), periodo e serie sono la selezione
+  iniziale; `catalog.coverage` dichiara ogni combinazione pubblicata con schema,
+  snapshot e conteggio. M0/M1 mantengono il percorso `legacy`.
   La revisione 0002 aggiunge fingerprint dei metadati, serie, versione API, snapshot
   territoriale, attribuzione, date upstream nullable e predecessore/motivazione.
   FK composite e unicità assicurano una catena lineare nello stesso dataset/periodo;
@@ -36,8 +37,9 @@ erDiagram
 - `geo.territory`: chiave surrogata bigint, codice testuale che preserva zeri iniziali,
   schema, livello e periodo `[valid_from, valid_to)`. Un codice ISTAT non equivale a un
   identificatore eterno. I codici demo hanno namespace `ITADB_DEMO`.
-- `geo.boundary`: geometria MultiPolygon EPSG:4326, versione e indice GiST. Nessuna
-  geometria inventata viene caricata. Una geometria per territorio e release.
+- `geo.boundary`: geometria MultiPolygon EPSG:4326, versione e indice GiST.
+  Geometrie inventate sono ammesse solo nelle fixture demo dei test isolati.
+  Una geometria per territorio e release; derivazioni M2 documentate nell'artefatto quality.
 - `stats.series`: significato della misura, unità e dimensioni canoniche condivise;
   JSONB solo qui per metadati di serie, non per ogni osservazione.
 - `stats.observation`: fatto numerico con stato esplicito. Mancante/soppresso implica null;
@@ -65,4 +67,9 @@ Lo snapshot ha validità `[2024-01-01,2024-01-02)`: attesta solo la data verific
 Il namespace incorpora schema fonte, data e hash della definizione territoriale;
 revisioni numeriche riusano i territori, una definizione modificata ne crea una nuova versione.
 Italia è padre delle regioni selezionate; le province autonome non sono incluse insieme a ITDA.
-Fusioni/scissioni, crosswalk e confini storici restano in M2, prima di estendere il perimetro.
+M2 aggiunge `geo.release_territory`, `geo.change_event` e `geo.crosswalk`:
+appartenenza allo snapshot, eventi documentati e collegamenti con FK composite.
+I pesi sono esatti (1) o strutturali (null), mai quote demografiche inventate.
+Tutte le evidenze pubblicate sono immutabili, comprese geografie prive di osservazioni.
+La pubblicazione ricontrolla contesto, copertura, gerarchia e confini dopo eventuali
+modifiche draft. Gli otto artefatti M2 includono un inventario di 28 originali/manifest.

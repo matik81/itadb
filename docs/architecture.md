@@ -24,7 +24,8 @@ flowchart LR
 ```
 
 Nella v0.1 il percorso completo supporta la fixture demo e il campione regionale ISTAT
-2024 revisionato. Altri dataset SDMX necessitano onboarding e adapter specifici.
+2024 revisionato e il [perimetro M2](sources/istat-m2.md). Altri dataset SDMX
+necessitano onboarding e adapter specifici.
 Le viste e le API escludono dati non pubblicati. L'archivio locale implementato usa path
 relativi e contenuti indirizzati per checksum; S3 è una destinazione futura, non presente.
 La pubblicazione ISTAT conserva tutte le evidenze nel medesimo archivio condiviso dai
@@ -47,7 +48,7 @@ upstream e la v1 continua a servire le release compatibili: [ADR 0006](adr/0006-
   INSERT per ogni osservazione. I trigger di immutabilità costano: non copiare questa strategia
   riga per riga nel futuro caricamento di decine di milioni di agenti.
 - Le geometrie sono separate dalle osservazioni; GiST per filtri spaziali. Servire confini
-  semplificati o vector tiles in una fase dedicata, non un GeoJSON nazionale a ogni apertura.
+  semplificati per singolo territorio in M2, con limite di vertici; vector tiles restano futuri.
 - DuckDB limita memoria e thread nella normalizzazione; Parquet abilita lettura selettiva
   di colonne e gruppi di righe. Preferire file da circa 128–512 MiB come ipotesi di prova,
   senza una partizione per persona/comune o una miriade di file piccoli.

@@ -18,6 +18,9 @@ fixture, stime, scenari o record virtuali come dati osservati o persone reali.
 - Le migrazioni applicate sono immutabili. Nuove modifiche richiedono nuove revisioni.
 - Non cancellare volumi o evidenze. Le correzioni producono nuove release, non overwrite.
 - Distinguere controlli realmente eseguiti, test saltati e comportamenti progettati.
+- Prima di operazioni onerose o lunghe, rendere visibili attività e avanzamento tramite
+  terminale, log seguito in tempo reale o visualizzatore. Indicare fase, conteggi quando
+  disponibili, tempo trascorso ed esito; conservare il log senza credenziali o dati personali.
 
 ## Comandi dalla root
 `uv sync --locked`; `uv run ruff check .`; `uv run ruff format --check .`;
