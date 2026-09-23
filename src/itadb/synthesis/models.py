@@ -1,4 +1,4 @@
-"""The generator receives calibration margins, never the held-out joint table."""
+"""Exact age/sex calibration from admitted aggregate evidence."""
 
 from typing import Annotated, Literal
 
@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Count = Annotated[int, Field(strict=True, ge=0, le=200_000)]
 Seed = Annotated[int, Field(strict=True, ge=0, le=2**32 - 1)]
-BANDS = ((0, 18), (18, 65), (65, 101))
 
 
 class StrictModel(BaseModel):
@@ -18,7 +17,7 @@ class Calibration(StrictModel):
     population_reference: Literal["2022-01-01"]
     household_reference: Literal["2021-12-31"]
     age_counts: list[Count] = Field(min_length=101, max_length=101)
-    male_by_band: list[Count] = Field(min_length=3, max_length=3)
+    male_by_age: list[Count] = Field(min_length=101, max_length=101)
     household_counts: list[Count] = Field(min_length=6, max_length=6)
 
     @model_validator(mode="after")
@@ -26,24 +25,20 @@ class Calibration(StrictModel):
         population = sum(self.age_counts)
         if not 0 < population <= 200_000 or not 0 < sum(self.household_counts) <= 100_000:
             raise ValueError("Pilot exceeds population/household limits or is empty")
-        if any(
-            male > sum(self.age_counts[start:end])
-            for male, (start, end) in zip(self.male_by_band, BANDS, strict=True)
-        ):
-            raise ValueError("Sex margins exceed age band totals")
+        if any(male > total for male, total in zip(self.male_by_age, self.age_counts, strict=True)):
+            raise ValueError("Male counts exceed single-age totals")
         return self
 
 
 class PilotInput(StrictModel):
-    schema_version: Literal["m3-input/1"]
+    schema_version: Literal["m3-input/2"]
     evidence_kind: Literal["official_aggregates", "invented_fixture"]
     calibration: Calibration
-    heldout_male_by_age: list[Count] = Field(min_length=101, max_length=101)
     attribution: str = Field(min_length=1)
     source_hashes: dict[str, str] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def coherent_holdout(self) -> "PilotInput":
+    def coherent_evidence(self) -> "PilotInput":
         c = self.calibration
         if (c.territory == "DEMO_M3") != (self.evidence_kind == "invented_fixture"):
             raise ValueError("Fixture and official territory namespaces must be distinct")
@@ -52,10 +47,6 @@ class PilotInput(StrictModel):
             for h in self.source_hashes.values()
         ):
             raise ValueError("Evidence requires SHA-256 identities")
-        if any(m > total for m, total in zip(self.heldout_male_by_age, c.age_counts, strict=True)):
-            raise ValueError("Held-out cells exceed age totals")
-        if [sum(self.heldout_male_by_age[a:b]) for a, b in BANDS] != c.male_by_band:
-            raise ValueError("Held-out table and calibration must describe the same population")
         return self
 
 

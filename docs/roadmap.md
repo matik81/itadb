@@ -37,12 +37,15 @@ calibrazione, incertezza e revisione indipendente. Nessuna persona virtuale asso
 Implementato e verificato il [pilota locale della Valle d'Aosta](synthesis-m3.md):
 123.360 residenti virtuali e 60.468 famiglie per replica, 15 repliche, input
 coerenti al confine 2021/2022, ricostruzione vincolata senza microcampione,
-margini esatti, congiunta sesso/età fuori calibrazione e sensibilità 6+.
+margini e congiunta sesso/età esatti rispetto ai conteggi ISTAT, sensibilità 6+.
+La congiunta è ora interamente usata per calibrare: non è disponibile una
+statistica osservata inutilizzata per validazione fuori calibrazione.
 La revisione indipendente implementata rilegge i Parquet con un verificatore
 SQL separato. **La revisione scientifica umana esterna non è stata svolta**:
 il completamento software del pilota non certifica il modello. I microdati
 rimangono locali e non distribuibili prima di tale revisione e dell'analisi
-disclosure. [Metodo e condizioni di revisione](adr/0008-synthesis-pilot.md).
+disclosure. [Calibrazione esatta](adr/0009-exact-demographic-calibration.md)
+e [condizioni di revisione](adr/0008-synthesis-pilot.md).
 
 ## M4 — scala nazionale 1:1
 Batch territoriali, snapshot colonnari e output aggregati; prova a 1M, 10M e volume nazionale.

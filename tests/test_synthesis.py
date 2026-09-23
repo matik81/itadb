@@ -1,5 +1,4 @@
 import json
-import random
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -12,7 +11,7 @@ from itadb.cli import app
 from itadb.pipeline.storage import sha256_file
 from itadb.pipeline.validate import QualityError
 from itadb.synthesis.audit import audit
-from itadb.synthesis.generate import check_feasibility, generate, integer_joint
+from itadb.synthesis.generate import check_feasibility, generate
 from itadb.synthesis.models import Calibration, Experiment, PilotInput
 from itadb.synthesis.runner import run_pilot, verify_run
 
@@ -38,13 +37,14 @@ def test_reconstruction_margins_family_rules_and_repeatability(
         assert report["persons"] == 40 and report["households"] == 12
         assert report["unassigned_adults"] == (12 if size == 6 else 10)
         assert report["calibration_max_absolute_error"] == 0
-        assert report["heldout"]["total_variation_distance"] in [0.15, 0.2]
-        cells = report["heldout"]["cells"]
-        assert report["heldout"]["reference_evidence_kind"] == "invented_fixture"
+        assert report["calibration_joint"]["total_variation_distance"] == 0
+        cells = report["calibration_joint"]["cells"]
+        assert len(cells) == 202 and all(cell["error"] == 0 for cell in cells)
+        assert report["calibration_joint"]["reference_evidence_kind"] == "invented_fixture"
         assert all("reference" in cell and "observed" not in cell for cell in cells)
         assert (
             sum(abs(r["error"]) for r in cells) / 80
-            == report["heldout"]["total_variation_distance"]
+            == report["calibration_joint"]["total_variation_distance"]
         )
     for filename in ["persons.parquet", "households.parquet"]:
         assert (tmp_path / "a" / filename).read_bytes() == (tmp_path / "b" / filename).read_bytes()
@@ -53,21 +53,51 @@ def test_reconstruction_margins_family_rules_and_repeatability(
     ).read_bytes()
 
 
-def test_exact_rounding_with_zeros_and_extreme_sex_margins(pilot: PilotInput) -> None:
-    for males in [[0, 0, 0], [6, 22, 12], [1, 21, 1], [3, 11, 5]]:
-        c = Calibration.model_validate({**pilot.calibration.model_dump(), "male_by_band": males})
-        for seed in range(20):
-            actual = integer_joint(c, random.Random(seed))
-            assert [sum(actual[:18]), sum(actual[18:65]), sum(actual[65:])] == males
-            assert all(0 <= m <= n for m, n in zip(actual, c.age_counts, strict=True))
-    c = pilot.calibration.model_dump()
-    c["age_counts"][5] = 0
-    c["male_by_band"][0] = 0
-    assert integer_joint(Calibration.model_validate(c), random.Random(1))[5] == 0
+@pytest.mark.parametrize("composition", ["all_female", "all_male", "unbalanced", "zero_minors"])
+def test_exact_joint_with_zeros_and_extreme_cells(
+    tmp_path: Path, pilot: PilotInput, composition: str
+) -> None:
+    data = pilot.model_dump()
+    c = data["calibration"]
+    # Exercise the open 100+ category as well as empty ages and extreme sex ratios.
+    c["age_counts"][100], c["age_counts"][80] = c["age_counts"][80], 0
+    c["male_by_age"][100], c["male_by_age"][80] = c["male_by_age"][80], 0
+    if composition == "all_female":
+        c["male_by_age"] = [0] * 101
+    elif composition == "all_male":
+        c["male_by_age"] = list(c["age_counts"])
+    elif composition == "unbalanced":
+        c["male_by_age"][30], c["male_by_age"][40] = 12, 0
+    else:
+        c["age_counts"][30] += c["age_counts"][5]
+        c["male_by_age"][30] += c["male_by_age"][5]
+        c["age_counts"][5] = c["male_by_age"][5] = 0
+    inputs = PilotInput.model_validate(data)
+    for seed in [17, 18]:
+        for size in [6, 8]:
+            directory = tmp_path / f"{seed}-{size}"
+            generate(inputs.calibration, seed, size, directory)
+            report = audit(directory, inputs, size)
+            assert report["checks"]["sex_age_joint_counts"]
+            assert all(cell["error"] == 0 for cell in report["calibration_joint"]["cells"])
 
 
 @pytest.mark.parametrize(
-    "mutation", ["negative", "float", "bool", "excess", "extra", "period", "missing_age"]
+    "mutation",
+    [
+        "negative",
+        "float",
+        "bool",
+        "excess",
+        "extra",
+        "period",
+        "missing_age",
+        "missing_male",
+        "male_exceeds_age",
+        "negative_male",
+        "float_male",
+        "bool_male",
+    ],
 )
 def test_invalid_margins_rejected(pilot: PilotInput, mutation: str) -> None:
     c = pilot.calibration.model_dump()
@@ -83,20 +113,30 @@ def test_invalid_margins_rejected(pilot: PilotInput, mutation: str) -> None:
         c["real_name"] = "forbidden"
     elif mutation == "period":
         c["household_reference"] = "2024-01-01"
-    else:
+    elif mutation == "missing_age":
         c["age_counts"].pop()
+    elif mutation == "missing_male":
+        c["male_by_age"].pop()
+    elif mutation == "male_exceeds_age":
+        c["male_by_age"][0] = 1
+    elif mutation == "negative_male":
+        c["male_by_age"][0] = -1
+    elif mutation == "float_male":
+        c["male_by_age"][30] = 1.2
+    else:
+        c["male_by_age"][30] = True
     with pytest.raises(ValidationError):
         Calibration.model_validate(c)
 
 
-def test_holdout_namespace_and_experiment_validation(pilot: PilotInput) -> None:
-    for changes in [{"evidence_kind": "official_aggregates"}, {"source_hashes": {"x": "bad"}}]:
+def test_namespace_schema_and_experiment_validation(pilot: PilotInput) -> None:
+    for changes in [
+        {"evidence_kind": "official_aggregates"},
+        {"source_hashes": {"x": "bad"}},
+        {"schema_version": "m3-input/1"},
+    ]:
         with pytest.raises(ValidationError):
             PilotInput.model_validate({**pilot.model_dump(), **changes})
-    p = pilot.model_dump()
-    p["heldout_male_by_age"][30] += 1
-    with pytest.raises(ValidationError):
-        PilotInput.model_validate(p)
     for changes in [
         {"seeds": [1]},
         {"seeds": [1, 1]},
@@ -160,6 +200,51 @@ def test_independent_audit_detects_corruption(
     assert error.value.report["checks"][gate] is False
 
 
+def test_joint_audit_detects_sex_swap_with_unchanged_broad_margins(
+    tmp_path: Path, pilot: PilotInput
+) -> None:
+    directory = tmp_path / "run"
+    generate(pilot.calibration, 17, 6, directory)
+    with duckdb.connect() as con:
+
+        def broad_counts() -> list[tuple[object, ...]]:
+            return con.execute(
+                "SELECT CASE WHEN age<18 THEN 0 WHEN age<65 THEN 1 ELSE 2 END, sex, count(*) "
+                "FROM read_parquet(?) GROUP BY 1,2 ORDER BY 1,2",
+                [str(directory / "persons.parquet")],
+            ).fetchall()
+
+        before = broad_counts()
+        rewrite_persons(
+            directory,
+            """UPDATE p SET sex=CASE sex WHEN 'M' THEN 'F' ELSE 'M' END
+            WHERE person_id IN (SELECT min(person_id) FROM p WHERE age=30 AND sex='M'
+            UNION ALL SELECT min(person_id) FROM p WHERE age=40 AND sex='F')""",
+        )
+        assert broad_counts() == before
+    with pytest.raises(QualityError) as error:
+        audit(directory, pilot, 6)
+    assert error.value.report["checks"]["age_margins"]
+    assert error.value.report["checks"]["sex_age_joint_counts"] is False
+
+
+def test_historical_run_requires_recorded_implementation(tmp_path: Path) -> None:
+    (tmp_path / "manifest.json").write_text(
+        json.dumps(
+            {
+                "descriptor": {
+                    "algorithm": "constrained-reconstruction/1.0.0",
+                    "audit": "parquet-independent-audit/1.0.1",
+                }
+            }
+        )
+    )
+    before = (tmp_path / "manifest.json").read_bytes()
+    with pytest.raises(ValueError, match="verify historical runs with their recorded"):
+        verify_run(tmp_path)
+    assert (tmp_path / "manifest.json").read_bytes() == before
+
+
 def test_retry_identity_concurrency_and_cli(
     tmp_path: Path, pilot: PilotInput, experiment: Experiment
 ) -> None:
@@ -179,18 +264,22 @@ def test_retry_identity_concurrency_and_cli(
     assert other != directory
 
 
-def test_holdout_never_changes_generation(
+def test_joint_changes_generation_and_preserves_previous_run(
     tmp_path: Path, pilot: PilotInput, experiment: Experiment
 ) -> None:
     original = run_pilot(tmp_path, pilot, experiment)
+    before = {p: sha256_file(p) for p in original.rglob("*") if p.is_file()}
     changed = pilot.model_dump()
-    changed["heldout_male_by_age"][30] -= 2
-    changed["heldout_male_by_age"][40] += 2
+    changed["calibration"]["male_by_age"][30] -= 2
+    changed["calibration"]["male_by_age"][40] += 2
     alternate = run_pilot(tmp_path, PilotInput.model_validate(changed), experiment)
     assert original != alternate
     assert (original / "report.json").read_bytes() != (alternate / "report.json").read_bytes()
-    for path in original.rglob("*.parquet"):
-        assert path.read_bytes() == (alternate / path.relative_to(original)).read_bytes()
+    assert before == {p: sha256_file(p) for p in original.rglob("*") if p.is_file()}
+    for path in original.rglob("persons.parquet"):
+        assert path.read_bytes() != (alternate / path.relative_to(original)).read_bytes()
+    verify_run(original)
+    verify_run(alternate)
 
 
 def test_failure_never_completes_and_preserves_attempt(
@@ -229,7 +318,9 @@ def test_retry_rejects_tampered_experiment(
         run_pilot(tmp_path, pilot, experiment)
 
 
-@pytest.mark.parametrize("damage", ["metric", "uncertainty", "replicates", "approval"])
+@pytest.mark.parametrize(
+    "damage", ["metric", "uncertainty", "replicates", "approval", "validation"]
+)
 def test_independent_recalculation_rejects_rehashed_report(
     tmp_path: Path, pilot: PilotInput, experiment: Experiment, damage: str
 ) -> None:
@@ -237,11 +328,13 @@ def test_independent_recalculation_rejects_rehashed_report(
     report_path = directory / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
     if damage == "metric":
-        report["replicates"][0]["audit"]["heldout"]["total_variation_distance"] = 0
+        report["replicates"][0]["audit"]["calibration_joint"]["total_variation_distance"] = 1
     elif damage == "uncertainty":
         report["uncertainty"][0]["metrics"]["unassigned_adults"]["mean"] = 0
     elif damage == "replicates":
         report["replicates"].pop()
+    elif damage == "validation":
+        report["out_of_calibration_validation"] = "passed"
     else:
         report["public_release"] = True
     report_path.write_text(json.dumps(report), encoding="utf-8")

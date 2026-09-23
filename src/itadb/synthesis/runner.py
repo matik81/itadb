@@ -20,6 +20,8 @@ from itadb.synthesis.audit import AUDIT_VERSION, audit
 from itadb.synthesis.generate import ALGORITHM_VERSION, check_feasibility, generate
 from itadb.synthesis.models import Experiment, PilotInput
 
+REPORT_VERSION = "m3-report/2"
+
 
 def implementation(root: Path) -> dict[str, str]:
     """Archive the executable source and dependency lock, including uncommitted changes."""
@@ -56,9 +58,6 @@ def summarize(replicates: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for size in sorted({r["large_household_size"] for r in replicates}):
         group = [r for r in replicates if r["large_household_size"] == size]
         metrics = {
-            "heldout_total_variation_distance": [
-                r["audit"]["heldout"]["total_variation_distance"] for r in group
-            ],
             "unassigned_adults": [r["audit"]["unassigned_adults"] for r in group],
             **{
                 name: [r["audit"]["model_statistics"][name] for r in group]
@@ -87,6 +86,11 @@ def verify_run(directory: Path) -> dict[str, Any]:
     """Fail closed on missing/tampered files and independently recompute every audit."""
     manifest: dict[str, Any] = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     descriptor = manifest["descriptor"]
+    if descriptor.get("algorithm") != ALGORITHM_VERSION or descriptor.get("audit") != AUDIT_VERSION:
+        raise ValueError(
+            "Unsupported experiment version; verify historical runs with their recorded "
+            "implementation. Generate a new run without overwriting existing evidence."
+        )
     run_id = hashlib.sha256(
         json.dumps(descriptor, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -118,6 +122,8 @@ def verify_run(directory: Path) -> dict[str, Any]:
         or manifest.get("public_release") is not False
         or report.get("data_kind") != "synthetic"
         or report.get("public_release") is not False
+        or report.get("schema_version") != REPORT_VERSION
+        or report.get("out_of_calibration_validation") != "not_available"
         or report.get("external_scientific_review") != "not_performed"
         or report.get("microdata_distribution")
         != "blocked_pending_disclosure_and_scientific_review"
@@ -203,9 +209,11 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
                     result = audit(subdir, inputs, size)
                     replicates.append({"seed": seed, "large_household_size": size, "audit": result})
             report = {
+                "schema_version": REPORT_VERSION,
                 "data_kind": "synthetic",
                 "public_release": False,
                 "external_scientific_review": "not_performed",
+                "out_of_calibration_validation": "not_available",
                 "microdata_distribution": "blocked_pending_disclosure_and_scientific_review",
                 "replicates": replicates,
                 "uncertainty": summarize(replicates),
@@ -214,13 +222,15 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
                     "non intervalli di confidenza"
                 ),
                 "limitations": [
-                    "Indipendenza tra sesso ed età entro le fasce 0–17, 18–64, 65+",
+                    "Sesso per singola età calibrato esattamente: "
+                    "errore zero non costituisce validazione fuori calibrazione",
                     "Famiglie casuali con almeno un adulto; parentela e coppie non inferite",
                     "100 indica 100 anni e più; non è un'età puntuale",
                     "Tutti i minori assegnati a famiglie; "
                     "residuo adulto non identificato come convivenze",
                     "Dimensione 6+ ipotetica; nessuna stima della sua distribuzione reale",
-                    "Validazione fuori calibrazione dalla stessa fonte, non evidenza indipendente",
+                    "Nessuna statistica osservata non utilizzata disponibile "
+                    "per validazione fuori calibrazione",
                     "Nessuna validazione osservata della composizione familiare "
                     "o misura del rischio disclosure",
                 ],
@@ -230,8 +240,9 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
                 "# Esperimento sintetico M3 — uso locale\n\n"
                 "Persone e famiglie virtuali, prive di corrispondenza con identità reali.\n"
                 "Input, algoritmo, ambiente, seed e checksum: manifest.json e input.json.\n"
-                "Controlli SQL indipendenti, metriche fuori calibrazione, "
+                "Controlli SQL indipendenti, 202 celle sesso/età calibrate esattamente, "
                 "incertezza e limiti: report.json.\n"
+                "Non sono disponibili statistiche osservate per validazione fuori calibrazione.\n"
                 "Età 100 = 100+. household_id nullo = residuo non assegnato.\n"
                 "La revisione scientifica esterna e la valutazione disclosure "
                 "non sono state svolte.\n"

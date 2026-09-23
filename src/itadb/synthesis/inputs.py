@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from itadb.pipeline.geography import read_territories
 from itadb.pipeline.storage import archive_file, atomic_json
-from itadb.synthesis.models import BANDS, Calibration, PilotInput
+from itadb.synthesis.models import Calibration, PilotInput
 
 
 def prepare_inputs(root: Path, inventory: Path, contract: Path) -> PilotInput:
@@ -98,17 +98,16 @@ def _prepare(root: Path, inventory: Path, contract: Path) -> PilotInput:
         raise ValueError("Pilot coverage differs from reviewed totals")
     male = [pop["1", age] for age in ages]
     return PilotInput(
-        schema_version="m3-input/1",
+        schema_version="m3-input/2",
         evidence_kind="official_aggregates",
         calibration=Calibration(
             territory="ITC2",
             population_reference="2022-01-01",
             household_reference="2021-12-31",
             age_counts=[pop["9", age] for age in ages],
-            male_by_band=[sum(male[a:b]) for a, b in BANDS],
+            male_by_age=male,
             household_counts=[hh[k] for k in categories],
         ),
-        heldout_male_by_age=male,
         attribution=spec["attribution"],
         source_hashes=hashes,
     )

@@ -8,7 +8,7 @@ import duckdb
 from itadb.pipeline.validate import QualityError
 from itadb.synthesis.models import PilotInput
 
-AUDIT_VERSION = "parquet-independent-audit/1.0.1"
+AUDIT_VERSION = "parquet-independent-audit/2.0.0"
 
 
 def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any]:
@@ -103,11 +103,6 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
         gate("household_size_margins", actual_sizes == expected_sizes)
         counts = dict(con.execute("SELECT age,count(*) FROM persons GROUP BY age").fetchall())
         gate("age_margins", [counts.get(age, 0) for age in range(101)] == c.age_counts)
-        bands = dict(
-            con.execute("""SELECT CASE WHEN age<18 THEN 0 WHEN age<65 THEN 1 ELSE 2 END,
-            count(*) FROM persons WHERE sex='M' GROUP BY 1""").fetchall()
-        )
-        gate("sex_band_margins", [bands.get(band, 0) for band in range(3)] == c.male_by_band)
         residual = con.execute(
             "SELECT count(*) FROM persons WHERE household_id IS NULL"
         ).fetchall()[0][0]
@@ -119,8 +114,7 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
             con.execute("SELECT age,count(*) FROM persons WHERE sex='M' GROUP BY age").fetchall()
         )
         cell_errors = [
-            abs(males.get(age, 0) - reference)
-            for age, reference in enumerate(inputs.heldout_male_by_age)
+            abs(males.get(age, 0) - reference) for age, reference in enumerate(c.male_by_age)
         ]
         # Female errors have equal magnitude and opposite sign because age totals are fixed.
         cells = [
@@ -131,12 +125,13 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
                 "synthetic": synthetic,
                 "error": synthetic - observed,
             }
-            for age, reference in enumerate(inputs.heldout_male_by_age)
+            for age, reference in enumerate(c.male_by_age)
             for sex, observed, synthetic in [
                 ("M", reference, males.get(age, 0)),
                 ("F", c.age_counts[age] - reference, counts.get(age, 0) - males.get(age, 0)),
             ]
         ]
+        gate("sex_age_joint_counts", all(cell["error"] == 0 for cell in cells))
         family = con.execute("""SELECT
             count(*) FILTER (WHERE youngest<18),
             count(*) FILTER (WHERE youngest>=65),
@@ -150,10 +145,10 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
         "persons": n,
         "households": h,
         "unassigned_adults": residual,
-        "calibration_max_absolute_error": 0,
-        "heldout": {
+        "calibration_max_absolute_error": max(cell_errors),
+        "calibration_joint": {
             "reference_evidence_kind": inputs.evidence_kind,
-            "description": "Tabella sesso per età, esclusa dalla calibrazione puntuale",
+            "description": "Tabella sesso per singola età: 202 vincoli esatti di calibrazione",
             "total_variation_distance": sum(cell_errors) / n,
             "mean_absolute_cell_error": sum(cell_errors) / 101,
             "max_absolute_cell_error": max(cell_errors),

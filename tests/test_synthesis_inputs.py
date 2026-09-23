@@ -28,11 +28,7 @@ def inventory(tmp_path: Path, problem: str = "") -> tuple[Path, Path]:
                 for sex in ["1", "2", "9"]:
                     for age in [*range(101), None]:
                         row = {k: values[0] for k, values in profile["domains"].items()}
-                        male = (
-                            fixture.heldout_male_by_age[age]
-                            if age is not None
-                            else sum(fixture.heldout_male_by_age)
-                        )
+                        male = c.male_by_age[age] if age is not None else sum(c.male_by_age)
                         total = c.age_counts[age] if age is not None else 40
                         row.update(
                             SEX=sex,
@@ -106,7 +102,12 @@ def test_offline_adapter_reconciles_and_archives(
     inputs, contract = inventory(tmp_path)
     result = prepare_inputs(tmp_path, inputs, contract)
     assert sum(result.calibration.age_counts) == 40
-    assert result.calibration.male_by_band == [3, 11, 5]
+    assert (
+        result.calibration.male_by_age
+        == PilotInput.model_validate_json(
+            Path("tests/fixtures/m3-invented.json").read_bytes()
+        ).calibration.male_by_age
+    )
     assert sum(result.calibration.household_counts) == 12
     assert len(result.source_hashes) == 17
     monkeypatch.setattr(

@@ -1,6 +1,9 @@
 # ADR 0008 — sintesi pilota locale, ricostruzione vincolata
 
 Stato: adottato per il pilota M3, 23 settembre 2026.
+La calibrazione demografica e il relativo holdout sono sostituiti da
+[ADR 0009](0009-exact-demographic-calibration.md). Il testo seguente conserva
+la decisione v1; allocazione familiare e condizioni di distribuzione restano valide.
 
 ## Contesto
 

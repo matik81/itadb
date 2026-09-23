@@ -42,8 +42,9 @@ province e comuni; nelle schede identificano persone, famiglie e abitazioni.
 123.360 persone virtuali per replica, 60.468 famiglie, cinque seed e tre
 ipotesi sulla classe familiare 6+. `fetch-m3`, `synthesize-m3` e `verify-m3`
 gestiscono input ISTAT fissati, Parquet immutabili, controlli indipendenti,
-metriche fuori calibrazione e sensibilità. Il rapporto distingue incertezza,
-residuo non assegnato e limiti. I record sintetici non sono dati osservati e
+calibrazione esatta delle 202 celle sesso/età e sensibilità familiare. Il rapporto
+dichiara l'assenza di validazione fuori calibrazione, residuo non assegnato e
+limiti. I record sintetici non sono dati osservati e
 non vengono pubblicati nelle API o nella web app. Revisione scientifica
 esterna e valutazione disclosure restano necessarie per distribuirli.
 
