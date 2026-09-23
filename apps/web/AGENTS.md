@@ -12,3 +12,5 @@
 - Identifica persone, famiglie e abitazioni con un'icona accanto ai valori nelle
   schede. Usa icone accessibili per il tipo di territorio accanto al nome,
   evitando colonne «Livello» che ripetono lo stesso valore su tutte le righe.
+- Per `unflagged_upstream` mostrare soltanto «—», senza badge o diciture tecniche,
+  nelle tabelle, nei filtri e nelle schede. Non equivale a dato mancante o osservato.

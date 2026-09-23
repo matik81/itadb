@@ -24,7 +24,7 @@ const statuses = {
   estimated: 'Stimato',
   missing: 'Mancante',
   suppressed: 'Riservato',
-  unflagged_upstream: 'Senza flag ISTAT',
+  unflagged_upstream: '—',
 };
 
 export function TerritoryDetail({ observation, coverage, release, sourceName, onClose }: Props) {

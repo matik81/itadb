@@ -81,7 +81,7 @@ it('renders the selected evidence and map with an explicit downloadable GeoJSON'
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Dato selezionato')).toHaveTextContent('12.000');
   expect(screen.getByLabelText('Dato selezionato')).toHaveTextContent('persone');
-  expect(screen.getByText('Senza flag ISTAT')).toBeInTheDocument();
+  expect(screen.getByText('—')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Scarica il confine/ })).toHaveAttribute(
     'download',
     'itadb-01-2024-01-01.geojson',
