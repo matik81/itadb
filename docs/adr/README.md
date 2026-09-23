@@ -17,6 +17,7 @@ Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
 | [0010](0010-model-fidelity-and-m3-reference.md) | Priorità di fedeltà e riferimento unico | Età/sesso, geografia, famiglie; 6+ = 6 e seed 1701; accettazione umana del pilota e avvio M4 |
 | [0011](0011-stable-birth-cohorts.md) | Anno di nascita stabile, età derivata | Convenzione annuale esplicita, classe 100+ censurata, calibrazione e artefatti storici conservati |
 | [0012](0012-national-territorial-snapshots.md) | Snapshot nazionali territoriali riprendibili | Congiunte comunali esatte, budget misurati, checkpoint verificati, microdati locali e soli aggregati preparati per distribuzione |
+| [0013](0013-citizenship-enrichment.md) | Cittadinanza come arricchimento immutabile | Vincoli STR/RCS esatti, attributi M4 conservati, incrocio età–singola cittadinanza sintetico e microdati locali |
 
 Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
 un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,

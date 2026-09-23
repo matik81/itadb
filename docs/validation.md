@@ -594,3 +594,65 @@ L'esito della CI è consultabile nei controlli della PR. Revisione
 scientifica esterna, dinamiche demografiche, sensibilità nazionale tra seed
 e distribuzione pubblica dei microdati **non eseguite**; non sono implicite
 nella corrispondenza dei conteggi. [Valutazione e limiti](reviews/m4-disclosure.md).
+
+## Integrazione della cittadinanza
+
+Verifiche del 24 settembre 2026. [Metodo](citizenship.md),
+[ADR 0013](adr/0013-citizenship-enrichment.md),
+[misure e fingerprint](benchmarks/citizenship-2026-09-24.json).
+
+- Sei originali fissati: STR comunale/regionale, RCS, pagine di definizione
+  e licenza. RCS contiene 267.367 righe su cinque livelli territoriali;
+  nessuna somma di totali sovrapposti. Copertura: 7.896 comuni, 196 categorie.
+- Ammissione: ogni cella STR è entro il conteggio M4; ogni totale RCS per
+  comune/sesso coincide con M4; stranieri RCS e STR coincidono. Riconciliate
+  tutte le congiunte STR regionali e tutte le cittadinanze RCS a provincia,
+  regione, ripartizione e Italia. Il campione preliminare Valle d'Aosta
+  coincide su 8.821 stranieri complessivi.
+- Risultato nazionale: 53.572.213 individui nella categoria italiana e
+  5.371.251 nella popolazione straniera (di cui 525 apolidi), totale 58.943.464.
+  Esatti 1.594.992 vincoli STR e 375.226 celle RCS comunali non nulle.
+- 107 batch, 214 Parquet. Tutti i dieci attributi preesistenti sono uguali
+  alla base, famiglie identiche byte per byte; aggiunta la sola colonna
+  `citizenship_code`. Base originale conservata, nuovi run immutabili.
+- Prova 10M interrotta dopo il primo checkpoint e ripresa con successo.
+  Una generazione in root separata e ordine dei batch invertito ha prodotto
+  tutti i nove file identici, in 12,69 s. Retry nazionale e riuso dei sei
+  originali senza nuovi download verificati.
+- Disclosure su comune/sesso/età/cittadinanza: 2.698.397 celle non vuote sotto
+  5 individui, 4.028.154 individui sintetici coinvolti (6,8339%). Diagnostica
+  tecnica, non rischio di identificazione misurato né certificazione.
+
+Nuovo snapshot:
+`data/curated/citizenship/d7ab8f19cc590fa6cba0a9ea9964f3ee0dcde5327b0019c8f63d48e896dab6a5`.
+Base M4:
+`7a27c844410adf29262477114bfeecc3a55743a454dfd392d4708c8163858eb8`.
+Gli hash del codice finale coincidono con il descrittore del run; sorgenti
+archiviati prima del commit, working tree dirty dichiarato.
+
+| Prova | Runner monitorato | Picco RSS | Disco campionato | Audit successivo, inclusa base |
+|---|---:|---:|---:|---:|
+| 1M inventato | 1,24 s | 226,87 MiB | 3,51 MiB | 0,56 s |
+| 10M inventato, due tentativi con recupero | 7,83 + 9,77 s | 1.066,99 MiB | 38,20 MiB | 6,60 s |
+| 58.943.464 nazionale | 86,13 s | 1.093,04 MiB | 249,60 MiB | 45,07 s |
+
+Macchina: Ryzen 9 9900X, 24 CPU logiche, Windows AMD64; Python 3.13.15,
+DuckDB 1.5.5. Il runner include audit completo della base, arricchimento e
+audit inline; esclude ammissione iniziale e parte della finalizzazione.
+CLI nazionale: 92,2 s. Snapshot finale: 261.766.895 byte. Il disco è campionato
+ogni secondo nella directory di lavoro: base, raw, altri run e log esterni
+sono esclusi. Budget rispettati: 8 GiB RSS, 40 GiB disco, 7.200 s, DuckDB
+2 GiB e due thread. Misure locali, non SLA o proiezioni per altri sistemi.
+
+Controlli: **266 test Python non integration passati**, inclusi **47 nuovi
+test** per STR/RCS, conservazione degli attributi, schema, recupero,
+riproducibilità, corruzione, metadati alterati, artefatti inattesi e budget.
+Ruff check/format e mypy Windows/Linux passati. OpenAPI senza modifiche.
+I 38 test PostgreSQL sono esclusi dal comando locale di questa iterazione;
+nessuna modifica a DB, API o frontend. La CI della PR esegue anche PostgreSQL,
+web e Compose; il suo esito è nei controlli della PR.
+
+Non eseguite: validazione osservata dell'incrocio età–singola cittadinanza,
+calibrazione delle relazioni familiari per cittadinanza, revisione scientifica
+esterna e distribuzione pubblica dei microdati. Il nuovo attributo resta
+una categoria sintetica calibrata su fonti aggregate.

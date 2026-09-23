@@ -87,3 +87,9 @@ rimangono condizioni separate, non dichiarate concluse dal completamento tecnico
 Collegamenti e dinamiche documentati, confronto baseline/intervento, sensibilità ai parametri
 e comunicazione dei limiti causali. La complessità del modello cresce solo dopo validazione
 del passo precedente. Non è previsto un agente LLM per ogni individuo.
+
+Primo arricchimento successivo a M4 completato: [cittadinanza](citizenship.md)
+per tutti i 58.943.464 individui, da STR/RCS 2025. Attributi M4 immutati,
+margini osservati esatti, assegnazione sintetica dell'incrocio età–singola
+cittadinanza. Questo non implica l'implementazione di lavoro, servizi,
+dinamiche demografiche o scenari causali di M5.

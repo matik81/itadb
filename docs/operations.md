@@ -123,3 +123,19 @@ avere margine anche per altre applicazioni; il limite DuckDB non equivale
 al picco RSS del processo. Gli ID rappresentano record sintetici; nessun
 microdato deve entrare in Git o nelle API. La sola tabella in `distribution/`
 rispetta il formato aggregato documentato, senza pubblicazione automatica.
+
+## Cittadinanza: conservazione dello snapshot derivato
+
+`fetch-citizenship`, `synthesize-citizenship` e `verify-citizenship` seguono il
+[percorso documentato](citizenship.md). I risultati sono in
+`data/curated/citizenship/<run_id>` e dipendono dalla base M4 identificata nel
+manifest. Salvare e ripristinare **entrambi gli snapshot**, gli originali raw,
+i contratti e i sorgenti archiviati. L'audit richiede esplicitamente `--base-run`.
+
+I retry controllano gli inventari e rileggono i dati. Checkpoint integri sono
+riusati; file corrotti vengono conservati e bloccano il run. I batch temporanei
+interrotti vengono spostati nello stato con un nome distinto. Non cancellare
+evidenze per forzare la ripresa: per una ricostruzione usare una nuova root.
+Misure e log dei tentativi sono in `data/reports/citizenship`; le quarantene
+sono in `data/quarantine`. Il log seguito nel terminale è
+`.tools/citizenship-progress.log`. Nessuna distribuzione pubblica automatica.
