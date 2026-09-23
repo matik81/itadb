@@ -19,6 +19,15 @@ class Repository(Protocol):
 
 class RepositoryV2(Repository, Protocol):
     def artifacts(self, release_id: UUID) -> list[dict[str, Any]]: ...
+    def coverage(self, release_id: UUID) -> list[dict[str, Any]]: ...
+    def territories(
+        self, release_id: UUID, snapshot: date, level: str, after: int, limit: int
+    ) -> list[dict[str, Any]]: ...
+    def crosswalks(self, release_id: UUID, after: int, limit: int) -> list[dict[str, Any]]: ...
+    def boundary(self, release_id: UUID, territory_id: int) -> dict[str, Any] | None: ...
+    def observations_at_level(
+        self, release_id: UUID, series: str, period: date, level: str, after: int, limit: int
+    ) -> list[dict[str, Any]]: ...
 
 
 class PostgresRepository:
@@ -92,4 +101,46 @@ class PostgresRepositoryV2(PostgresRepository):
             "SELECT * FROM api.observations_v2 WHERE release_id=%s AND series_code=%s "
             "AND period=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
             (release_id, series, period, after, limit),
+        )
+
+    def coverage(self, release_id: UUID) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.coverage_v2 WHERE release_id=%s "
+            "ORDER BY period,series_code LIMIT 500",
+            (release_id,),
+        )
+
+    def territories(
+        self, release_id: UUID, snapshot: date, level: str, after: int, limit: int
+    ) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.territories_v2 WHERE release_id=%s AND snapshot=%s "
+            "AND level=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            (release_id, snapshot, level, after, limit),
+        )
+
+    def crosswalks(self, release_id: UUID, after: int, limit: int) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.crosswalks_v2 WHERE release_id=%s AND id>%s ORDER BY id LIMIT %s",
+            (release_id, after, limit),
+        )
+
+    def boundary(self, release_id: UUID, territory_id: int) -> dict[str, Any] | None:
+        rows = self._query(
+            """SELECT release_id,territory_id,ST_AsGeoJSON(geom,5)::json AS geometry,
+            0.001 AS simplification_degrees FROM (
+            SELECT release_id,territory_id,ST_Multi(ST_SimplifyPreserveTopology(geom,0.001)) AS geom
+            FROM api.boundaries_v2 WHERE release_id=%s AND territory_id=%s) b
+            WHERE ST_NPoints(geom)<=20000""",
+            (release_id, territory_id),
+        )
+        return rows[0] if rows else None
+
+    def observations_at_level(
+        self, release_id: UUID, series: str, period: date, level: str, after: int, limit: int
+    ) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.observations_v2 WHERE release_id=%s AND series_code=%s "
+            "AND period=%s AND level=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            (release_id, series, period, level, after, limit),
         )

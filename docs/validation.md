@@ -136,3 +136,44 @@ stati eseguiti un deploy pubblico, una nuova CI remota di queste modifiche,
 una validazione statistica indipendente o un benchmark nazionale. La data di
 pubblicazione upstream rimane non accertata; gli stati senza flag non sono
 convertiti in dati osservati. Storia territoriale e altri periodi restano in M2.
+
+## M2 — 23 settembre 2026
+
+- Perimetro e fonti: [onboarding M2](sources/istat-m2.md), 14 originali revisionati,
+  317 selezioni serie/periodo, 22.678 osservazioni, 24.091 versioni territoriali,
+  2.815 equazioni e riconciliazione dei cambi di codice tra tre snapshot.
+- Accettazione ufficiale su PostgreSQL isolato e nello stack Compose locale:
+  pubblicazione atomica, retry idempotente, confronto integrale Parquet/DB,
+  45 gate superati e otto artefatti con inventario di provenienza.
+- Audit geometrico realmente eseguito: 25 riparazioni revisionate con variazione
+  d'area ≤ 4,1×10⁻¹⁵; originali conservati. Province/regioni derivate dall'unione
+  dei comuni dopo aver misurato incoerenze nei confini fonte tra livelli.
+  Rapporti locali `m2-geometry-audit.json` e `m2-hierarchy-audit.json` in `data/reports/`.
+- Release ufficiale **`85e67cbd-ced9-5a5d-85b5-8e1b2ca3141e`**, riprodotta con lo
+  stesso UUID su Windows e Linux grazie ai terminatori LF dei JSON generati.
+  Evidenze applicative nel volume `itadb_evidence`; fixture solo nei DB di test.
+- Verifica HTTP attraverso Nginx: **16.147 osservazioni confrontate** con gli
+  input, sei serie incluse famiglie comunali, età 0 e 100+, tutti gli attributi
+  upstream, paginazione a 500, otto eventi/15 collegamenti, confini e compatibilità v1.
+  Rapporto `data/reports/m2-http-acceptance.json`.
+- Backup pre-M2 ripristinato realmente in `itadb_m2_restore_386e34f94dec` e
+  aggiornato due volte a 0004: tre release M0/M1 conservate con UUID/hash/conteggi.
+  Backup fuori Git; rapporto `data/reports/m2-backup-restore.json`.
+- [Benchmark su 1.024.000 aggregati inventati](benchmarks/m2.md): circa 30 s di
+  caricamento, p50 1,79 ms e p95 2,36 ms SQL; indice e pruning verificati.
+  Nessuna misura di sintesi nazionale, picco RSS o SLA.
+- Test offline, PostgreSQL/PostGIS e web coprono inventario/fonte modificata,
+  partizioni sovrapposte, vintage errato, gerarchie, crosswalk, concorrenza,
+  revisioni senza fork, modifiche draft prima della pubblicazione, privilegi
+  reader, immutabilità e rollback dopo COPY. Il web verifica cambio periodo,
+  categoria, livello e reset della paginazione. OpenAPI e tipi client rigenerati.
+  Esito locale: **103 test offline, 23 di integrazione, 5 web passati**; Ruff,
+  formattazione, mypy, TypeScript, build web e installazione lock verificati.
+  Gli schemi API preesistenti e tutte le route v1 sono invariati.
+- Il collegamento Computer Use non disponeva di un browser utilizzabile:
+  nessuna verifica interattiva o visuale M2 dichiarata. Test componenti e HTTP
+  eseguiti; nessuna prova su dispositivo mobile fisico o deploy pubblico.
+
+M2 è completa per il perimetro dichiarato. Non implica storia amministrativa
+continua, tutti gli anni/indicatori per comune o una validazione statistica
+indipendente. La creazione dei circa 60 milioni di individui virtuali rimane M4.

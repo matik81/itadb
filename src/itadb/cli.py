@@ -8,8 +8,11 @@ import uvicorn
 
 from itadb.api.app import create_app
 from itadb.config import Settings
+from itadb.connectors.m2 import acquire_m2
 from itadb.connectors.sdmx import SOURCES, SdmxConnector
+from itadb.pipeline.istat_m2 import build_istat_m2
 from itadb.pipeline.istat_population import check_population_sample
+from itadb.pipeline.publish_coverage import publish_coverage
 from itadb.pipeline.publish_istat import ingest_istat_population
 from itadb.pipeline.runner import ingest_demo
 
@@ -123,6 +126,43 @@ def publish_istat(
 def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
     """Run the public API locally."""
     uvicorn.run("itadb.api.app:app", host=host, port=port, access_log=False)
+
+
+@app.command("check-m2")
+def check_m2(
+    inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m2-v1.json"
+    ),
+) -> None:
+    """Verifica offline copertura, partizioni e riconciliazioni M2, senza pubblicare."""
+    build_istat_m2(Settings().data_dir, inputs, contract)
+
+
+@app.command("fetch-m2")
+def fetch_m2(
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m2-v1.json"
+    ),
+) -> None:
+    """Acquisisce il solo inventario M2 revisionato, riusando gli originali verificati."""
+    typer.echo(str(acquire_m2(Settings().data_dir, contract)))
+
+
+@app.command("ingest-m2")
+def ingest_m2(
+    inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m2-v1.json"
+    ),
+    supersedes: Annotated[UUID | None, typer.Option()] = None,
+    revision_reason: Annotated[str | None, typer.Option()] = None,
+) -> None:
+    """Verifica e pubblica M2 atomicamente, con avanzamento nel terminale."""
+    settings = Settings()
+    bundle = build_istat_m2(settings.data_dir, inputs, contract)
+    release = publish_coverage(settings, bundle, contract, supersedes, revision_reason)
+    typer.echo(json.dumps({"release_id": str(release)}))
 
 
 @app.command()

@@ -60,8 +60,16 @@ Una nuova acquisizione identica non produce doppioni. Cambiamenti richiedono
 `--supersedes` con il predecessore corrente e `--revision-reason`; il report registra
 le differenze numeriche. Due revisioni concorrenti non possono creare rami.
 È una revisione umana esplicita, non un rilevatore statistico di anomalie.
-Storia territoriale e crosswalk oltre lo snapshot restano da implementare.
+Storia territoriale e crosswalk sono implementati nel perimetro M2.
 Vedere [evidenze e limiti](sources/istat-population.md).
+
+M2 aggiunge copertura esatta per serie/periodo/vintage, gerarchie temporali,
+partizioni disgiunte per sesso, età, dimensione familiare e occupazione delle
+abitazioni. Intervalli di età sono semiaperti; 100+ usa il limite convenzionale
+1000, senza inferire un'età reale massima. Sono vietati totali inclusi tra le
+parti e somme di unità, periodi o vintage diversi. Il gate geometrico conserva
+originali e riparazioni revisionate; la pubblicazione confronta integralmente
+Parquet e DB, compresi stato e attributi upstream. Vedi [M2](sources/istat-m2.md).
 
 ## Gate richiesti per la sintesi
 

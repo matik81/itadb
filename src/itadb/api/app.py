@@ -4,11 +4,12 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Path as ApiPath
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,6 +19,9 @@ from starlette.responses import Response
 from itadb import __version__
 from itadb.api.models import (
     Artifact,
+    BoundaryItem,
+    CoverageItem,
+    CrosswalkPage,
     ObservationPage,
     ObservationPageV2,
     Problem,
@@ -25,6 +29,7 @@ from itadb.api.models import (
     Release,
     ReleaseV2,
     Source,
+    TerritoryPage,
 )
 from itadb.api.repository import PostgresRepository, PostgresRepositoryV2, Repository, RepositoryV2
 from itadb.config import Settings
@@ -277,17 +282,80 @@ def create_app(
         release_id: UUID,
         period: date,
         series: Annotated[str, Query(pattern=r"^[a-z][a-z0-9_]{0,63}$")],
+        level: Literal["country", "region", "province", "municipality"] | None = None,
         after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
         limit: Annotated[int, Query(ge=1, le=500)] = 100,
     ) -> object:
         """Keep release, series and period fixed across pages. Country totals overlap regions."""
         if db.release(release_id) is None:
             raise HTTPException(404, "Published release not found")
-        rows = db.observations(release_id, series, period, after, limit + 1)
+        rows = (
+            db.observations(release_id, series, period, after, limit + 1)
+            if level is None
+            else db.observations_at_level(release_id, series, period, level, after, limit + 1)
+        )
         return {
             "items": rows[:limit],
             "next_cursor": rows[limit - 1]["territory_id"] if len(rows) > limit else None,
         }
+
+    @app.get(
+        "/v2/releases/{release_id}/coverage",
+        response_model=list[CoverageItem],
+        tags=["coverage v2"],
+    )
+    def coverage_v2(release_id: UUID, db: RepoV2) -> object:
+        """Explicit available selections; published contracts support at most 500 cells."""
+        if db.release(release_id) is None:
+            raise HTTPException(404, "Published release not found")
+        return db.coverage(release_id)
+
+    @app.get("/v2/territories", response_model=TerritoryPage, tags=["geography v2"])
+    def territories_v2(
+        db: RepoV2,
+        release_id: UUID,
+        snapshot: date,
+        level: Literal["country", "region", "province", "municipality"],
+        after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> object:
+        if db.release(release_id) is None:
+            raise HTTPException(404, "Published release not found")
+        rows = db.territories(release_id, snapshot, level, after, limit + 1)
+        return {
+            "items": rows[:limit],
+            "next_cursor": rows[limit - 1]["territory_id"] if len(rows) > limit else None,
+        }
+
+    @app.get("/v2/crosswalks", response_model=CrosswalkPage, tags=["geography v2"])
+    def crosswalks_v2(
+        db: RepoV2,
+        release_id: UUID,
+        after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> object:
+        if db.release(release_id) is None:
+            raise HTTPException(404, "Published release not found")
+        rows = db.crosswalks(release_id, after, limit + 1)
+        return {
+            "items": rows[:limit],
+            "next_cursor": rows[limit - 1]["id"] if len(rows) > limit else None,
+        }
+
+    @app.get(
+        "/v2/releases/{release_id}/territories/{territory_id}/boundary",
+        response_model=BoundaryItem,
+        tags=["geography v2"],
+    )
+    def boundary_v2(
+        release_id: UUID,
+        territory_id: Annotated[int, ApiPath(ge=1, le=9223372036854775807)],
+        db: RepoV2,
+    ) -> object:
+        item = db.boundary(release_id, territory_id)
+        if item is None:
+            raise HTTPException(404, "Boundary unavailable within the 20000 vertex response budget")
+        return item
 
     return app
 

@@ -86,6 +86,66 @@ class Artifact(BaseModel):
     byte_size: int
 
 
+class CoverageItem(BaseModel):
+    release_id: UUID
+    series_code: str
+    title: str
+    unit: str
+    dimensions: dict[str, str]
+    period: date
+    scheme: str | None
+    territory_snapshot: date | None
+    row_count: int
+
+
+class TerritoryItem(BaseModel):
+    release_id: UUID
+    territory_id: int
+    scheme: str
+    code: str
+    name: str
+    level: Literal["country", "region", "province", "municipality"]
+    valid_from: date
+    valid_to: date | None
+    parent_code: str | None
+    snapshot: date
+    has_boundary: bool
+
+
+class TerritoryPage(BaseModel):
+    items: list[TerritoryItem]
+    next_cursor: int | None
+
+
+class CrosswalkItem(BaseModel):
+    id: int
+    release_id: UUID
+    event_id: str
+    kind: Literal["merger", "split", "recode", "transfer"]
+    effective_date: date
+    source_url: str
+    evidence_sha256: str
+    description: str
+    from_code: str
+    from_scheme: str
+    to_code: str
+    to_scheme: str
+    allocation_weight: Decimal | None
+    weight_basis: Literal["exact", "structural"]
+
+
+class CrosswalkPage(BaseModel):
+    items: list[CrosswalkItem]
+    next_cursor: int | None
+
+
+class BoundaryItem(BaseModel):
+    release_id: UUID
+    territory_id: int
+    geometry: dict[str, Any]
+    simplification_degrees: float
+
+
 class Quality(BaseModel):
     release_id: UUID
     check_name: str

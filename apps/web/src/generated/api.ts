@@ -135,6 +135,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/crosswalks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Crosswalks V2 */
+        get: operations["crosswalks_v2_v2_crosswalks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/observations": {
         parameters: {
             query?: never;
@@ -206,6 +223,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/releases/{release_id}/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coverage V2
+         * @description Explicit available selections; published contracts support at most 500 cells.
+         */
+        get: operations["coverage_v2_v2_releases__release_id__coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/releases/{release_id}/quality": {
         parameters: {
             query?: never;
@@ -215,6 +252,23 @@ export interface paths {
         };
         /** Quality V2 */
         get: operations["quality_v2_v2_releases__release_id__quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/releases/{release_id}/territories/{territory_id}/boundary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Boundary V2 */
+        get: operations["boundary_v2_v2_releases__release_id__territories__territory_id__boundary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -240,6 +294,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/territories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Territories V2 */
+        get: operations["territories_v2_v2_territories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -257,6 +328,101 @@ export interface components {
             release_id: string;
             /** Sha256 */
             sha256: string;
+        };
+        /** BoundaryItem */
+        BoundaryItem: {
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            };
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+            /** Simplification Degrees */
+            simplification_degrees: number;
+            /** Territory Id */
+            territory_id: number;
+        };
+        /** CoverageItem */
+        CoverageItem: {
+            /** Dimensions */
+            dimensions: {
+                [key: string]: string;
+            };
+            /**
+             * Period
+             * Format: date
+             */
+            period: string;
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+            /** Row Count */
+            row_count: number;
+            /** Scheme */
+            scheme: string | null;
+            /** Series Code */
+            series_code: string;
+            /** Territory Snapshot */
+            territory_snapshot: string | null;
+            /** Title */
+            title: string;
+            /** Unit */
+            unit: string;
+        };
+        /** CrosswalkItem */
+        CrosswalkItem: {
+            /** Allocation Weight */
+            allocation_weight: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            /** Event Id */
+            event_id: string;
+            /** Evidence Sha256 */
+            evidence_sha256: string;
+            /** From Code */
+            from_code: string;
+            /** From Scheme */
+            from_scheme: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "merger" | "split" | "recode" | "transfer";
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+            /** Source Url */
+            source_url: string;
+            /** To Code */
+            to_code: string;
+            /** To Scheme */
+            to_scheme: string;
+            /**
+             * Weight Basis
+             * @enum {string}
+             */
+            weight_basis: "exact" | "structural";
+        };
+        /** CrosswalkPage */
+        CrosswalkPage: {
+            /** Items */
+            items: components["schemas"]["CrosswalkItem"][];
+            /** Next Cursor */
+            next_cursor: number | null;
         };
         /** Observation */
         Observation: {
@@ -501,6 +667,50 @@ export interface components {
             license_url: string;
             /** Name */
             name: string;
+        };
+        /** TerritoryItem */
+        TerritoryItem: {
+            /** Code */
+            code: string;
+            /** Has Boundary */
+            has_boundary: boolean;
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "country" | "region" | "province" | "municipality";
+            /** Name */
+            name: string;
+            /** Parent Code */
+            parent_code: string | null;
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+            /** Scheme */
+            scheme: string;
+            /**
+             * Snapshot
+             * Format: date
+             */
+            snapshot: string;
+            /** Territory Id */
+            territory_id: number;
+            /**
+             * Valid From
+             * Format: date
+             */
+            valid_from: string;
+            /** Valid To */
+            valid_to: string | null;
+        };
+        /** TerritoryPage */
+        TerritoryPage: {
+            /** Items */
+            items: components["schemas"]["TerritoryItem"][];
+            /** Next Cursor */
+            next_cursor: number | null;
         };
     };
     responses: never;
@@ -820,12 +1030,55 @@ export interface operations {
             };
         };
     };
+    crosswalks_v2_v2_crosswalks_get: {
+        parameters: {
+            query: {
+                release_id: string;
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrosswalkPage"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     observations_v2_v2_observations_get: {
         parameters: {
             query: {
                 release_id: string;
                 period: string;
                 series: string;
+                level?: ("country" | "region" | "province" | "municipality") | null;
                 after?: number;
                 limit?: number;
             };
@@ -1011,6 +1264,46 @@ export interface operations {
             };
         };
     };
+    coverage_v2_v2_releases__release_id__coverage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageItem"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     quality_v2_v2_releases__release_id__quality_get: {
         parameters: {
             query?: never;
@@ -1060,6 +1353,47 @@ export interface operations {
             };
         };
     };
+    boundary_v2_v2_releases__release_id__territories__territory_id__boundary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                territory_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoundaryItem"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     sources_v2_v2_sources_get: {
         parameters: {
             query?: never;
@@ -1076,6 +1410,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Source"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    territories_v2_v2_territories_get: {
+        parameters: {
+            query: {
+                release_id: string;
+                snapshot: string;
+                level: "country" | "region" | "province" | "municipality";
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerritoryPage"];
                 };
             };
             /** @description Unprocessable Content */

@@ -7,7 +7,9 @@ import {
   type Quality,
   type Release,
   type Source,
+  type Coverage,
 } from './api';
+import { TerritorialHistory } from './TerritorialHistory';
 
 const number = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 6 });
 const dateTime = (value: string) => new Date(value).toLocaleString('it-IT');
@@ -23,7 +25,38 @@ export function App() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
+  const [coverage, setCoverage] = useState<Coverage[]>([]);
+  const [selection, setSelection] = useState('');
+  const [level, setLevel] = useState('region');
   const release = releases.find((item) => item.id === selected);
+  const isM2 = release?.dataset_id === 'istat_m2';
+  const chosen = coverage.find((item) => `${item.period}|${item.series_code}` === selection);
+  const unit =
+    { persons: 'persone', households: 'famiglie', dwellings: 'abitazioni' }[
+      chosen?.unit ?? 'persons'
+    ] ?? chosen?.unit;
+
+  useEffect(() => {
+    setCoverage([]);
+    setSelection('');
+    if (!release || !isM2) return;
+    const controller = new AbortController();
+    get<Coverage[]>(`/v2/releases/${release.id}/coverage`, controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted) return;
+        setCoverage(items);
+        const initial =
+          items.find(
+            (item) =>
+              item.series_code === release.series_code && item.period === release.reference_period,
+          ) ?? items[0];
+        setSelection(initial ? `${initial.period}|${initial.series_code}` : '');
+      })
+      .catch((reason) => {
+        if (!controller.signal.aborted) setError(String(reason.message));
+      });
+    return () => controller.abort();
+  }, [release, isM2, retry]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -49,7 +82,7 @@ export function App() {
   }, [retry]);
 
   useEffect(() => {
-    if (!release) return;
+    if (!release || (isM2 && !chosen)) return;
     const controller = new AbortController();
     setPage(null);
     setQuality([]);
@@ -58,11 +91,12 @@ export function App() {
     setError('');
     const query = new URLSearchParams({
       release_id: release.id,
-      period: release.reference_period,
-      series: release.series_code,
+      period: chosen?.period ?? release.reference_period,
+      series: chosen?.series_code ?? release.series_code,
       after: String(after),
       limit: '100',
     });
+    if (isM2) query.set('level', level);
     Promise.all([
       get<Page>(`/v2/observations?${query}`, controller.signal),
       get<Quality[]>(`/v2/releases/${release.id}/quality`, controller.signal),
@@ -80,7 +114,7 @@ export function App() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [release, after, retry]);
+  }, [release, after, retry, chosen, isM2, level]);
 
   return (
     <>
@@ -127,6 +161,10 @@ export function App() {
             onChange={(event) => {
               setSelected(event.target.value);
               setAfter(0);
+              setCoverage([]);
+              setSelection('');
+              setPage(null);
+              setLevel('region');
             }}
           >
             <option value="" disabled>
@@ -140,10 +178,71 @@ export function App() {
           </select>
           {release && (
             <span className="period">
-              Riferimento <strong>{release.reference_period}</strong>
+              Riferimento <strong>{chosen?.period ?? release.reference_period}</strong>
             </span>
           )}
         </section>
+        {isM2 && (
+          <section className="controls m2-controls" aria-label="Copertura demografica">
+            <div>
+              <label htmlFor="period">Periodo</label>
+              <select
+                id="period"
+                value={chosen?.period ?? ''}
+                onChange={(event) => {
+                  const next = coverage.find((item) => item.period === event.target.value);
+                  setSelection(next ? `${next.period}|${next.series_code}` : '');
+                  setAfter(0);
+                }}
+              >
+                {[...new Set(coverage.map((item) => item.period))].sort().map((period) => (
+                  <option key={period}>{period}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="series">Indicatore e categoria</label>
+              <select
+                id="series"
+                value={selection}
+                onChange={(event) => {
+                  setSelection(event.target.value);
+                  setAfter(0);
+                }}
+              >
+                {coverage
+                  .filter((item) => item.period === chosen?.period)
+                  .map((item) => (
+                    <option key={item.series_code} value={`${item.period}|${item.series_code}`}>
+                      {item.title}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="level">Livello territoriale</label>
+              <select
+                id="level"
+                value={level}
+                onChange={(event) => {
+                  setLevel(event.target.value);
+                  setAfter(0);
+                }}
+              >
+                <option value="country">Italia · totale di controllo</option>
+                <option value="region">Regioni</option>
+                <option value="province">Province</option>
+                <option value="municipality">Comuni</option>
+              </select>
+            </div>
+            <p className="muted">
+              {chosen?.row_count} osservazioni su tutti i livelli coperti · Confini del{' '}
+              {chosen?.territory_snapshot}. Ogni selezione mostra una sola categoria e un solo
+              livello; non sommare totali e dettagli. Età e abitazioni sono disponibili per regione,
+              famiglie anche per comune nel 2021.
+            </p>
+          </section>
+        )}
         {release?.is_demo && (
           <div className="notice demo">
             <strong>Dimostrazione con dati inventati</strong>
@@ -180,8 +279,10 @@ export function App() {
             aria-busy={loading}
           >
             <div className="panel-heading">
-              <h2 id="observations-title">Popolazione per territorio</h2>
-              <span className="muted">Unità: persone</span>
+              <h2 id="observations-title">
+                {isM2 ? 'Evidenze per territorio' : 'Popolazione per territorio'}
+              </h2>
+              <span className="muted">Unità: {unit}</span>
             </div>
             {loading && (
               <p role="status" className="empty">
@@ -205,7 +306,18 @@ export function App() {
                     <tbody>
                       {page.items.map((item) => (
                         <tr key={item.territory_id}>
-                          <td>{item.territory_name}</td>
+                          <td>
+                            {isM2 && item.level !== 'country' ? (
+                              <a
+                                href={`${API_BASE}/v2/releases/${release.id}/territories/${item.territory_id}/boundary`}
+                              >
+                                {item.territory_name}{' '}
+                                <span className="sr-only">· confine GeoJSON</span>
+                              </a>
+                            ) : (
+                              item.territory_name
+                            )}
+                          </td>
                           <td className="code">{item.territory_code}</td>
                           <td>
                             {
@@ -288,7 +400,7 @@ export function App() {
                           : 'Non accertata'}
                       </dd>
                       <dt>Snapshot territoriale</dt>
-                      <dd>{release.territory_snapshot}</dd>
+                      <dd>{chosen?.territory_snapshot ?? release.territory_snapshot}</dd>
                     </>
                   )}
                   <dt>Licenza di questa versione</dt>
@@ -339,6 +451,7 @@ export function App() {
             )}
           </aside>
         </div>
+        {isM2 && release && <TerritorialHistory key={release.id} releaseId={release.id} />}
         <footer>
           Itadb è un’infrastruttura aperta in costruzione. La popolazione sintetica 1:1 è una fase
           futura; gli agenti non rappresenteranno persone reali.

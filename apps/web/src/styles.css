@@ -346,6 +346,43 @@ footer {
   white-space: nowrap;
   border: 0;
 }
+.m2-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+}
+.m2-controls > div {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.m2-controls label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+.m2-controls select {
+  width: 100%;
+  min-width: 0;
+}
+.m2-controls > p {
+  flex-basis: 100%;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+.history {
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+.history > p {
+  line-height: 1.6;
+  max-width: 90ch;
+}
+.snapshot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
 @media (max-width: 950px) {
   .workspace {
     grid-template-columns: 1fr;
