@@ -5,6 +5,10 @@ M4 genera **58.943.464 persone virtuali** calibrate sui conteggi ISTAT al
 non una corrispondenza con persone reali. Le famiglie sono virtuali e la
 loro composizione resta una baseline casuale vincolata.
 
+La successiva [integrazione della cittadinanza](citizenship.md) produce uno
+snapshot derivato con `citizenship_code`, conservando tutti gli attributi e
+le famiglie di questa base. Il riferimento descritto qui resta immutabile.
+
 ## Fonti e riferimento unico
 
 Il contratto [`istat-m4-national-v1.json`](../contracts/istat-m4-national-v1.json)

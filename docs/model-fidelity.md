@@ -1,7 +1,8 @@
 # Priorità di fedeltà del modello
 
-Versione 3, aggiornata il 24 settembre 2026 per il riferimento nazionale M4.
-La graduatoria adottata nella versione 1 dalla revisione umana M3 resta invariata.
+Versione 4, aggiornata il 24 settembre 2026 per l'integrazione della cittadinanza.
+Le prime tre priorità adottate nella versione 1 dalla revisione umana M3 restano
+invariate; la cittadinanza viene aggiunta come quarta proprietà.
 La graduatoria è una decisione di progetto evolutiva: orienta lavoro e
 valutazione delle versioni, senza attribuire uguale affidabilità a tutti gli
 attributi degli agenti. [Decisione](adr/0010-model-fidelity-and-m3-reference.md).
@@ -92,6 +93,30 @@ La composizione casuale è ora limitata allo stesso comune. Non si trasferisce
 l'accettazione del pilota a una certificazione di relazioni familiari nazionali.
 Il [rapporto M4](reviews/m4-disclosure.md) confronta i due perimetri e distingue
 calibrazione, statistiche del modello e validazione esterna non svolta.
-La graduatoria non cambia; i nuovi attributi di M5 richiederanno una posizione
-esplicita e una nuova versione. La distribuzione pubblica dei microdati rimane
-subordinata alle condizioni della governance.
+Nel riferimento M4 originale la graduatoria non cambia. L'estensione successiva
+è registrata qui sotto; ulteriori attributi richiederanno una posizione esplicita
+e una nuova versione. La distribuzione pubblica dei microdati rimane subordinata
+alle condizioni della governance.
+
+## Versione 4 — cittadinanza dopo gli attributi già integrati
+
+L'utente ha identificato la cittadinanza come quarta integrazione e ne ha
+richiesto l'implementazione il 24 settembre 2026. Ordine del riferimento
+arricchito: **sesso/età → geografia → famiglie → cittadinanza**. Non cambia
+l'ordine relativo delle proprietà precedenti, che vengono conservate per
+ogni individuo anziché ricalibrate o riassegnate.
+
+Il riferimento unico `citizenship-reference/1` ([ADR 0013](adr/0013-citizenship-enrichment.md))
+arricchisce la base M4 2025: STR vincola stranieri per comune/sesso/età e
+RCS vincola i conteggi per comune/sesso/singola cittadinanza. I due vincoli
+devono essere entrambi esatti; incompatibilità delle fonti bloccano la versione.
+Gli ID e tutti gli attributi M4 restano identici, le famiglie sono copiate
+byte per byte. Il riferimento precedente rimane un'evidenza immutabile.
+
+Seed 1701, namespace distinto per la cittadinanza. L'ipotesi unica è la
+scambiabilità delle cittadinanze specifiche entro comune e sesso fra gli
+stranieri selezionati per età. Permette di conservare i margini disponibili
+senza inventare una correlazione osservata fra età e singola cittadinanza.
+L'arrivo di tale congiunta, o di evidenze sulle cittadinanze nella famiglia,
+richiederà un nuovo riferimento e un confronto esplicito. Finché assenti,
+quelle relazioni restano sintetiche e non validate.

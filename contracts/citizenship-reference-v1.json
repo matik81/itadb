@@ -1,0 +1,10 @@
+{
+  "schema_version": "citizenship-reference/1",
+  "seed": 1701,
+  "selection": "hash_within_municipality_sex_age",
+  "allocation": "shuffle_countries_within_municipality_sex",
+  "country_age_assumption": "conditional_exchangeability",
+  "italian_code": "100",
+  "stateless_code": "999",
+  "distribution": "local_only"
+}

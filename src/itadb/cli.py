@@ -15,10 +15,13 @@ from itadb.pipeline.istat_population import check_population_sample
 from itadb.pipeline.publish_coverage import publish_coverage
 from itadb.pipeline.publish_istat import ingest_istat_population
 from itadb.pipeline.runner import ingest_demo
+from itadb.synthesis.citizenship_inputs import prepare_citizenship_inputs
+from itadb.synthesis.citizenship_models import CitizenshipReference
+from itadb.synthesis.citizenship_runner import run_citizenship, verify_citizenship
 from itadb.synthesis.inputs import prepare_inputs
 from itadb.synthesis.models import Experiment
 from itadb.synthesis.national_inputs import prepare_national_inputs
-from itadb.synthesis.national_models import NationalReference, ResourceBudget
+from itadb.synthesis.national_models import NationalInput, NationalReference, ResourceBudget
 from itadb.synthesis.national_runner import run_national, verify_national
 from itadb.synthesis.runner import run_pilot, verify_run
 
@@ -256,4 +259,55 @@ def synthesize_m4(
 def verify_m4(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
     """Verifica integrità, vincoli comunali e rapporto statistico/disclosure nazionale."""
     result = verify_national(run)
+    typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
+
+
+@app.command("fetch-citizenship")
+def fetch_citizenship(
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-citizenship-v1.json"
+    ),
+) -> None:
+    """Acquisisce gli originali STR/RCS fissati, con riuso e controllo checksum."""
+    typer.echo(
+        str(acquire_inventory(Settings().data_dir, contract, "istat-citizenship", "citizenship"))
+    )
+
+
+@app.command("synthesize-citizenship")
+def synthesize_citizenship(
+    base_run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+    inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-citizenship-v1.json"
+    ),
+    reference: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/citizenship-reference-v1.json"
+    ),
+    budget: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/m4-budget-v1.json"
+    ),
+) -> None:
+    """Assegna cittadinanze in una nuova versione, conservando gli attributi M4."""
+    root = Settings().data_dir
+    base = NationalInput.model_validate_json((base_run / "input.json").read_bytes())
+    directory = run_citizenship(
+        root,
+        base_run,
+        prepare_citizenship_inputs(root, inputs, contract, base),
+        CitizenshipReference.model_validate_json(reference.read_bytes()),
+        ResourceBudget.model_validate_json(budget.read_bytes()),
+    )
+    typer.echo(
+        json.dumps({"snapshot": str(directory), "data_kind": "synthetic", "public_release": False})
+    )
+
+
+@app.command("verify-citizenship")
+def verify_citizenship_command(
+    run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+    base_run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+) -> None:
+    """Rilegge base e nuova versione, verificando cittadinanza e attributi immutati."""
+    result = verify_citizenship(run, base_run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))

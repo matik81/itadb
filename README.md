@@ -76,6 +76,14 @@ esterna delle composizioni familiari. La [valutazione disclosure](docs/reviews/m
 mantiene i microdati locali e prepara solo 400 aggregati regionali decennali;
 nessuna pubblicazione automatica, API di microdati o certificazione statistica.
 
+Il [riepilogo delle integrazioni di dati esterni](docs/population-data-integrations.md)
+registra **quattro passaggi completati**: sesso/età, geografia, famiglie e
+[cittadinanza](docs/citizenship.md). La versione arricchita conserva tutti gli
+attributi M4 e aggiunge `citizenship_code` a 58.943.464 individui: 53.572.213
+nella categoria italiana, 5.371.251 nella popolazione straniera, inclusi 525
+apolidi. Margini STR/RCS esatti; incrocio età–singola cittadinanza sintetico.
+Il riferimento M4 originale resta immutabile; i microdati rimangono locali.
+
 ## Stack e motivazione
 
 | Livello | Scelta | Responsabilità |
