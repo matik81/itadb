@@ -11,6 +11,7 @@ from itadb.cli import app
 from itadb.pipeline.storage import sha256_file
 from itadb.pipeline.validate import QualityError
 from itadb.synthesis.audit import audit
+from itadb.synthesis.demography import AnnualAge, age_at_year_start, person_model_metadata
 from itadb.synthesis.generate import check_feasibility, generate
 from itadb.synthesis.models import Calibration, Experiment, PilotInput
 from itadb.synthesis.runner import run_pilot, verify_run
@@ -80,6 +81,67 @@ def test_exact_joint_with_zeros_and_extreme_cells(
             report = audit(directory, inputs, size)
             assert report["checks"]["sex_age_joint_counts"]
             assert all(cell["error"] == 0 for cell in report["calibration_joint"]["cells"])
+
+
+def test_birth_cohorts_preserve_boundaries_and_advance_without_changing_records(
+    tmp_path: Path, pilot: PilotInput
+) -> None:
+    data = pilot.model_dump()
+    c = data["calibration"]
+    ages = [0, 17, 18, 64, 65, 99, 100]
+    c["age_counts"] = [int(age in ages) for age in range(101)]
+    c["male_by_age"] = [int(age in [0, 18, 65, 100]) for age in range(101)]
+    c["household_counts"] = [0, 0, 0, 0, 0, 1]
+    inputs = PilotInput.model_validate(data)
+    generate(inputs.calibration, 17, 6, tmp_path / "run")
+    path = tmp_path / "run/persons.parquet"
+    checksum = sha256_file(path)
+    assert audit(path.parent, inputs, 6)["checks"]["sex_age_joint_counts"]
+    with duckdb.connect() as con:
+        rows = con.execute(
+            "SELECT birth_year, birth_year_upper_bound FROM read_parquet(?) "
+            "ORDER BY coalesce(birth_year, birth_year_upper_bound) DESC",
+            [str(path)],
+        ).fetchall()
+    assert rows == [
+        (2021, None),
+        (2004, None),
+        (2003, None),
+        (1957, None),
+        (1956, None),
+        (1922, None),
+        (None, 1921),
+    ]
+    for (birth_year, upper_bound), reference_age in zip(rows, ages, strict=True):
+        for year in [2022, 2023, 2024, 2050]:
+            result = age_at_year_start(
+                year, birth_year=birth_year, birth_year_upper_bound=upper_bound
+            )
+            assert result == AnnualAge(reference_age + year - 2022, reference_age == 100)
+    # In 2023 the former age 99 is exactly 100; the open class is still open (101+).
+    assert sha256_file(path) == checksum
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "UPDATE p SET birth_year=1921 WHERE birth_year_upper_bound=1921",
+        "UPDATE p SET birth_year_upper_bound=1920 WHERE birth_year_upper_bound=1921",
+    ],
+)
+def test_open_birth_cohort_cannot_be_made_exact_or_shifted(
+    tmp_path: Path, pilot: PilotInput, statement: str
+) -> None:
+    data = pilot.model_dump()
+    c = data["calibration"]
+    c["age_counts"][100], c["age_counts"][80] = c["age_counts"][80], 0
+    c["male_by_age"][100], c["male_by_age"][80] = c["male_by_age"][80], 0
+    inputs = PilotInput.model_validate(data)
+    generate(inputs.calibration, 17, 6, tmp_path / "run")
+    rewrite_persons(tmp_path / "run", statement)
+    with pytest.raises(QualityError) as error:
+        audit(tmp_path / "run", inputs, 6)
+    assert error.value.report["checks"]["birth_year_domains"] is False
 
 
 @pytest.mark.parametrize(
@@ -181,10 +243,19 @@ def rewrite_persons(directory: Path, statement: str) -> None:
         ("UPDATE p SET household_id=999 WHERE person_id=1", "foreign_keys"),
         ("UPDATE p SET reference_adult=false WHERE person_id=1", "family_constraints"),
         ("UPDATE p SET person_id=2 WHERE person_id=1", "person_identity_and_total"),
-        ("UPDATE p SET household_id=NULL WHERE age<18", "person_domains_and_minor_assignment"),
+        (
+            "UPDATE p SET household_id=NULL WHERE birth_year>2003",
+            "person_domains_and_minor_assignment",
+        ),
         ("UPDATE p SET sex='X' WHERE person_id=1", "person_domains_and_minor_assignment"),
         ("UPDATE p SET data_kind='observed'", "person_domains_and_minor_assignment"),
-        ("UPDATE p SET age=31 WHERE age=30", "age_margins"),
+        ("UPDATE p SET birth_year=1990 WHERE birth_year=1991", "age_margins"),
+        ("UPDATE p SET birth_year=NULL WHERE person_id=1", "birth_year_domains"),
+        ("UPDATE p SET birth_year=2022 WHERE person_id=1", "birth_year_domains"),
+        ("UPDATE p SET birth_year=1921 WHERE person_id=1", "birth_year_domains"),
+        ("UPDATE p SET birth_year_upper_bound=1921 WHERE person_id=1", "birth_year_domains"),
+        ("ALTER TABLE p ADD COLUMN age SMALLINT", "persons_schema"),
+        ("ALTER TABLE p ALTER birth_year TYPE DOUBLE", "persons_schema"),
         ("ALTER TABLE p ADD COLUMN real_identifier VARCHAR", "persons_schema"),
         ("ALTER TABLE p ALTER person_id TYPE DOUBLE", "persons_schema"),
     ],
@@ -209,7 +280,8 @@ def test_joint_audit_detects_sex_swap_with_unchanged_broad_margins(
 
         def broad_counts() -> list[tuple[object, ...]]:
             return con.execute(
-                "SELECT CASE WHEN age<18 THEN 0 WHEN age<65 THEN 1 ELSE 2 END, sex, count(*) "
+                "SELECT CASE WHEN birth_year>2003 THEN 0 WHEN birth_year>1956 THEN 1 "
+                "ELSE 2 END, sex, count(*) "
                 "FROM read_parquet(?) GROUP BY 1,2 ORDER BY 1,2",
                 [str(directory / "persons.parquet")],
             ).fetchall()
@@ -218,8 +290,8 @@ def test_joint_audit_detects_sex_swap_with_unchanged_broad_margins(
         rewrite_persons(
             directory,
             """UPDATE p SET sex=CASE sex WHEN 'M' THEN 'F' ELSE 'M' END
-            WHERE person_id IN (SELECT min(person_id) FROM p WHERE age=30 AND sex='M'
-            UNION ALL SELECT min(person_id) FROM p WHERE age=40 AND sex='F')""",
+            WHERE person_id IN (SELECT min(person_id) FROM p WHERE birth_year=1991 AND sex='M'
+            UNION ALL SELECT min(person_id) FROM p WHERE birth_year=1981 AND sex='F')""",
         )
         assert broad_counts() == before
     with pytest.raises(QualityError) as error:
@@ -228,13 +300,14 @@ def test_joint_audit_detects_sex_swap_with_unchanged_broad_margins(
     assert error.value.report["checks"]["sex_age_joint_counts"] is False
 
 
-def test_historical_run_requires_recorded_implementation(tmp_path: Path) -> None:
+@pytest.mark.parametrize("version", ["1.0.0", "2.0.0"])
+def test_historical_run_requires_recorded_implementation(tmp_path: Path, version: str) -> None:
     (tmp_path / "manifest.json").write_text(
         json.dumps(
             {
                 "descriptor": {
-                    "algorithm": "constrained-reconstruction/1.0.0",
-                    "audit": "parquet-independent-audit/1.0.1",
+                    "algorithm": f"constrained-reconstruction/{version}",
+                    "audit": f"parquet-independent-audit/{version}",
                 }
             }
         )
@@ -267,6 +340,11 @@ def test_retry_identity_concurrency_and_cli(
     manifest = verify_run(directory)
     assert manifest["public_release"] is False
     assert manifest["descriptor"]["input_sha256"] == sha256_file(directory / "input.json")
+    expected_model = person_model_metadata(pilot.calibration.population_reference)
+    assert manifest["descriptor"]["person_model"] == expected_model
+    report = json.loads((directory / "report.json").read_text(encoding="utf-8"))
+    assert report["schema_version"] == "m3-report/3"
+    assert report["person_model"] == expected_model
     result = CliRunner().invoke(app, ["verify-m3", "--run", str(directory)])
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["verified"] is True
@@ -329,7 +407,7 @@ def test_retry_rejects_tampered_experiment(
 
 
 @pytest.mark.parametrize(
-    "damage", ["metric", "uncertainty", "replicates", "approval", "validation"]
+    "damage", ["metric", "uncertainty", "replicates", "approval", "validation", "birth_policy"]
 )
 def test_independent_recalculation_rejects_rehashed_report(
     tmp_path: Path, pilot: PilotInput, experiment: Experiment, damage: str
@@ -345,6 +423,8 @@ def test_independent_recalculation_rejects_rehashed_report(
         report["replicates"].pop()
     elif damage == "validation":
         report["out_of_calibration_validation"] = "passed"
+    elif damage == "birth_policy":
+        report["person_model"]["age_formula"] = "year - birth_year"
     else:
         report["public_release"] = True
     report_path.write_text(json.dumps(report), encoding="utf-8")

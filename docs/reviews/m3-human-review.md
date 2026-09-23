@@ -1,5 +1,10 @@
 # M3 — esito della revisione umana di progetto
 
+Nota di versione: questo documento conserva la decisione e gli artefatti v2.
+La successiva rappresentazione con anno di nascita stabile ha un
+[riferimento v3 distinto](m3-birth-year-reference.md), con gli stessi seed,
+ipotesi e appartenenze familiari.
+
 Data: 23 settembre 2026. Origine: conclusioni esplicite dell'utente nella
 revisione del pilota. **Esito: M3 accettato come modello di lavoro iniziale;
 pronto per avviare M4 secondo il piano definito.**

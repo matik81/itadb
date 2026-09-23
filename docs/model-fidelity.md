@@ -1,7 +1,8 @@
 # Priorità di fedeltà del modello
 
-Versione 1, adottata il 23 settembre 2026 dalle conclusioni della revisione umana
-M3. La graduatoria è una decisione di progetto evolutiva: orienta lavoro e
+Versione 2, aggiornata il 23 settembre 2026 per le coorti di nascita stabili.
+La graduatoria adottata nella versione 1 dalla revisione umana M3 resta invariata.
+La graduatoria è una decisione di progetto evolutiva: orienta lavoro e
 valutazione delle versioni, senza attribuire uguale affidabilità a tutti gli
 attributi degli agenti. [Decisione](adr/0010-model-fidelity-and-m3-reference.md).
 
@@ -49,10 +50,27 @@ non si riduce quel residuo scegliendo 7 o 8 per suggerire un adattamento miglior
 continuità e riproducibilità, senza selezione in base alle statistiche familiari.
 
 Gli altri seed e le dimensioni 7/8 misurano sensibilità. Identità, artefatti
-e statistiche puntuali del riferimento sono nella
-[revisione M3](reviews/m3-human-review.md). La CLI attuale continua a generare
+e statistiche puntuali del riferimento v2 sono nella
+[revisione M3](reviews/m3-human-review.md); quelli della nuova rappresentazione
+v3 sono nella [revisione delle coorti](reviews/m3-birth-year-reference.md).
+La CLI attuale continua a generare
 l'esperimento completo: la scelta del riferimento è documentale e individua
 esattamente una delle repliche conservate, senza modificare i report storici.
+
+## Nascita stabile ed età derivata
+
+L'[ADR 0011](adr/0011-stable-birth-cohorts.md) applica la prima priorità
+alla rappresentazione temporale: l'età è derivata da una coorte sintetica
+stabile, al 1° gennaio prima dei compleanni (`Y - birth_year - 1`). Tutte le
+202 celle iniziali rimangono vincolanti; questa esattezza non si estende
+automaticamente agli anni simulati successivi.
+
+Per 100+ l'anno esatto resta nullo e si conserva soltanto l'ultimo anno
+possibile (`birth_year_upper_bound`). Il limite inferiore dell'età avanza
+nel tempo; non si sceglie una distribuzione non osservata della coda.
+Schema, formula, riferimento e razionale sono nei metadati eseguibili v3.
+Nuove evidenze sulle date di nascita o una simulazione infra-annuale
+richiederanno una regola distinta e un confronto esplicito.
 
 ## Evoluzione
 

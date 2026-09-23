@@ -2,6 +2,51 @@
 
 ## M3 — sintesi pilota
 
+### Revisione v3 — coorti di nascita stabili
+
+Verifiche del 23 settembre 2026. [Decisione](adr/0011-stable-birth-cohorts.md),
+[schema e uso](synthesis-m3.md#proprietà-individuali-e-anno-di-nascita),
+[nuovo riferimento unico](reviews/m3-birth-year-reference.md).
+
+- `uv sync --locked`, Ruff check/format e mypy: passati.
+- **189 test Python non integration passati**, di cui **85** su demografia,
+  sintesi e input M3. Verificati età zero, soglie 18/65, 99 e 100+, avanzamento
+  annuale anche oltre 100, domini stretti, corruzione dei campi e dei metadati,
+  tutte le celle sesso/età, versioni v1/v2 rifiutate senza alterazioni,
+  determinismo, concorrenza, retry, quarantena e mancato completamento dopo errori.
+- **15/15 repliche ufficiali v3 generate offline**, senza nuove acquisizioni:
+  123.360 persone virtuali e 60.468 famiglie per replica. Ogni replica ha
+  123.327 anni di nascita sintetici puntuali e 33 limiti superiori per 100+.
+- Confronto diretto delle età ricostruite dal Parquet con il CSV ISTAT:
+  **3.030/3.030 celle esatte**, errore massimo zero. I 33 record 100+ conservano
+  la distinzione dalla nascita puntuale: non sono trasformati in centenari esatti.
+- Confronto individuale con tutte le repliche del riferimento v2: identità,
+  sesso, appartenenza e adulto di riferimento invariati su **1.850.400 record**.
+  I 15 Parquet delle famiglie sono identici per checksum.
+- Verifica indipendente e retry passati: **34/34 file v3 invariati**;
+  **136/136 file storici conservati**. Nessun esperimento precedente riscritto.
+- I **38 test integration sono esclusi**, non eseguiti in questa revisione;
+  suite web e Docker non ripetute. Non cambiano DB, HTTP o frontend.
+  Due warning di deprecazione Starlette/AnyIO già presenti nella suite Python.
+
+Esperimento:
+`7ffa65715dd035357e71f33feed373528b2cfe490393be318cb898e841dc98ce`.
+Input `m3-input/2`, persone `m3-persons/3`, rapporto `m3-report/3`, algoritmo
+e audit `3.0.0`. Riferimento `m3-reference/2`: classe 6+ = 6, seed 1701.
+La selezione rimane documentale; formula e semantica della nascita sono
+registrate e verificate nei metadati eseguibili `person_model`.
+
+Generazione e audit: **4,3 s**; accettazione completa con confronto v2/ISTAT,
+checksum, rilettura e retry: **7,3 s**. Singola esecuzione locale, con la
+suite test in parallelo: non è una misura di capacità nazionale o del picco RAM.
+Log: `.tools/m3-birth-year-checks.log` e `.tools/m3-birth-year-progress.log`.
+Evidenza aggregata:
+`data/reports/m3/acceptance-birth-year-7ffa65715dd035357e71f33feed373528b2cfe490393be318cb898e841dc98ce-c455c572ddbe41f197c35da145e18c5b.json`.
+
+La regola annuale preserva la calibrazione iniziale; non simula mortalità,
+nuovi nati o evoluzione familiare. Le età future derivano dalla convenzione,
+non da nuove osservazioni. Restano i limiti scientifici e di distribuzione M3.
+
 ### Correzione prima del merge: staging dei retry
 
 Il rilievo di revisione sulla PR #14 segnalava che ogni retry riuscito creava

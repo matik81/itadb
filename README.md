@@ -49,6 +49,12 @@ limiti. I record sintetici non sono dati osservati e
 non vengono pubblicati nelle API o nella web app. Revisione scientifica
 esterna e valutazione disclosure restano necessarie per distribuirli.
 
+La revisione M3 v3 conserva un **anno di nascita sintetico stabile** e deriva
+l'età al confine annuale. Per 100+ mantiene solo l'ultimo anno di nascita
+possibile, senza inventare un'età esatta. Schema, convenzione temporale ed
+esempi sono nel [modello individuale](docs/synthesis-m3.md#proprietà-individuali-e-anno-di-nascita).
+Le versioni precedenti restano immutabili.
+
 La [revisione umana di progetto](docs/reviews/m3-human-review.md) accetta M3
 come prima versione e consente l'avvio di [M4](docs/plans/m4-national-synthesis.md).
 La [graduatoria di fedeltà](docs/model-fidelity.md) privilegia **età/sesso,

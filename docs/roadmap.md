@@ -53,6 +53,11 @@ gli altri seed e le dimensioni 7/8 sono sensibilità. Sei è il minimo della
 classe osservata, senza stimare la coda; resta esplicito il residuo di 929 adulti.
 [Esito, razionale e replica adottata](reviews/m3-human-review.md).
 
+La [revisione v3](adr/0011-stable-birth-cohorts.md) sostituisce l'età individuale
+memorizzata con una coorte di nascita stabile e un calcolo annuale esplicito;
+100+ resta una classe aperta. Conserva calibrazione e scelte del riferimento,
+senza implementare dinamiche demografiche o modificare gli esperimenti v2.
+
 La verifica indipendente implementata rilegge i Parquet con SQL separato.
 La revisione scientifica esterna e l'analisi disclosure non sono state svolte:
 restano condizioni per la distribuzione dei microdati, senza impedire lo
