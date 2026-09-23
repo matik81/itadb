@@ -82,6 +82,9 @@ it('selects one M2 category, period and level and resets pagination', async () =
     expect(fetchMock.mock.calls.some(([url]) => url.includes('level=municipality'))).toBe(true),
   );
   expect(screen.getByText(/non sommare totali e dettagli/)).toBeInTheDocument();
+  for (const endpoint of ['coverage', 'quality', 'artifacts']) {
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith(`/${endpoint}`))).toHaveLength(1);
+  }
 });
 it('shows a genuine empty catalog without invented statistics', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));

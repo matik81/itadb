@@ -23,6 +23,7 @@ export function App() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [after, setAfter] = useState(0);
   const [error, setError] = useState('');
+  const [evidenceError, setEvidenceError] = useState('');
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
   const [coverage, setCoverage] = useState<Coverage[]>([]);
@@ -39,12 +40,23 @@ export function App() {
   useEffect(() => {
     setCoverage([]);
     setSelection('');
-    if (!release || !isM2) return;
+    setQuality([]);
+    setArtifacts([]);
+    setEvidenceError('');
+    if (!release) return;
     const controller = new AbortController();
-    get<Coverage[]>(`/v2/releases/${release.id}/coverage`, controller.signal)
-      .then((items) => {
+    Promise.all([
+      isM2
+        ? get<Coverage[]>(`/v2/releases/${release.id}/coverage`, controller.signal)
+        : Promise.resolve([]),
+      get<Quality[]>(`/v2/releases/${release.id}/quality`, controller.signal),
+      get<Artifact[]>(`/v2/releases/${release.id}/artifacts`, controller.signal),
+    ])
+      .then(([items, checks, evidenceFiles]) => {
         if (controller.signal.aborted) return;
         setCoverage(items);
+        setQuality(checks);
+        setArtifacts(evidenceFiles);
         const initial =
           items.find(
             (item) =>
@@ -53,7 +65,7 @@ export function App() {
         setSelection(initial ? `${initial.period}|${initial.series_code}` : '');
       })
       .catch((reason) => {
-        if (!controller.signal.aborted) setError(String(reason.message));
+        if (!controller.signal.aborted) setEvidenceError(String(reason.message));
       });
     return () => controller.abort();
   }, [release, isM2, retry]);
@@ -85,8 +97,6 @@ export function App() {
     if (!release || (isM2 && !chosen)) return;
     const controller = new AbortController();
     setPage(null);
-    setQuality([]);
-    setArtifacts([]);
     setLoading(true);
     setError('');
     const query = new URLSearchParams({
@@ -97,15 +107,10 @@ export function App() {
       limit: '100',
     });
     if (isM2) query.set('level', level);
-    Promise.all([
-      get<Page>(`/v2/observations?${query}`, controller.signal),
-      get<Quality[]>(`/v2/releases/${release.id}/quality`, controller.signal),
-      get<Artifact[]>(`/v2/releases/${release.id}/artifacts`, controller.signal),
-    ])
-      .then(([result, checks, evidenceFiles]) => {
+    get<Page>(`/v2/observations?${query}`, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
         setPage(result);
-        setQuality(checks);
-        setArtifacts(evidenceFiles);
       })
       .catch((reason) => {
         if (!controller.signal.aborted) setError(String(reason.message));
@@ -145,10 +150,10 @@ export function App() {
             01 <span>Dati aggregati</span>
           </span>
         </div>
-        {error && (
+        {(error || evidenceError) && (
           <div role="alert" className="notice error">
             <strong>Dati non disponibili</strong>
-            <p>{error}</p>
+            <p>{error || evidenceError}</p>
             <button onClick={() => setRetry((value) => value + 1)}>Riprova</button>
           </div>
         )}
@@ -204,6 +209,7 @@ export function App() {
               <label htmlFor="series">Indicatore e categoria</label>
               <select
                 id="series"
+                aria-describedby="selection-description"
                 value={selection}
                 onChange={(event) => {
                   setSelection(event.target.value);
@@ -212,6 +218,9 @@ export function App() {
               >
                 {coverage
                   .filter((item) => item.period === chosen?.period)
+                  .sort((left, right) =>
+                    left.title.localeCompare(right.title, 'it', { numeric: true }),
+                  )
                   .map((item) => (
                     <option key={item.series_code} value={`${item.period}|${item.series_code}`}>
                       {item.title}
@@ -235,7 +244,8 @@ export function App() {
                 <option value="municipality">Comuni</option>
               </select>
             </div>
-            <p className="muted">
+            <p className="muted" id="selection-description">
+              <strong className="selection-title">{chosen?.title}</strong>
               {chosen?.row_count} osservazioni su tutti i livelli coperti · Confini del{' '}
               {chosen?.territory_snapshot}. Ogni selezione mostra una sola categoria e un solo
               livello; non sommare totali e dettagli. Età e abitazioni sono disponibili per regione,

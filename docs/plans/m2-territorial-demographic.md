@@ -33,13 +33,16 @@ Non generare individui sintetici (M3/M4).
 
 ## Stato
 
-Fasi 1–5 completate sul branch `feat/m2-territorial-demographic-coverage`.
+Fasi 1–6 completate sul branch `feat/m2-territorial-demographic-coverage`:
+[PR #13](https://github.com/matik81/itadb/pull/13).
 Fonti, perimetro e derivazioni sono in `docs/sources/istat-m2.md`; esiti dei test,
 backup/restore, pubblicazione Windows/Linux e HTTP in `docs/validation.md`;
 benchmark del milione di aggregati in `docs/benchmarks/m2.md`.
 
-La verifica visiva interattiva non è stata eseguita: nessuna sessione browser
-disponibile tramite Computer Use. Componenti React e API sono stati verificati.
-Fase 6: consegna tramite commit, rebase e PR; l'esito remoto è tracciato nei check
-della PR. La direttiva sulle operazioni lunghe è stata salvata anche nelle
+La verifica visiva interattiva è stata completata tramite Playwright e Chrome,
+su dati ufficiali nello stack locale, anche a viewport di 320/390/768 px.
+Corretti richieste duplicate dei metadati e troncamento della categoria su mobile;
+verificati filtri, paginazione, collegamenti, tastiera e recupero dagli errori.
+Esiti ed evidenze sono descritti in `docs/validation.md`; l'esito remoto è tracciato
+nei check della PR. La direttiva sulle operazioni lunghe è stata salvata anche nelle
 istruzioni generali locali, oltre ad AGENTS.md.
