@@ -1,6 +1,9 @@
 # M3 — sintesi pilota
 
-Stato: revisione implementata e verificata, calibrazione esatta sesso per singola età.
+Stato: **chiuso nel perimetro accettato dalla revisione umana di progetto**.
+Allocazione familiare casuale vincolata accettata come prima versione;
+priorità e riferimento unico registrati nell'[esito](../reviews/m3-human-review.md).
+Pronto per l'avvio del [piano M4](m4-national-synthesis.md).
 Nuovo algoritmo/input/report v2; 15 repliche, 3.030 confronti esatti con ISTAT,
 160 test Python passati. Gli esperimenti v1 restano conservati. Risultati in
 [validation.md](../validation.md#m3--sintesi-pilota).
@@ -19,8 +22,10 @@ interamente virtuali. Nessuna pubblicazione di microdati nelle API o in Git.
   modifica l'assegnazione familiare, senza modificare la congiunta demografica.
 - La congiunta non è più un holdout. Assenza di statistiche esterne inutilizzate
   dichiarata nei report; zero errore di calibrazione non è validazione esterna.
-- Classe 6+ esplorata con dimensioni ipotetiche 6, 7 e 8. Residuo esplicito
-  non assegnato; non viene dichiarato popolazione in convivenze.
+- Riferimento unico: classe 6+ = 6, seed 1701. Minimo della categoria osservata
+  e primo seed già fissato, senza scelta basata sui risultati. Dimensioni
+  7/8 e altri seed conservati come sensibilità. Residuo esplicito di 929
+  adulti, non dichiarato popolazione in convivenze.
 - Più seed, statistiche aggregate, intervalli empirici di variabilità;
   nessuna interpretazione come intervalli di confidenza della popolazione.
 - Verificatore separato che rilegge i Parquet con SQL, senza importare il
@@ -37,6 +42,9 @@ interamente virtuali. Nessuna pubblicazione di microdati nelle API o in Git.
    estremi e zeri; rigenerazione ufficiale offline, confronto diretto con CSV
    ISTAT su ogni replica, retry e conservazione dei precedenti esperimenti.
 5. Rebase su main aggiornato, commit su branch dedicato e PR.
+6. Revisione umana conclusa: [priorità evolutive](../model-fidelity.md),
+   riferimento unico e razionale; verifica degli artefatti selezionati e
+   condizioni di ingresso/uscita M4 distinte.
 
 ## Limiti da rendere visibili
 

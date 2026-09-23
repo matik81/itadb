@@ -61,6 +61,10 @@ generatore, verificatore SQL dei Parquet e archivio degli esperimenti.
 La CLI non pubblica record virtuali nelle viste delle osservazioni ufficiali.
 Limite rigido: 200.000 residenti e 100.000 famiglie; output immutabile, seed,
 provenienza e sensibilità registrati. [ADR 0008](adr/0008-synthesis-pilot.md).
+Il riferimento M3 adottato usa 6+ = 6 e seed 1701. Le
+[priorità di fedeltà](model-fidelity.md) guidano le evoluzioni: l'assegnazione
+comunale/provinciale non è presente nei record M3 e costituisce un primo
+requisito del [piano M4](plans/m4-national-synthesis.md).
 
 L'individuo statistico non è un agente LLM e non richiede un processo per persona.
 La generazione nazionale dovrà essere vettorizzata, per blocchi territoriali, riproducibile con seed

@@ -74,7 +74,9 @@ Parquet e DB, compresi stato e attributi upstream. Vedi [M2](sources/istat-m2.md
 ## Gate richiesti per la sintesi
 
 Margini territoriali, distribuzioni congiunte, composizione familiare, vincoli logici e
-copertura. Validazione su statistiche non usate nella calibrazione; confronto tra seed e
+copertura, nell'ordine delle [priorità di fedeltà](model-fidelity.md).
+Validazione su statistiche non usate nella calibrazione quando disponibili,
+con assenze dichiarate; confronto tra seed e
 quantificazione dell'incertezza. I margini non determinano univocamente le correlazioni:
 ipotesi modellistiche, errori e bias vanno pubblicati insieme ai risultati.
 La coerenza statistica non rende uno scenario una previsione certa o una stima causale.
@@ -100,3 +102,11 @@ Questi controlli certificano integrità del software e conservazione dei margini
 non accuratezza delle composizioni familiari. La revisione scientifica esterna
 e la valutazione disclosure non sono state eseguite; nessuna release pubblica
 di microdati è consentita dal percorso implementato.
+
+La [revisione umana di progetto M3](reviews/m3-human-review.md) accetta
+l'allocazione familiare casuale vincolata come prima versione. Il riferimento
+adottato è univoco (6+ = 6, seed 1701), con razionale e residuo espliciti;
+le restanti repliche sono sensibilità. Tale accettazione consente lo sviluppo
+M4, senza attestare fedeltà familiare non misurata o distribuzione comunale
+già implementata. Le nuove versioni dovranno conservare i vincoli prioritari
+e dichiarare per ogni proprietà cosa è osservato, calibrato o ipotizzato.

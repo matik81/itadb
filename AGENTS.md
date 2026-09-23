@@ -4,6 +4,8 @@
 Leggi README.md e docs/roadmap.md prima di cambiare l'architettura. La v0.1 serve
 evidenze territoriali aggregate. La popolazione sintetica 1:1 è futura: non presentare
 fixture, stime, scenari o record virtuali come dati osservati o persone reali.
+Per sintesi e attributi degli agenti applica `docs/model-fidelity.md`: priorità
+versionate e un solo modello di riferimento, con assunzioni e razionali espliciti.
 
 ## Regole di lavoro
 - Rispetta le istruzioni dell'utente e gli AGENTS.md più specifici.

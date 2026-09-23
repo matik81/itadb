@@ -2,6 +2,27 @@
 
 ## M3 — sintesi pilota
 
+### Chiusura della revisione umana di progetto
+
+Il 23 settembre 2026 l'utente accetta il modello familiare casuale vincolato
+come prima versione e stabilisce la graduatoria età/sesso → geografia → famiglie.
+L'[esito della revisione](reviews/m3-human-review.md) adotta un riferimento unico,
+6+ = 6 e seed 1701, con razionale, run, replica e checksum. Le altre repliche
+rimangono sensibilità; i risultati precedenti non sono stati riscritti.
+
+Verifica ripetuta del run `ee50a4c577b6462db82c909ea54b092ddc8346c4b8d6463286f848e55d3219a0`:
+integrità e ricalcolo SQL delle 15 repliche passati; replica selezionata con
+123.360 persone, 60.468 famiglie e 929 adulti non assegnati. Controllati
+87 collegamenti documentali e la coerenza dei valori con manifest/report/Parquet.
+Log della verifica: `.tools/m3-review-progress.log`.
+Questa modifica è documentale: codice, contratti, input e output immutati;
+suite applicative locali non ripetute. La CI della PR controlla il commit.
+
+**M3 accettato per proseguire in M4** secondo il [piano](plans/m4-national-synthesis.md).
+L'esito riguarda la revisione umana di progetto, distinta dalla revisione
+scientifica esterna e disclosure, che restano non svolte. Non attesta una
+distribuzione comunale o prestazioni nazionali già implementate.
+
 ### Revisione v2 — sesso ed età esattamente uguali a ISTAT
 
 Verifiche del 23 settembre 2026, dopo la richiesta di corrispondenza 1:1.
