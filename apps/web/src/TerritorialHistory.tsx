@@ -1,19 +1,40 @@
 import { useEffect, useState } from 'react';
 import { API_BASE, get, type CrosswalkPage } from './api';
+import { SortHeader, type TableSort } from './SortHeader';
+
+const kindLabels = {
+  merger: 'Fusione',
+  split: 'Scissione',
+  recode: 'Ricodifica',
+  transfer: 'Trasferimento',
+};
 
 export function TerritorialHistory({ releaseId }: { releaseId: string }) {
   const [page, setPage] = useState<CrosswalkPage | null>(null);
   const [after, setAfter] = useState(0);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [sort, setSort] = useState<TableSort>({ field: 'date', direction: 'asc' });
+  const [kind, setKind] = useState('');
+  const [usage, setUsage] = useState('');
+  function changeSort(next: TableSort) {
+    setSort(next);
+    setAfter(0);
+  }
   useEffect(() => {
     const controller = new AbortController();
     setPage(null);
     setError('');
-    get<CrosswalkPage>(
-      `/v2/crosswalks?release_id=${releaseId}&after=${after}&limit=50`,
-      controller.signal,
-    )
+    const query = new URLSearchParams({
+      release_id: releaseId,
+      after: String(after),
+      limit: '50',
+      sort_by: sort.field,
+      direction: sort.direction,
+    });
+    if (kind) query.set('kind', kind);
+    if (usage) query.set('weight_basis', usage);
+    get<CrosswalkPage>(`/v2/crosswalks?${query}`, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) setPage(result);
       })
@@ -21,7 +42,7 @@ export function TerritorialHistory({ releaseId }: { releaseId: string }) {
         if (!controller.signal.aborted) setError(String(reason.message));
       });
     return () => controller.abort();
-  }, [releaseId, after, retry]);
+  }, [releaseId, after, retry, sort, kind, usage]);
   return (
     <section className="panel history" aria-labelledby="history-title">
       <h2 id="history-title">Storia territoriale e corrispondenze</h2>
@@ -43,6 +64,49 @@ export function TerritorialHistory({ releaseId }: { releaseId: string }) {
           </a>
         ))}
       </div>
+      <div className="table-filters" role="group" aria-label="Filtri storia territoriale">
+        <label>
+          Tipo di variazione
+          <select
+            value={kind}
+            onChange={(event) => {
+              setKind(event.target.value);
+              setAfter(0);
+            }}
+          >
+            <option value="">Tutte le variazioni</option>
+            {Object.entries(kindLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Utilizzo delle corrispondenze
+          <select
+            value={usage}
+            onChange={(event) => {
+              setUsage(event.target.value);
+              setAfter(0);
+            }}
+          >
+            <option value="">Tutti gli utilizzi</option>
+            <option value="exact">Aggregazione esatta</option>
+            <option value="structural">Collegamento strutturale</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setKind('');
+            setUsage('');
+            setAfter(0);
+          }}
+        >
+          Azzera filtri storia
+        </button>
+      </div>
       {error && (
         <div role="alert">
           <p>{error}</p>
@@ -57,10 +121,26 @@ export function TerritorialHistory({ releaseId }: { releaseId: string }) {
               <caption className="sr-only">Collegamenti tra codici territoriali storici</caption>
               <thead>
                 <tr>
-                  <th>Decorrenza</th>
-                  <th>Variazione</th>
-                  <th>Codici</th>
-                  <th>Utilizzo</th>
+                  <SortHeader label="Decorrenza" field="date" sort={sort} onSort={changeSort} />
+                  <SortHeader
+                    label="Variazione"
+                    field="description"
+                    sort={sort}
+                    onSort={changeSort}
+                  />
+                  <SortHeader
+                    label="Codice origine"
+                    field="from_code"
+                    sort={sort}
+                    onSort={changeSort}
+                  />
+                  <SortHeader
+                    label="Codice destinazione"
+                    field="to_code"
+                    sort={sort}
+                    onSort={changeSort}
+                  />
+                  <SortHeader label="Utilizzo" field="usage" sort={sort} onSort={changeSort} />
                 </tr>
               </thead>
               <tbody>
@@ -69,10 +149,10 @@ export function TerritorialHistory({ releaseId }: { releaseId: string }) {
                     <td>{item.effective_date}</td>
                     <td>
                       <a href={item.source_url}>{item.description} ↗</a>
+                      <span className="history-kind">{kindLabels[item.kind]}</span>
                     </td>
-                    <td className="code">
-                      {item.from_code} → {item.to_code}
-                    </td>
+                    <td className="code">{item.from_code}</td>
+                    <td className="code">{item.to_code}</td>
                     <td>
                       {item.weight_basis === 'exact'
                         ? 'Aggregazione esatta · peso 1'

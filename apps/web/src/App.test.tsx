@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { App } from './App';
 
@@ -41,6 +41,7 @@ it('selects one M2 category, period and level and resets pagination', async () =
         ];
       if (url.endsWith('/coverage')) return coverage;
       if (url.includes('/crosswalks')) return { items: [], next_cursor: null };
+      if (url.includes('/territories')) return { items: [], next_cursor: null };
       if (url.includes('/observations'))
         return {
           items: [
@@ -85,6 +86,46 @@ it('selects one M2 category, period and level and resets pagination', async () =
   for (const endpoint of ['coverage', 'quality', 'artifacts']) {
     expect(fetchMock.mock.calls.filter(([url]) => url.endsWith(`/${endpoint}`))).toHaveLength(1);
   }
+  fireEvent.click(screen.getByRole('button', { name: 'Successive →' }));
+  await waitFor(() =>
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('after=8'))).toBe(true),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Ordina valore in ordine crescente' }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) =>
+          url.includes('sort_by=value') && url.includes('direction=asc') && url.includes('after=0'),
+      ),
+    ).toBe(true),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Ordina valore in ordine decrescente' }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => url.includes('sort_by=value') && url.includes('direction=desc'),
+      ),
+    ).toBe(true),
+  );
+  fireEvent.change(screen.getByLabelText('Stato del dato'), { target: { value: 'missing' } });
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => url.includes('status=missing') && url.includes('after=0'),
+      ),
+    ).toBe(true),
+  );
+  fireEvent.change(screen.getByLabelText('Cerca territorio o codice'), {
+    target: { value: 'Alfa' },
+  });
+  fireEvent.submit(screen.getByRole('form', { name: 'Filtri osservazioni' }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => url.includes('search=Alfa') && url.includes('status=missing'),
+      ),
+    ).toBe(true),
+  );
 });
 it('shows a genuine empty catalog without invented statistics', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
@@ -192,11 +233,14 @@ it('uses the release series and distinguishes national controls, upstream state 
   }));
   vi.stubGlobal('fetch', fetchMock);
   render(<App />);
-  expect(await screen.findByText('Senza flag ISTAT')).toBeInTheDocument();
-  expect(screen.getByText('Italia · totale')).toBeInTheDocument();
+  expect(await screen.findByRole('img', { name: 'Italia · totale' })).toBeInTheDocument();
+  const table = within(
+    screen.getByRole('table', { name: 'Osservazioni della versione selezionata' }),
+  );
+  expect(table.getByText('Senza flag ISTAT')).toBeInTheDocument();
   expect(screen.getByText('Non accertata')).toBeInTheDocument();
   expect(screen.getByText('Correzione del campione di test.')).toBeInTheDocument();
-  expect(screen.queryByText('Osservato')).not.toBeInTheDocument();
+  expect(table.queryByText('Osservato')).not.toBeInTheDocument();
   expect(screen.queryByText('Dimostrazione con dati inventati')).not.toBeInTheDocument();
   expect(
     fetchMock.mock.calls.some(([url]) => url.includes('series=resident_population_jan1')),

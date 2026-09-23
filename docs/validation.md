@@ -240,3 +240,43 @@ Non sono state aggiunte dipendenze, sorgenti esterne, API o migrazioni.
 
 Verifica limitata a Chrome e dispositivi emulati. Il confine è semplificato per
 la consultazione e non è una carta catastale o stradale.
+
+## Tabelle e icone M2 — 23 settembre 2026
+
+Entrambe le tabelle offrono pulsanti crescenti/decrescenti nelle intestazioni,
+con stato `aria-sort`, e filtri per selezione. Le osservazioni filtrano regione
+o provincia padre e stato, con ricerca letterale per nome/codice. Lo storico
+filtra tipo di variazione e utilizzo. Ogni modifica riparte dalla prima pagina;
+il database ordina e filtra tutta la selezione prima di limitarne la pagina.
+La colonna ripetitiva «Livello» è sostituita da icone territoriali accessibili.
+Le schede hanno icone SVG locali distinte per persone, famiglie e abitazioni.
+Le preferenze sono conservate in `apps/web/AGENTS.md`.
+
+- **104 test offline, 25 di integrazione e 17 web superati**. I nuovi test
+  PostgreSQL confrontano entrambe le direzioni su più pagine, valori numerici
+  uguali e nulli, filtri combinati e ricerca contenente caratteri SQL trattati
+  letteralmente. Le API respingono colonne, direzioni e filtri fuori elenco.
+  Ruff, mypy, TypeScript, Prettier, build web e contratto OpenAPI verificati.
+- Sulla release ufficiale locale: tutti i **7.904 comuni del 2021**, in 16 pagine
+  da massimo 500 righe, coincidono con una query SQL indipendente sia in ordine
+  numerico crescente sia decrescente; nessun ID duplicato o perso. Quattro
+  `EXPLAIN (ANALYZE, BUFFERS)` conservati: prime pagine circa 14 ms, seconde
+  circa 43–46 ms in questa esecuzione locale. È una misura di questa selezione,
+  non uno SLA né un benchmark della futura popolazione sintetica.
+- **16 controlli Playwright 1.63.0 / Chrome 153.0.8010.53**: regioni in entrambe
+  le direzioni; Roma e Milano in testa ai comuni per popolazione decrescente;
+  200 comuni su due pagine senza duplicati; filtro Torino con codice UTS `201`,
+  ricerca Moncalieri, otto province del Piemonte, stato mancante e reset.
+  Storico: scissioni, utilizzi strutturali/esatti, selezione vuota e data decrescente.
+- Le tre icone nelle schede sono state controllate visivamente insieme alla mappa.
+  Viewport 1440, 768, 390 e 320 px; pagina e scheda senza overflow orizzontale,
+  tabelle scorrevoli internamente. Ordinamento da tastiera verificato.
+  Errore 503 simulato nel catalogo dei territori padre: retry riuscito senza
+  modificare periodo/categoria. Nessun errore JavaScript o HTTP inatteso.
+- Evidenze locali fuori Git in `data/reports/`: `m2-tables-playwright.json`,
+  `m2-tables-progress.log`, `m2-tables-trace.zip`, `m2-tables-query-plans.json`,
+  screenshot `m2-tables-*.png`. Build e controlli registrati anche nel log
+  `.tools/m2-progress.log`; API e web ricostruiti nello stack locale.
+
+Nessuna nuova dipendenza, migrazione o modifica alle evidenze pubblicate.
+Verifica browser limitata a Chrome e viewport emulati.

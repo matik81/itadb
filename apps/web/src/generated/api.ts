@@ -1036,6 +1036,10 @@ export interface operations {
                 release_id: string;
                 after?: number;
                 limit?: number;
+                sort_by?: "id" | "date" | "description" | "from_code" | "to_code" | "usage";
+                direction?: "asc" | "desc";
+                kind?: ("merger" | "split" | "recode" | "transfer") | null;
+                weight_basis?: ("exact" | "structural") | null;
             };
             header?: never;
             path?: never;
@@ -1081,6 +1085,11 @@ export interface operations {
                 level?: ("country" | "region" | "province" | "municipality") | null;
                 after?: number;
                 limit?: number;
+                sort_by?: "territory_id" | "name" | "code" | "value" | "status";
+                direction?: "asc" | "desc";
+                search?: string | null;
+                parent_code?: string | null;
+                status?: ("observed" | "estimated" | "missing" | "suppressed" | "demo" | "unflagged_upstream") | null;
             };
             header?: never;
             path?: never;

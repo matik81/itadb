@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { get, type Boundary, type Coverage, type Observation, type Release } from './api';
 import { TerritoryMap } from './TerritoryMap';
 import { projectBoundary } from './territory-map';
+import { Icon } from './Icons';
 
 type Props = {
   observation: Observation;
@@ -152,12 +153,15 @@ export function TerritoryDetail({ observation, coverage, release, sourceName, on
         <section className="territory-statistic" aria-label="Dato selezionato">
           <p className="eyebrow">DATO SELEZIONATO</p>
           <h3>{coverage.title}</h3>
-          <p className="territory-value">
-            {observation.value === null
-              ? 'Non disponibile'
-              : number.format(Number(observation.value))}
-            <span>{unit}</span>
-          </p>
+          <div className="territory-value-with-icon">
+            <Icon kind={coverage.unit} className="metric-icon" />
+            <p className="territory-value">
+              {observation.value === null
+                ? 'Non disponibile'
+                : number.format(Number(observation.value))}
+              <span>{unit}</span>
+            </p>
+          </div>
           <dl>
             <dt>Periodo del dato</dt>
             <dd>{coverage.period}</dd>

@@ -9,9 +9,12 @@ import {
   type Source,
   type Coverage,
   type Observation,
+  type TerritoryPage,
 } from './api';
 import { TerritorialHistory } from './TerritorialHistory';
 import { TerritoryDetail } from './TerritoryDetail';
+import { Icon, levelLabels } from './Icons';
+import { SortHeader, type TableSort } from './SortHeader';
 
 const number = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 6 });
 const dateTime = (value: string) => new Date(value).toLocaleString('it-IT');
@@ -32,9 +35,31 @@ export function App() {
   const [selection, setSelection] = useState('');
   const [level, setLevel] = useState('region');
   const [territory, setTerritory] = useState<Observation | null>(null);
+  const [sort, setSort] = useState<TableSort>({ field: 'name', direction: 'asc' });
+  const [searchDraft, setSearchDraft] = useState('');
+  const [filters, setFilters] = useState({ search: '', parent: '', status: '' });
+  const [parents, setParents] = useState<TerritoryPage['items']>([]);
+  const [parentError, setParentError] = useState('');
+  const [parentRetry, setParentRetry] = useState(0);
   const release = releases.find((item) => item.id === selected);
   const isM2 = release?.dataset_id === 'istat_m2';
   const chosen = coverage.find((item) => `${item.period}|${item.series_code}` === selection);
+  const parentLevel = isM2
+    ? level === 'municipality'
+      ? 'province'
+      : level === 'province'
+        ? 'region'
+        : null
+    : null;
+  function resetFilters() {
+    setAfter(0);
+    setFilters({ search: '', parent: '', status: '' });
+    setSearchDraft('');
+  }
+  function changeSort(next: TableSort) {
+    setSort(next);
+    setAfter(0);
+  }
   const unit =
     { persons: 'persone', households: 'famiglie', dwellings: 'abitazioni' }[
       chosen?.unit ?? 'persons'
@@ -97,6 +122,30 @@ export function App() {
   }, [retry]);
 
   useEffect(() => {
+    setParents([]);
+    setParentError('');
+    if (!release || !parentLevel || !chosen?.territory_snapshot) return;
+    const controller = new AbortController();
+    const query = new URLSearchParams({
+      release_id: release.id,
+      snapshot: chosen.territory_snapshot,
+      level: parentLevel,
+      limit: '500',
+    });
+    get<TerritoryPage>(`/v2/territories?${query}`, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (result.next_cursor !== null)
+          throw new Error('Elenco dei territori incompleto. Riprova.');
+        setParents(result.items.sort((a, b) => a.name.localeCompare(b.name, 'it')));
+      })
+      .catch((reason) => {
+        if (!controller.signal.aborted) setParentError(String(reason.message));
+      });
+    return () => controller.abort();
+  }, [release, parentLevel, chosen?.territory_snapshot, parentRetry]);
+
+  useEffect(() => {
     if (!release || (isM2 && !chosen)) return;
     const controller = new AbortController();
     setPage(null);
@@ -108,8 +157,13 @@ export function App() {
       series: chosen?.series_code ?? release.series_code,
       after: String(after),
       limit: '100',
+      sort_by: sort.field,
+      direction: sort.direction,
     });
     if (isM2) query.set('level', level);
+    if (filters.search) query.set('search', filters.search);
+    if (filters.parent) query.set('parent_code', filters.parent);
+    if (filters.status) query.set('status', filters.status);
     get<Page>(`/v2/observations?${query}`, controller.signal)
       .then((result) => {
         if (controller.signal.aborted) return;
@@ -122,7 +176,7 @@ export function App() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [release, after, retry, chosen, isM2, level]);
+  }, [release, after, retry, chosen, isM2, level, sort, filters]);
 
   return (
     <>
@@ -173,6 +227,7 @@ export function App() {
               setSelection('');
               setPage(null);
               setLevel('region');
+              resetFilters();
             }}
           >
             <option value="" disabled>
@@ -201,6 +256,7 @@ export function App() {
                   const next = coverage.find((item) => item.period === event.target.value);
                   setSelection(next ? `${next.period}|${next.series_code}` : '');
                   setAfter(0);
+                  resetFilters();
                 }}
               >
                 {[...new Set(coverage.map((item) => item.period))].sort().map((period) => (
@@ -217,6 +273,7 @@ export function App() {
                 onChange={(event) => {
                   setSelection(event.target.value);
                   setAfter(0);
+                  resetFilters();
                 }}
               >
                 {coverage
@@ -238,7 +295,7 @@ export function App() {
                 value={level}
                 onChange={(event) => {
                   setLevel(event.target.value);
-                  setAfter(0);
+                  resetFilters();
                 }}
               >
                 <option value="country">Italia · totale di controllo</option>
@@ -297,6 +354,78 @@ export function App() {
               </h2>
               <span className="muted">Unità: {unit}</span>
             </div>
+            <form
+              className="table-filters"
+              aria-label="Filtri osservazioni"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setFilters({ ...filters, search: searchDraft.trim() });
+                setAfter(0);
+              }}
+            >
+              <label>
+                Cerca territorio o codice
+                <input
+                  type="search"
+                  value={searchDraft}
+                  maxLength={100}
+                  onChange={(event) => setSearchDraft(event.target.value)}
+                  placeholder="Nome o codice ISTAT"
+                />
+              </label>
+              {parentLevel && (
+                <label>
+                  {parentLevel === 'region' ? 'Regione' : 'Provincia'}
+                  <select
+                    value={filters.parent}
+                    disabled={!parents.length}
+                    onChange={(event) => {
+                      setFilters({ ...filters, parent: event.target.value });
+                      setAfter(0);
+                    }}
+                  >
+                    <option value="">
+                      {parentLevel === 'region' ? 'Tutte le regioni' : 'Tutte le province'}
+                    </option>
+                    {parents.map((parent) => (
+                      <option key={parent.territory_id} value={parent.code}>
+                        {parent.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label>
+                Stato del dato
+                <select
+                  value={filters.status}
+                  onChange={(event) => {
+                    setFilters({ ...filters, status: event.target.value });
+                    setAfter(0);
+                  }}
+                >
+                  <option value="">Tutti gli stati</option>
+                  <option value="observed">Osservato</option>
+                  <option value="estimated">Stimato</option>
+                  <option value="unflagged_upstream">Senza flag ISTAT</option>
+                  <option value="missing">Mancante</option>
+                  <option value="suppressed">Riservato</option>
+                  <option value="demo">Dimostrativo</option>
+                </select>
+              </label>
+              <button type="submit">Cerca</button>
+              <button type="button" onClick={resetFilters}>
+                Azzera filtri
+              </button>
+              {parentError && (
+                <p role="alert">
+                  {parentError}{' '}
+                  <button type="button" onClick={() => setParentRetry((value) => value + 1)}>
+                    Riprova filtri
+                  </button>
+                </p>
+              )}
+            </form>
             {loading && (
               <p role="status" className="empty">
                 Caricamento delle evidenze…
@@ -309,42 +438,45 @@ export function App() {
                     <caption className="sr-only">Osservazioni della versione selezionata</caption>
                     <thead>
                       <tr>
-                        <th>Territorio</th>
-                        <th>Codice</th>
-                        <th>Livello</th>
-                        <th className="numeric">Valore</th>
-                        <th>Stato</th>
+                        <SortHeader
+                          label="Territorio"
+                          field="name"
+                          sort={sort}
+                          onSort={changeSort}
+                        />
+                        <SortHeader label="Codice" field="code" sort={sort} onSort={changeSort} />
+                        <SortHeader
+                          label="Valore"
+                          field="value"
+                          sort={sort}
+                          onSort={changeSort}
+                          numeric
+                        />
+                        <SortHeader label="Stato" field="status" sort={sort} onSort={changeSort} />
                       </tr>
                     </thead>
                     <tbody>
                       {page.items.map((item) => (
                         <tr key={item.territory_id}>
                           <td>
-                            {isM2 && item.level !== 'country' ? (
-                              <button
-                                type="button"
-                                className="territory-link"
-                                aria-haspopup="dialog"
-                                onClick={() => setTerritory(item)}
-                              >
-                                {item.territory_name}{' '}
-                                <span className="sr-only">· apri scheda e mappa</span>
-                              </button>
-                            ) : (
-                              item.territory_name
-                            )}
+                            <span className="territory-name-cell">
+                              <Icon kind={item.level} label={levelLabels[item.level]} />
+                              {isM2 && item.level !== 'country' ? (
+                                <button
+                                  type="button"
+                                  className="territory-link"
+                                  aria-haspopup="dialog"
+                                  onClick={() => setTerritory(item)}
+                                >
+                                  {item.territory_name}{' '}
+                                  <span className="sr-only">· apri scheda e mappa</span>
+                                </button>
+                              ) : (
+                                item.territory_name
+                              )}
+                            </span>
                           </td>
                           <td className="code">{item.territory_code}</td>
-                          <td>
-                            {
-                              {
-                                country: 'Italia · totale',
-                                region: 'Regione',
-                                province: 'Provincia',
-                                municipality: 'Comune',
-                              }[item.level]
-                            }
-                          </td>
                           <td className="numeric">
                             {item.value === null
                               ? 'Non disponibile'

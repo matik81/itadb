@@ -113,6 +113,26 @@ pagina vuota; non significa popolazione zero. Totali territoriali e categorie
 totali non vanno sommati ai rispettivi dettagli. Il filtro livello è opzionale
 per compatibilità; la web app M2 lo imposta sempre.
 
+### Ordinamento e filtri delle tabelle
+
+`/v2/observations` accetta `sort_by=territory_id|name|code|value|status` e
+`direction=asc|desc` (default `territory_id`, `asc`). Filtri opzionali:
+`search` (1–100 caratteri, sottostringa letterale di nome o codice senza distinzione
+maiuscole/minuscole), `parent_code` (codice del padre immediato nello snapshot),
+`status=observed|estimated|missing|suppressed|demo|unflagged_upstream`.
+L'ordinamento dello stato segue le etichette italiane della web app.
+
+`/v2/crosswalks` accetta `sort_by=id|date|description|from_code|to_code|usage` e
+`direction=asc|desc` (default `id`, `asc`), con filtri
+`kind=merger|split|recode|transfer` e `weight_basis=exact|structural`.
+
+Filtri e ordinamento sono applicati nel database **prima** della paginazione.
+I valori numerici sono ordinati come numeri; i null restano in fondo in entrambe
+le direzioni. A parità di valore, l'ID è crescente e rende stabile il cursore.
+Mantenere tutti i parametri invariati tra pagine; a ogni modifica ricominciare
+con `after=0`. Un cursore fuori dalla selezione restituisce una pagina vuota.
+La dimensione massima resta 500 righe. Nessuna modifica alle route v1.
+
 Confine assente o oltre il budget: 404. La forma GeoJSON può essere usata per
 consultazione, non per misure catastali. Crosswalk `structural` ha peso null:
 non autorizza a distribuire i valori dei predecessori. Snapshot e codice da soli

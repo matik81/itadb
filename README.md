@@ -33,6 +33,10 @@ Il nome di una regione, provincia o comune apre una scheda con mappa del confine
 dato selezionato, periodo, fonte e licenza. La mappa permette zoom e spostamento;
 il GeoJSON si scarica da un collegamento esplicito. Chiudere la scheda conserva
 filtri e pagina della tabella.
+Le tabelle offrono ordinamento crescente/decrescente sull'intera selezione,
+ricerca nome/codice e filtri per territorio padre e stato del dato; lo storico
+filtra tipo di variazione e utilizzo. Icone accanto ai nomi distinguono regioni,
+province e comuni; nelle schede identificano persone, famiglie e abitazioni.
 
 ## Stack e motivazione
 
