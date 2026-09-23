@@ -248,15 +248,25 @@ def test_historical_run_requires_recorded_implementation(tmp_path: Path) -> None
 def test_retry_identity_concurrency_and_cli(
     tmp_path: Path, pilot: PilotInput, experiment: Experiment
 ) -> None:
+    # Previous interrupted attempts are evidence, not retry scratch space to clean up.
+    previous_attempt = tmp_path / "state" / "m3-attempt-interrupted" / "input.json"
+    previous_attempt.parent.mkdir(parents=True)
+    previous_attempt.write_bytes(b"preserved previous attempt")
+
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda _: run_pilot(tmp_path, pilot, experiment), range(2)))
     assert results[0] == results[1]
+    assert list((tmp_path / "state").glob("m3-attempt-*")) == [previous_attempt.parent]
     directory = results[0]
     before = {p: sha256_file(p) for p in directory.rglob("*") if p.is_file()}
-    assert run_pilot(tmp_path, pilot, experiment) == directory
+    for _ in range(3):
+        assert run_pilot(tmp_path, pilot, experiment) == directory
+        assert list((tmp_path / "state").glob("m3-attempt-*")) == [previous_attempt.parent]
+        assert previous_attempt.read_bytes() == b"preserved previous attempt"
     assert before == {p: sha256_file(p) for p in directory.rglob("*") if p.is_file()}
     manifest = verify_run(directory)
     assert manifest["public_release"] is False
+    assert manifest["descriptor"]["input_sha256"] == sha256_file(directory / "input.json")
     result = CliRunner().invoke(app, ["verify-m3", "--run", str(directory)])
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["verified"] is True

@@ -2,6 +2,23 @@
 
 ## M3 — sintesi pilota
 
+### Correzione prima del merge: staging dei retry
+
+Il rilievo di revisione sulla PR #14 segnalava che ogni retry riuscito creava
+una directory `m3-attempt-*` contenente soltanto l'input. La preparazione
+calcola ora l'hash dell'input in memoria; lo staging viene creato sotto lock
+soltanto quando manca un esperimento completato da riutilizzare.
+
+Ruff check/format, mypy e **160 test Python non integration passati**.
+Il test di concorrenza/retry verifica che due invocazioni e tre retry successivi
+non lascino nuove directory di tentativo, preservando un tentativo precedente
+interrotto e i checksum degli output. Restano verificati quarantena e
+conservazione delle evidenze in caso di errore. Nuova rilettura del run di
+riferimento `ee50a4c577b6462db82c909ea54b092ddc8346c4b8d6463286f848e55d3219a0`
+passata, senza rigenerare o modificare dati. Log: `.tools/m3-merge-checks.log`.
+La correzione riguarda il ciclo dei tentativi, non il metodo statistico o
+la replica di riferimento scelta nella revisione umana.
+
 ### Chiusura della revisione umana di progetto
 
 Il 23 settembre 2026 l'utente accetta il modello familiare casuale vincolato

@@ -142,7 +142,10 @@ con un messaggio esplicito; una nuova sintesi crea una directory distinta.
 Un lock serializza i retry sullo stesso host; il rename della directory sullo
 stesso filesystem rende visibile l'esperimento completo. Non è un protocollo
 di pubblicazione distribuito. I tentativi interrotti restano in `data/state/`;
-gli errori gestiti producono quarantena. Un retry completato verifica checksum
+la directory di un nuovo tentativo viene creata soltanto sotto lock, dopo
+aver escluso il riuso di un esperimento completato. I retry riusciti non
+accumulano directory di staging; i log per tentativo restano conservati.
+Gli errori gestiti producono quarantena. Un retry completato verifica checksum
 e ricalcola gli audit: artefatti mancanti o alterati vengono rifiutati.
 Non riparare un esperimento sovrascrivendolo; conservare l'evidenza e usare un
 nuovo archivio per riprodurlo. Parquet, originali, log e report locali sono esclusi da Git.
