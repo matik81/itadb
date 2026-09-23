@@ -33,7 +33,7 @@ Per un comando uv che possa risincronizzare dipendenze usare il flag anche con `
 `REQUESTS_CA_BUNDLE` con un bundle approvato dal sistema se si desidera eseguire l'audit
 localmente; il workflow Linux lo ha completato correttamente.
 
-## Da installare per sviluppare agevolmente
+## Raccomandazioni dell'audit iniziale
 
 1. **Docker Desktop con backend WSL2 e Compose v2**, oppure Docker Engine+Compose in Ubuntu.
    Scegliere una sola modalità e verificarla con `docker version` e `docker compose version`.
@@ -46,3 +46,19 @@ localmente; il workflow Linux lo ha completato correttamente.
 Non sono necessari PostgreSQL nativo, Redis, Java, Spark, Kubernetes o pnpm per la v0.1.
 Non è stata eseguita alcuna installazione globale o di Docker durante questo lavoro.
 Il controllo `scripts/doctor.ps1` permette di aggiornare l'inventario senza modifiche.
+
+## Aggiornamento durante M1, 23 settembre 2026
+
+Docker Desktop è ora disponibile: Docker Engine 29.8.0 e Compose utilizzabili.
+Lo stack locale DB/API/web è stato avviato; PostgreSQL 17.5/PostGIS 3.5 serve
+la demo e il primo dataset ISTAT. La tabella sopra descrive lo stato iniziale.
+
+L'eseguibile è in `%LOCALAPPDATA%/Programs/DockerDesktop/resources/bin`.
+Se il terminale non lo trova, aggiungere la directory al PATH del solo processo
+prima dei comandi Compose; anche il credential helper deve essere raggiungibile.
+La configurazione locale del trust store usata per le build resta fuori Git.
+
+Per M1 è stato creato il container separato `itadb-m1-test-db`, porta 55432,
+con volume persistente `itadb_m1_test_postgres`. I database di test e quello
+di verifica del restore sono conservati. Non usare gli URL del database
+applicativo per eseguire la suite di integrazione.

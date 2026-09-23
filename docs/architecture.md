@@ -23,10 +23,13 @@ flowchart LR
   A --> W[Web app e utenti API]
 ```
 
-Nella v0.1 il percorso completo parte dalla fixture demo; i connettori reali arrivano
-all'archivio originale. La trasformazione di SDMX reali necessita onboarding specifico.
+Nella v0.1 il percorso completo supporta la fixture demo e il campione regionale ISTAT
+2024 revisionato. Altri dataset SDMX necessitano onboarding e adapter specifici.
 Le viste e le API escludono dati non pubblicati. L'archivio locale implementato usa path
 relativi e contenuti indirizzati per checksum; S3 è una destinazione futura, non presente.
+La pubblicazione ISTAT conserva tutte le evidenze nel medesimo archivio condiviso dai
+worker. Le revisioni sono serializzate per dataset/periodo. Le API v2 preservano gli stati
+upstream e la v1 continua a servire le release compatibili: [ADR 0006](adr/0006-istat-publication.md).
 
 ## Confini e scalabilità
 

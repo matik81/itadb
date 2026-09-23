@@ -1,0 +1,14 @@
+{
+  "name": "istat-population-regions-publication",
+  "version": "1.0.1",
+  "dataset_id": "istat_population_regions",
+  "series_code": "resident_population_jan1",
+  "onboarding_contract_sha256": "f86e6a076034ab16a716ddcec931d3a34aebd53760811353c6e9efdda2d158e9",
+  "territory_snapshot": "2024-01-01",
+  "territory_valid_to": "2024-01-02",
+  "source_scheme": "ISTAT:CL_ITTER107:1.0",
+  "national_code": "IT",
+  "status": "unflagged_upstream",
+  "max_value_exclusive": 100000000000000,
+  "license_evidence_sha256": "5104ea81de8b249fb2cd2f873e5d931e39337ebc3f105cd66bebda20daf8b515"
+}

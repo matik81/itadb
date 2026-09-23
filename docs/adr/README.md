@@ -10,6 +10,7 @@ Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
 | 0003 | Release immutabili + provenienza | Revisioni verificabili; evitare sovrascritture e risposte dipendenti dall'ultimo import implicito |
 | 0004 | API read-only/versionate | Nessun SQL pubblico e limiti espliciti; job asincroni per elaborazioni future |
 | 0005 | Demo evidente, SDMX reale solo raw | Nessuna statistica inventata pubblicata come ufficiale; ogni dataflow richiede adapter e gate |
+| [0006](0006-istat-publication.md) | Pubblicazione ISTAT, snapshot territoriali, API v2 | Revisioni immutabili, stati fedeli alla fonte e integrità temporale con btree_gist |
 
 Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
 un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,

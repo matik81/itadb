@@ -45,6 +45,26 @@ collection prima della rimozione, con retention dei fallimenti. Non eliminare or
 automaticamente in caso di importazione fallita. In caso di corruzione fermare la pubblicazione,
 conservare evidenza del guasto e ripristinare contenuti verificati.
 
+La migrazione 0002 abilita `btree_gist`, aggiunge vincoli temporali e viste v2,
+senza riscrivere le release pubblicate. Il ruolo di migrazione deve poter creare
+l'estensione. Rieseguire `scripts/migrate.py` applica anche i grant alle nuove viste.
+I test M1 creano database isolati: richiedono CREATEDB sul server **di test**.
+
+Per la prima pubblicazione locale è stato conservato un backup pre-0002 in
+`.tools/backups/itadb-before-0002-20260923.dump`, fuori Git. Il recupero consiste
+nel ripristino in un nuovo database isolato e nella verifica degli artefatti,
+non nel downgrade distruttivo del catalogo. Ripristinare anche la corrispondente
+versione dell'applicazione quando si recupera lo schema precedente.
+Il restore del backup è stato eseguito in `itadb_m1_restore_20260923` sul server
+di test: schema 0001 e identità, checksum e conteggio della demo corrispondono.
+Questa prova non configura un sistema automatico di backup o un obiettivo RPO/RTO.
+
+Le acquisizioni, i manifest, i contratti e la pagina licenza della release ISTAT
+sono nel volume `itadb_evidence`. Il filesystem `data/` del repository e il volume
+Compose sono archivi distinti: non presumere che un file locale sia già nel container.
+Non utilizzare la fixture `istat-population-invented.csv` nel catalogo applicativo:
+serve esclusivamente ai test isolati. [Procedura ISTAT](sources/istat-population.md).
+
 ## GitHub
 
 Repository pubblico `matik81/itadb`. CI su push main/PR: lint, tipi, unit, contratto OpenAPI,

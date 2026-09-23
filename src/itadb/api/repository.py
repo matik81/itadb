@@ -17,6 +17,10 @@ class Repository(Protocol):
     ) -> list[dict[str, Any]]: ...
 
 
+class RepositoryV2(Repository, Protocol):
+    def artifacts(self, release_id: UUID) -> list[dict[str, Any]]: ...
+
+
 class PostgresRepository:
     def __init__(self, pool: ConnectionPool[Any]):
         self.pool = pool
@@ -53,6 +57,39 @@ class PostgresRepository:
     ) -> list[dict[str, Any]]:
         return self._query(
             "SELECT * FROM api.observations WHERE release_id=%s AND series_code=%s "
+            "AND period=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            (release_id, series, period, after, limit),
+        )
+
+
+class PostgresRepositoryV2(PostgresRepository):
+    def ping(self) -> None:
+        self._query("SELECT metadata_sha256,series_code FROM api.releases_v2 LIMIT 0")
+
+    def releases(self, limit: int) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.releases_v2 ORDER BY published_at DESC,id LIMIT %s", (limit,)
+        )
+
+    def release(self, release_id: UUID) -> dict[str, Any] | None:
+        rows = self._query("SELECT * FROM api.releases_v2 WHERE id=%s", (release_id,))
+        return rows[0] if rows else None
+
+    def quality(self, release_id: UUID) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.quality_v2 WHERE release_id=%s ORDER BY check_name", (release_id,)
+        )
+
+    def artifacts(self, release_id: UUID) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.artifacts_v2 WHERE release_id=%s ORDER BY kind", (release_id,)
+        )
+
+    def observations(
+        self, release_id: UUID, series: str, period: date, after: int, limit: int
+    ) -> list[dict[str, Any]]:
+        return self._query(
+            "SELECT * FROM api.observations_v2 WHERE release_id=%s AND series_code=%s "
             "AND period=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
             (release_id, series, period, after, limit),
         )

@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { API_BASE, get, type Page, type Quality, type Release, type Source } from './api';
+import {
+  API_BASE,
+  get,
+  type Artifact,
+  type Page,
+  type Quality,
+  type Release,
+  type Source,
+} from './api';
 
 const number = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 6 });
 const dateTime = (value: string) => new Date(value).toLocaleString('it-IT');
@@ -10,6 +18,7 @@ export function App() {
   const [selected, setSelected] = useState('');
   const [page, setPage] = useState<Page | null>(null);
   const [quality, setQuality] = useState<Quality[]>([]);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [after, setAfter] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -21,8 +30,8 @@ export function App() {
     setLoading(true);
     setError('');
     Promise.all([
-      get<Release[]>('/v1/releases', controller.signal),
-      get<Source[]>('/v1/sources', controller.signal),
+      get<Release[]>('/v2/releases', controller.signal),
+      get<Source[]>('/v2/sources', controller.signal),
     ])
       .then(([items, registered]) => {
         setReleases(items);
@@ -44,22 +53,25 @@ export function App() {
     const controller = new AbortController();
     setPage(null);
     setQuality([]);
+    setArtifacts([]);
     setLoading(true);
     setError('');
     const query = new URLSearchParams({
       release_id: release.id,
       period: release.reference_period,
-      series: 'population_total',
+      series: release.series_code,
       after: String(after),
       limit: '100',
     });
     Promise.all([
-      get<Page>(`/v1/observations?${query}`, controller.signal),
-      get<Quality[]>(`/v1/releases/${release.id}/quality`, controller.signal),
+      get<Page>(`/v2/observations?${query}`, controller.signal),
+      get<Quality[]>(`/v2/releases/${release.id}/quality`, controller.signal),
+      get<Artifact[]>(`/v2/releases/${release.id}/artifacts`, controller.signal),
     ])
-      .then(([result, checks]) => {
+      .then(([result, checks, evidenceFiles]) => {
         setPage(result);
         setQuality(checks);
+        setArtifacts(evidenceFiles);
       })
       .catch((reason) => {
         if (!controller.signal.aborted) setError(String(reason.message));
@@ -122,7 +134,7 @@ export function App() {
             </option>
             {releases.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.title} · {item.reference_period}
+                {item.title} · {dateTime(item.published_at)} · {item.id.slice(0, 8)}
               </option>
             ))}
           </select>
@@ -151,6 +163,16 @@ export function App() {
             </p>
           </div>
         )}
+        {release?.dataset_id === 'istat_population_regions' && (
+          <div className="notice official">
+            <strong>Dati ISTAT · 20 regioni e totale Italia</strong>
+            <span>
+              {' '}
+              Il totale Italia serve al controllo: non va sommato alle regioni. “Senza flag ISTAT”
+              descrive lo stato fornito dalla fonte, senza attribuire un metodo di rilevazione.
+            </span>
+          </div>
+        )}
         <div className="workspace">
           <section
             className="panel observations"
@@ -175,6 +197,7 @@ export function App() {
                       <tr>
                         <th>Territorio</th>
                         <th>Codice</th>
+                        <th>Livello</th>
                         <th className="numeric">Valore</th>
                         <th>Stato</th>
                       </tr>
@@ -184,6 +207,16 @@ export function App() {
                         <tr key={item.territory_id}>
                           <td>{item.territory_name}</td>
                           <td className="code">{item.territory_code}</td>
+                          <td>
+                            {
+                              {
+                                country: 'Italia · totale',
+                                region: 'Regione',
+                                province: 'Provincia',
+                                municipality: 'Comune',
+                              }[item.level]
+                            }
+                          </td>
                           <td className="numeric">
                             {item.value === null
                               ? 'Non disponibile'
@@ -198,6 +231,7 @@ export function App() {
                                   estimated: 'Stimato',
                                   missing: 'Mancante',
                                   suppressed: 'Riservato',
+                                  unflagged_upstream: 'Senza flag ISTAT',
                                 }[item.status]
                               }
                             </span>
@@ -237,8 +271,26 @@ export function App() {
                   </dd>
                   <dt>Acquisita</dt>
                   <dd>{dateTime(release.retrieved_at)}</dd>
-                  <dt>Pubblicata</dt>
+                  <dt>Pubblicata in Itadb</dt>
                   <dd>{dateTime(release.published_at)}</dd>
+                  {!release.is_demo && (
+                    <>
+                      <dt>Aggiornamento del dataflow ISTAT</dt>
+                      <dd>
+                        {release.upstream_last_update
+                          ? dateTime(release.upstream_last_update)
+                          : 'Non disponibile'}
+                      </dd>
+                      <dt>Pubblicazione alla fonte</dt>
+                      <dd>
+                        {release.upstream_published_at
+                          ? dateTime(release.upstream_published_at)
+                          : 'Non accertata'}
+                      </dd>
+                      <dt>Snapshot territoriale</dt>
+                      <dd>{release.territory_snapshot}</dd>
+                    </>
+                  )}
                   <dt>Licenza di questa versione</dt>
                   <dd>
                     <a href={release.license_url}>Consulta la licenza ↗</a>
@@ -250,12 +302,32 @@ export function App() {
                       : 'Verifiche non disponibili'}
                   </dd>
                 </dl>
+                {release.supersedes_release_id && (
+                  <div className="revision">
+                    <h3>Revisione della versione precedente</h3>
+                    <p>{release.revision_reason}</p>
+                    <a href={`${API_BASE}/v2/releases/${release.supersedes_release_id}`}>
+                      Consulta la provenienza precedente ↗
+                    </a>
+                  </div>
+                )}
+                {release.attribution && <p className="muted">{release.attribution}</p>}
                 <details>
                   <summary>Identificativi e checksum</summary>
                   <p>Versione</p>
                   <code>{release.id}</code>
                   <p>SHA-256 originale</p>
                   <code>{release.raw_sha256}</code>
+                  <p>SHA-256 contratto</p>
+                  <code>{release.contract_sha256}</code>
+                  {artifacts.length > 0 && (
+                    <>
+                      <p>{artifacts.length} artefatti tracciati</p>
+                      <a href={`${API_BASE}/v2/releases/${release.id}/artifacts`}>
+                        Consulta manifest e checksum via API ↗
+                      </a>
+                    </>
+                  )}
                 </details>
                 <div className="limitations">
                   <h3>Limiti di utilizzo</h3>

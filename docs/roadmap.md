@@ -11,6 +11,13 @@ DSD/codelist conservate, licenza verificata, domini territoriali reali e riconci
 totali upstream. Estendere catalogo per data di pubblicazione upstream e revisioni. Uscita:
 risultati riproducibili e campione revisionato manualmente, con limiti documentati.
 
+Primo incremento completato: [onboarding della popolazione regionale 2024](sources/istat-population.md),
+contratto e controllo offline con 21 osservazioni ufficiali e riconciliazione esatta.
+M1 completata per questo perimetro: pubblicazione DB/API v2/web, revisioni esplicite,
+snapshot territoriali con integrità temporale e verifiche PostgreSQL eseguite.
+La data di pubblicazione upstream resta non accertata e dichiarata null; non viene
+dedotta da LAST_UPDATE. Storia territoriale, geometrie e ulteriori periodi restano in M2.
+
 ## M2 — copertura territoriale e demografica
 Territori storicizzati, fusioni/scissioni e crosswalk, confini verificati, indicatori per
 sesso/età, famiglie e abitazioni. Uscita: test di gerarchia e copertura, riconciliazioni tra

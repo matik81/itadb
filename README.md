@@ -7,13 +7,21 @@ coerenti con evidenze demografiche, sociali ed economiche. Gli agenti non sarann
 persone reali. Questo repository parte dal fondamento: dati territoriali aggregati,
 provenienza esplicita e passaggi di elaborazione riproducibili.
 
-## Stato: scaffold eseguibile, versione 0.1
+## Stato: primo dataset ISTAT pubblicabile, versione 0.1
 
 Il percorso dimostrativo importa tre territori **fittizi**, archivia il file originale,
 produce Parquet e verifiche, pubblica una versione immutabile in PostgreSQL e la espone
-via API e web app. Non contiene statistiche italiane ufficiali, microdati o un generatore
-di popolazione sintetica. I connettori ISTAT/Eurostat acquisiscono risposte SDMX-CSV;
-la mappatura di un dataset reale richiede un contratto e la revisione delle sue dimensioni.
+via API e web app. La web app distingue la demo dai dati ufficiali; non contiene
+microdati o un generatore di popolazione sintetica. I connettori ISTAT/Eurostat acquisiscono risposte
+SDMX-CSV e metadati strutturali.
+
+Il [primo onboarding ISTAT](docs/sources/istat-population.md) verifica un campione ufficiale
+di popolazione al 1° gennaio 2024: 20 regioni e totale Italia, contratto versionato,
+DSD/codelist archiviate e riconciliazione esatta. `itadb check-istat-population` ripete
+offline i controlli e produce evidenze locali. `itadb ingest-istat-population` pubblica
+una release immutabile con Parquet, metadati e licenza; le API v2 e la web app la espongono.
+Le revisioni richiedono predecessore e motivazione. Il perimetro territoriale è uno
+snapshot alla data verificata, non una ricostruzione storica dei confini.
 
 ## Stack e motivazione
 
@@ -44,6 +52,7 @@ docker compose run --rm pipeline itadb ingest-demo
 
 - Web app: <http://localhost:8080>
 - API tramite proxy: <http://localhost:8080/api/v1/sources>
+- Catalogo v2 (demo e dataset ufficiali importati): <http://localhost:8080/api/v2/releases>
 - Swagger: <http://localhost:8080/api/docs> · ReDoc: <http://localhost:8080/api/redoc>
 - OpenAPI versionata: [docs/api/openapi.json](docs/api/openapi.json)
 
@@ -88,6 +97,9 @@ I test di integrazione richiedono un database **dedicato e sacrificabile**, migr
 ruolo reader configurato. Impostare `ITADB_TEST_DATABASE_URL` all'URL amministrativo del
 database di test e `ITADB_TEST_READER_URL` al ruolo reader dello stesso database, poi
 `uv run pytest -m integration`. La CI li esegue su un servizio PostGIS isolato.
+I test M1 creano database dedicati `itadb_m1_test_*` nello stesso server di test:
+il ruolo amministrativo deve poter creare database. Non puntarli al server applicativo.
+Database e volumi non vengono cancellati automaticamente.
 
 ## Struttura
 
@@ -112,7 +124,7 @@ AGENTS.md                 istruzioni principali per Codex
 - [Uso delle API](docs/api/README.md), [esercizio e sicurezza](docs/operations.md)
 - [Roadmap verificabile](docs/roadmap.md), [decisioni architetturali](docs/adr/README.md)
 - [Contribuire](CONTRIBUTING.md), [governance](GOVERNANCE.md), [sicurezza](SECURITY.md)
-- [Lavorare con Codex](docs/codex.md), [verifiche dello scaffold](docs/validation.md)
+- [Lavorare con Codex](docs/codex.md), [registro delle verifiche](docs/validation.md)
 
 ## Licenze
 

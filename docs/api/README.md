@@ -1,4 +1,4 @@
-# API pubbliche v1
+# API pubbliche v1 e v2
 
 FastAPI espone OpenAPI 3.1 a `/openapi.json`, Swagger a `/docs`, ReDoc a `/redoc`.
 Nel Compose il prefisso esterno è `/api`: <http://localhost:8080/api/docs>.
@@ -55,3 +55,43 @@ Nessuna scrittura, SQL arbitrario, ricerca individuale o download massivo via AP
 Le API pubbliche di lettura non richiedono login nella v0.1. Prima della produzione definire
 fair-use, caching, budget di risorse e monitoraggio. Export grandi saranno job asincroni
 con manifest e URL firmati, non una pagina JSON senza limite.
+
+## v2 — evidenze ufficiali e revisioni
+
+La web app usa v2. Le route e gli schemi di risposta v1 restano invariati e
+servono solo release compatibili con gli stati v1; una release ISTAT v2 richiesta
+tramite v1 restituisce 404. Il catalogo v2 include anche la demo.
+
+| Endpoint GET | Significato |
+|---|---|
+| `/v2/sources` | Fonti registrate |
+| `/v2/releases?limit=50` | Ultime release, comprese quelle sostituite |
+| `/v2/releases/{uuid}` | Provenienza, serie, snapshot territoriale e revisione |
+| `/v2/releases/{uuid}/quality` | Gate, riconciliazione e differenze tra revisioni |
+| `/v2/releases/{uuid}/artifacts` | Tipo, SHA-256 e dimensione degli artefatti |
+| `/v2/observations` | Release, serie e periodo obbligatori; pagine da 1 a 500 righe |
+
+Usare `series_code` restituito dalla release: `population_total` per la demo,
+`resident_population_jan1` per ISTAT. Esempio sullo stack locale:
+
+```sh
+curl http://localhost:8080/api/v2/releases
+curl 'http://localhost:8080/api/v2/observations?release_id=UUID&series=resident_population_jan1&period=2024-01-01&limit=100'
+```
+
+`unflagged_upstream` significa che la fonte non ha fornito un flag; non viene
+convertito in `observed`. Le osservazioni v2 aggiungono livello territoriale,
+codice del padre e attributi upstream. `country` e `region` si sovrappongono:
+il totale Italia non deve essere sommato alle regioni. La paginazione resta
+keyset con `next_cursor`, mantenendo release, serie e periodo costanti.
+
+Le release aggiungono `metadata_sha256`, `series_code`, `territory_snapshot`,
+`upstream_last_update`, `upstream_published_at`, `supersedes_release_id`,
+`revision_reason` e `attribution`. Le date upstream possono essere null e non
+coincidono con acquisizione o pubblicazione Itadb. Una release sostituita rimane
+leggibile al proprio UUID; il client può seguire il predecessore dichiarato.
+
+Gli artefatti sono un inventario di provenienza; l'API non espone percorsi del
+filesystem né serve download arbitrari. Le viste v2 e il ruolo reader escludono
+sempre draft, artefatti e verifiche non pubblicati. La readiness verifica anche
+la presenza dello schema v2.

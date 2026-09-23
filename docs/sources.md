@@ -4,7 +4,7 @@
 
 | Fonte | Interfaccia | Stato nello scaffold |
 |---|---|---|
-| ISTAT IstatData | SDMX REST, `https://esploradati.istat.it/SDMXWS/rest` | Campione regionale 2024 acquisito e verificato offline |
+| ISTAT IstatData | SDMX REST, `https://esploradati.istat.it/SDMXWS/rest` | Campione regionale 2024 acquisito, verificato e pubblicabile in DB/API v2/web |
 | Eurostat | SDMX 2.1, `https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1` | Stessa interfaccia di acquisizione; mapping da implementare |
 | Fixture Itadb | CSV versionato nel repository | Percorso completo verificabile con dati inventati |
 

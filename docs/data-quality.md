@@ -34,6 +34,35 @@ idempotente, il filesystem non partecipa alla transazione PostgreSQL.
 - Distinzione tra osservato, stimato, mancante e soppresso; preservare i flag upstream.
 - Geometrie valide, SRID, copertura e versione dei confini.
 
+### Primo gate reale implementato: campione regionale ISTAT
+
+`itadb check-istat-population` verifica offline il contratto
+`contracts/istat-population-regions-v1.json`: provenienza e hash di dati/metadati,
+DSD e codelist, codici e significati selezionati, intestazioni esatte, anno 2024,
+chiave unica, 20 regioni più Italia, conteggi int64 non negativi e somma regionale
+uguale al totale upstream. Flag e note non revisionati bloccano il controllo;
+gli attributi accettati sono conservati nel rapporto. Zero resta un valore valido.
+
+Originali e manifest sono archiviati prima della verifica. Il rapporto locale
+`validated_sample` non è una release e non è esposto dalle API. Input identici
+riusano il rapporto verificandone il contenuto, senza overwrite; input nuovi
+producono un nuovo rapporto. Errori di qualità/provenienza finiscono in quarantena.
+Il successivo comando `ingest-istat-population` applica anche il contratto
+`istat-population-publication-v1.json`: corrispondenza dei contratti e della licenza,
+limite Numeric(20,6), snapshot giornaliero, COPY da Parquet e verifica del conteggio
+e del totale dopo caricamento. Pubblicazione, osservazioni, artefatti e quality sono
+in una sola transazione. Il run fallito e la quarantena restano dopo il rollback.
+Anche il DB rifiuta pubblicazione v2 con righe mancanti, gate falliti o artefatti incompleti.
+
+L'identità della release ISTAT comprende raw, contratto di pubblicazione (che fissa
+l'hash del contratto onboarding), trasformazione e XML canonici privati del solo Header SDMX.
+Una nuova acquisizione identica non produce doppioni. Cambiamenti richiedono
+`--supersedes` con il predecessore corrente e `--revision-reason`; il report registra
+le differenze numeriche. Due revisioni concorrenti non possono creare rami.
+È una revisione umana esplicita, non un rilevatore statistico di anomalie.
+Storia territoriale e crosswalk oltre lo snapshot restano da implementare.
+Vedere [evidenze e limiti](sources/istat-population.md).
+
 ## Gate richiesti per la sintesi
 
 Margini territoriali, distribuzioni congiunte, composizione familiare, vincoli logici e

@@ -8,7 +8,8 @@ Perimetro: popolazione al 1° gennaio 2024, totale sesso/età/stato civile,
 20 regioni amministrative e Italia come controllo. Nessun microdato.
 
 Questo primo incremento produce evidenze locali e non assegna lo stato `published`.
-La pubblicazione in DB/API/web resta nel passaggio successivo.
+La pubblicazione è stata realizzata nell'[incremento successivo](m1-publication.md),
+con revisioni upstream e snapshot territoriali vincolati alla data verificata.
 
 ## Decisioni
 
@@ -37,4 +38,5 @@ La pubblicazione in DB/API/web resta nel passaggio successivo.
 La versione nominale di una DSD può restare invariata: registrare anche SHA-256.
 Il campione non prova validità storica di tutti i territori o prestazioni nazionali.
 Nell'onboarding iniziale Docker/PostgreSQL non erano disponibili localmente e i
-test di integrazione non erano stati eseguiti.
+test di integrazione non erano stati eseguiti. Sono stati eseguiti nella fase di
+pubblicazione successiva, dopo che Docker Desktop è diventato disponibile.
