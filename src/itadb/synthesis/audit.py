@@ -8,7 +8,7 @@ import duckdb
 from itadb.pipeline.validate import QualityError
 from itadb.synthesis.models import PilotInput
 
-AUDIT_VERSION = "parquet-independent-audit/1.0.0"
+AUDIT_VERSION = "parquet-independent-audit/1.0.1"
 
 
 def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any]:
@@ -127,7 +127,7 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
             {
                 "sex": sex,
                 "age": age,
-                "observed": observed,
+                "reference": observed,
                 "synthetic": synthetic,
                 "error": synthetic - observed,
             }
@@ -152,6 +152,7 @@ def audit(directory: Path, inputs: PilotInput, large_size: int) -> dict[str, Any
         "unassigned_adults": residual,
         "calibration_max_absolute_error": 0,
         "heldout": {
+            "reference_evidence_kind": inputs.evidence_kind,
             "description": "Tabella sesso per età, esclusa dalla calibrazione puntuale",
             "total_variation_distance": sum(cell_errors) / n,
             "mean_absolute_cell_error": sum(cell_errors) / 101,
