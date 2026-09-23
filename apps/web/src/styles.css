@@ -368,6 +368,11 @@ footer {
   margin-bottom: 0;
   line-height: 1.6;
 }
+.selection-title {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #172c42;
+}
 .history {
   padding: 1.5rem;
   margin-top: 1.5rem;

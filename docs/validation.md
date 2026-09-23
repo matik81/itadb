@@ -170,9 +170,34 @@ convertiti in dati osservati. Storia territoriale e altri periodi restano in M2.
   Esito locale: **103 test offline, 23 di integrazione, 5 web passati**; Ruff,
   formattazione, mypy, TypeScript, build web e installazione lock verificati.
   Gli schemi API preesistenti e tutte le route v1 sono invariati.
-- Il collegamento Computer Use non disponeva di un browser utilizzabile:
-  nessuna verifica interattiva o visuale M2 dichiarata. Test componenti e HTTP
-  eseguiti; nessuna prova su dispositivo mobile fisico o deploy pubblico.
+- **26 controlli** nella verifica visuale e interattiva con **Playwright 1.63.0 e Chrome
+  153.0.8010.53** su Windows, contro lo stack reale `http://localhost:8080`.
+  Controllati desktop a 1440 px e viewport a 768, 390 e 320 px: nessun overflow
+  orizzontale della pagina; tabelle scorrevoli internamente, categoria completa
+  leggibile, provenienza e checksum consultabili. Nessuna prova su dispositivo
+  mobile fisico, altri motori browser o deploy pubblico.
+- Nel browser: filtri periodo/categoria/livello e unità, totale nazionale 2024,
+  due pagine comunali senza duplicati, ritorno alla prima pagina, reset cursore,
+  107 province in pagine da 100 e 7, selezioni prive di copertura, 15 crosswalk,
+  apertura dei confini, catalogo 2020 e otto artefatti. Verificati Tab, cambio
+  periodo con freccia e collegamento «Vai ai dati».
+- La verifica ha riprodotto un HTTP 429 durante cambi rapidi: il web ricaricava
+  qualità e artefatti a ogni filtro/pagina. Ora questi metadati sono acquisiti
+  solo al cambio release o retry; una sequenza di 15 transizioni rapide passa
+  senza 429, con una sola richiesta per coverage/quality/artifacts. Il test
+  componente controlla anche il numero delle richieste. Il limite Nginx rimane
+  attivo: tre ritorni rapidissimi da pagine JSON possono raggiungerlo; verificati
+  messaggio esplicito e recupero con «Riprova» dopo un intervallo.
+- Corretta anche la leggibilità delle categorie lunghe su mobile: il titolo
+  completo appare sotto i filtri e le età sono ordinate numericamente nel menu.
+  Errori 503 simulati con intercettazione Playwright per osservazioni, qualità
+  e crosswalk: messaggi e retry verificati, senza dati inventati. Nessun errore
+  JavaScript rilevato nella sessione principale.
+- Evidenze locali fuori Git: `data/reports/m2-ui-playwright.json`,
+  `m2-ui-progress.log`, `m2-ui-trace.zip`, `m2-ui-desktop-final.png`,
+  `m2-ui-mobile-filters.png`, `m2-ui-mobile-table.png`,
+  `m2-ui-mobile-evidence.png` e `m2-ui-desktop-history.png`, nella stessa cartella.
+  Test web, TypeScript, formattazione e build ricontrollati dopo le correzioni.
 
 M2 è completa per il perimetro dichiarato. Non implica storia amministrativa
 continua, tutti gli anni/indicatori per comune o una validazione statistica
