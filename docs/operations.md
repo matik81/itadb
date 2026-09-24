@@ -1,156 +1,131 @@
-# Esercizio e sicurezza operativa
+# Operazioni
 
-## Sviluppo
+## Ambiente e avvio
 
-Compose crea database PostGIS, migrazione one-shot, ruolo API, server e frontend Nginx.
-`docker compose run --rm pipeline itadb ingest-demo` pubblica la fixture; ripeterlo è
-idempotente. `docker compose stop` arresta i servizi; `down` rimuove i container ma conserva
-i volumi. **Non usare `down -v` su dati da conservare.** Le fixture del repository sono
-separate dagli originali scaricati, esclusi da Git.
+Usare la [guida Linux](local-environment.md) per avvio, migrazione e test isolati.
+Compose è un ambiente locale. API e frontend leggono il database; la generazione
+usa un archivio separato scelto da `ITADB_DATA_DIR`. Il filesystem host `data/`
+e il volume Compose `evidence` sono distinti.
 
-Su Windows scegliere una sola modalità per virtualenv e node_modules: quella Windows
-oppure quella WSL. Non riutilizzare `.venv` tra i due sistemi. Per grandi importazioni,
-preferire filesystem Linux nativo in WSL o volumi Docker rispetto a `/mnt/c`.
+## Generazione, audit e pubblicazione
 
-## Confine dello scaffold
+Seguire il [workflow corrente](population.md#pipeline-corrente): acquisire
+l'inventario nazionale con `fetch-national-inputs` e STR/RCS con
+`fetch-citizenship`, poi eseguire `synthesize-population`, `verify-population`
+e `publish-population`. Usare i percorsi effettivamente stampati dai comandi.
 
-Non è un deployment pubblico di produzione. Le immagini hanno versioni di linea ma
-non digest immutabili; una release produttiva deve fissare digest, scan e SBOM, oltre ai
-lockfile applicativi. Il DB owner è usato per migrazione e pipeline locale; separare
-DDL owner, writer e reader in produzione. Nessun TLS pubblico, secret manager, backup
-automatico, tracing distribuito o sistema di allerta è provisionato qui.
+```sh
+uv run python scripts/run_logged.py --label "Pubblicazione popolazione" --log .tools/population-publication.log -- uv run itadb publish-population --run data/curated/population/RUN_ID
+```
 
-## Prima esposizione pubblica
+Ogni attività lunga deve mostrare fase, conteggi disponibili, tempo ed esito.
+`run_logged.py` conserva l'output e un heartbeat ogni dieci secondi. Senza
+`--log` usa `.tools/task-progress.log`; seguirlo da un altro terminale con
+`tail -n 30 -F .tools/task-progress.log`. Non inserire credenziali negli argomenti.
 
-1. TLS al gateway, solo web/API esposti, DB su rete privata. CORS esplicito.
-2. Segreti generati e custoditi fuori Git; rotazione e privilegi separati. Non usare le
-   password di esempio. Le password nei DSN devono essere correttamente percent-encoded.
-3. Rate limit condiviso a livello edge per più repliche; la zona Nginx locale non è globale.
-4. Budget connessioni/CPU/RAM, timeout, queue per i batch e un solo limiter per IP upstream.
-5. Log JSON con request_id e durata, metriche di errori, latenza, pool, query lente, WAL,
-   spazio libero, freschezza delle fonti e run bloccati. Evitare payload o query sensibili.
-6. Conservazione e recupero: backup PostgreSQL con WAL/PITR, oggetti versionati e checksum.
-   Eseguire un restore su ambiente isolato e verificare release, conteggi e gate.
-7. Definire RPO/RTO e retention con il gestore; nessun valore SLA è assunto nello scaffold.
+L'importatore verifica snapshot, fonti e geografia, carica record e distribuzioni,
+quindi pubblica in un'unica transazione. I retry identici non duplicano snapshot.
+Un errore produce rollback e quarantena. Se fallisce soltanto il rapporto locale
+dopo il commit, il diagnostico riporta `published=true` e snapshot ID: il retry
+riconosce la pubblicazione già completata.
 
-## Migrazioni e recupero
+## Confini amministrativi
 
-Backup verificato, upgrade in staging, verifica compatibilità API, pianificazione di lock
-e tempi, rollout e monitoraggio. La migrazione iniziale è intenzionalmente irreversibile:
-un downgrade distruggerebbe le evidenze. Recuperare con backup verificato o migrazione
-correttiva forward. Testare l'upgrade da vuoto e da ogni versione supportata.
+La revisione corrente `0002_province_boundaries`, successiva a `0001_baseline`,
+aggiunge i confini provinciali della popolazione. Non va confusa con la vecchia
+revisione numerica `0002` precedente al consolidamento.
 
-Per file orfani confrontare `catalog.artifact` e archivio; proporre un report di garbage
-collection prima della rimozione, con retention dei fallimenti. Non eliminare originali
-automaticamente in caso di importazione fallita. In caso di corruzione fermare la pubblicazione,
-conservare evidenza del guasto e ripristinare contenuti verificati.
+Dopo la migrazione, uno snapshot già pubblicato può completare i confini senza
+ricaricare individui o famiglie:
 
-La migrazione 0002 abilita `btree_gist`, aggiunge vincoli temporali e viste v2,
-senza riscrivere le release pubblicate. Il ruolo di migrazione deve poter creare
-l'estensione. Rieseguire `scripts/migrate.py` applica anche i grant alle nuove viste.
-I test M1 creano database isolati: richiedono CREATEDB sul server **di test**.
+```sh
+uv run python scripts/run_logged.py --label "Confini provinciali" --log .tools/population-boundaries.log -- uv run itadb publish-population-boundaries --snapshot-id 1
+```
 
-Per la prima pubblicazione locale è stato conservato un backup pre-0002 in
-`.tools/backups/itadb-before-0002-20260923.dump`, fuori Git. Il recupero consiste
-nel ripristino in un nuovo database isolato e nella verifica degli artefatti,
-non nel downgrade distruttivo del catalogo. Ripristinare anche la corrispondente
-versione dell'applicazione quando si recupera lo schema precedente.
-Il restore del backup è stato eseguito in `itadb_m1_restore_20260923` sul server
-di test: schema 0001 e identità, checksum e conteggio della demo corrispondono.
-Questa prova non configura un sistema automatico di backup o un obiettivo RPO/RTO.
+Usare l'ID effettivo. Il comando verifica checksum e corrispondenza territoriale,
+importa atomicamente e conserva l'hash di origine. Ripeterlo non duplica geometrie;
+fonti incomplete lasciano il DB invariato. Le nuove pubblicazioni includono il passaggio.
 
-Le acquisizioni, i manifest, i contratti e la pagina licenza della release ISTAT
-sono nel volume `itadb_evidence`. Il filesystem `data/` del repository e il volume
-Compose sono archivi distinti: non presumere che un file locale sia già nel container.
-Non utilizzare la fixture `istat-population-invented.csv` nel catalogo applicativo:
-serve esclusivamente ai test isolati. [Procedura ISTAT](sources/istat-population.md).
+## Baseline consolidata
 
-## Operazioni M2 e avanzamento
+Dal 24 settembre 2026 la catena attiva ha una sola radice: `0001_baseline`.
+Le revisioni 0001–0006 sono conservate nel commit
+[`9cd934a`](https://github.com/matik81/itadb/tree/9cd934a/migrations).
+La nuova baseline crea direttamente lo stesso schema finale, inclusi
+popolazione sintetica, viste, vincoli, trigger e cataloghi iniziali.
+Le successive modifiche allo schema richiedono nuove revisioni.
 
-Le migrazioni 0003/0004 aggiungono copertura, geografie e controlli alla pubblicazione.
-Prima dell'upgrade locale è stato creato e ripristinato un backup in un nuovo DB
-di test; le tre release precedenti e i conteggi sono stati conservati anche dopo
-due upgrade consecutivi. Il rapporto è `data/reports/m2-backup-restore.json`.
-Originali e artefatti M2 sono nel volume condiviso `itadb_evidence`.
+**Database nuovo:** `uv run python scripts/migrate.py` applica la baseline
+e configura il reader; richiede le variabili amministrative e `API_DB_PASSWORD`
+descritte nella guida locale. Una seconda esecuzione non modifica i dati.
 
-La revisione correttiva 0005 ripete i controlli di contesto degli eventi e di
-contenimento geometrico immediatamente prima della pubblicazione. Non modifica
-le revisioni applicate o le evidenze pubblicate. Aggiornare anche la pipeline:
-le nuove pubblicazioni dichiarano la politica geometrica nel dettaglio del gate;
-senza questa informazione il DB rifiuta la pubblicazione. Il backup pre-0005 e
-il suo ripristino isolato sono registrati in `data/reports/m2-review-backup-restore.json`.
-Per recuperare usare il backup in un nuovo DB e il codice corrispondente, oppure
-una correzione forward; non eliminare volumi o forzare un downgrade.
+**Database esistente a 0006:** non eseguire il DDL iniziale sopra le tabelle
+esistenti. Verificare che lo schema non abbia modifiche manuali e conservare
+il valore corrente del registro Alembic. Prima dell’allineamento confrontare lo schema effettivo con quello previsto
+dalla baseline, inclusi viste, vincoli e trigger.
+Con i processi di migrazione fermi e `ITADB_ADMIN_DATABASE_URL` rivolto al
+database corretto, allineare solo il registro, in una transazione:
 
-Per le attività lunghe usare `scripts/run_logged.py --label "Fase" -- COMANDO`:
-output seguito in tempo reale, heartbeat ogni dieci secondi, durata e codice
-finale nel log `.tools/m2-progress.log`. Non passare credenziali negli argomenti
-e non registrare payload personali. Su Windows un terminale dedicato può seguire
-`scripts/watch-progress.ps1`. La direttiva è anche in AGENTS.md e nelle istruzioni
-generali locali di Codex.
+```sh
+uv run python - <<'PY'
+import psycopg
+from itadb.config import Settings
 
-Il benchmark `scripts/benchmark_m2.py` richiede `ITADB_TEST_DATABASE_URL`, schema
-migrato e catalogo vuoto. Produce solo aggregati inventati su un server di test:
-non usarlo nel catalogo applicativo. Non rimuove evidenze o database. Il rapporto
-misura caricamento, query, dimensione DB, WAL e piano; non è un test di sintesi 1:1.
+with psycopg.connect(Settings().admin_database_url) as db:
+    db.execute("LOCK TABLE public.alembic_version IN ACCESS EXCLUSIVE MODE")
+    versions = db.execute("SELECT version_num FROM public.alembic_version").fetchall()
+    if versions == [("0006",)]:
+        db.execute("UPDATE public.alembic_version SET version_num='0001_baseline' WHERE version_num='0006'")
+    elif versions != [("0001_baseline",)]:
+        raise RuntimeError("È richiesto lo schema storico completo a 0006")
+print("Registro Alembic allineato alla baseline; dati applicativi invariati")
+PY
+```
 
-## GitHub
+Eseguire quindi `scripts/migrate.py` e verificare `/health/ready`, catalogo
+popolazioni e query individuali. L'allineamento non importa, cancella o
+riscrive record applicativi. Non è una verifica automatica di eventuali
+modifiche manuali al DDL.
+Con Compose ricostruire l'immagine del servizio `migrate` prima di eseguirlo,
+così che contenga la nuova storia: `docker compose build migrate`.
 
-Repository pubblico `matik81/itadb`. CI su push main/PR: lint, tipi, unit, contratto OpenAPI,
-test PostGIS e smoke Compose. Workflow con permessi contents:read e action fissate a SHA.
-Dependabot propone aggiornamenti; audit dipendenze settimanale. Richiedere i controlli e
-una revisione sulle PR, vietare force push, abilitare segnalazioni private, secret scanning
-e push protection dove disponibili. Le impostazioni effettivamente applicate sono registrate
-in docs/validation.md: un file YAML non prova che una protezione GitHub sia abilitata.
-## Popolazione corrente: cittadinanza prima delle famiglie
+**Database a 0001–0005:** completare prima l'upgrade a 0006 da un checkout
+del commit `9cd934a`, poi seguire il passaggio sopra. Non marcare come baseline
+uno schema incompleto. Per annullare il solo allineamento del registro,
+prima di applicare ulteriori migrazioni, ripristinare `0006` nella stessa
+transazione con controllo del valore atteso e usare il codice `9cd934a`.
+Non rimuovere volumi, tabelle o archivi di evidenze.
 
-Seguire [la pipeline corrente](population.md#pipeline-corrente) con
-`synthesize-population --inputs INVENTARIO_M4 --citizenship-inputs INVENTARIO_STR_RCS`.
-Il riferimento è `contracts/population-reference-v1.json`; il budget resta
-`contracts/m4-budget-v1.json`. `verify-population --run SNAPSHOT` rilegge
-autonomamente le evidenze delle quattro fasi, senza `--base-run`.
 
-Conservare l'intera directory `data/curated/population/<run_id>`, compresi
-gli `individuals.parquet` prima delle famiglie, insieme a raw, inventari,
-contratti, sorgenti e lock archiviati. Report e misure sono in
-`data/reports/population`; log visibile `.tools/population-progress.log`.
-Gli stessi obblighi di conservazione, budget, checkpoint e quarantena
-si applicano ai riferimenti storici seguenti. Non cancellarli durante la migrazione.
+## Conservazione e recupero
 
-## Snapshot sintetici locali M4 — storico
+Conservare insieme raw, snapshot completi, inventari, contratti, sorgenti e lock
+archiviati, rapporti e quarantene. Il [catalogo dei percorsi](../data/README.md)
+descrive snapshot, originali e prove locali.
+Non spostare file citati dai manifest o dal database senza migrare e verificare
+anche tutti i riferimenti. Non eliminare checkpoint o file `pending` per far
+passare un retry: una corruzione richiede indagine e una nuova root di riproduzione.
 
-Il percorso [M4](synthesis-m4.md) usa l'archivio locale e non pubblica nel
-database di servizio. Eseguire da root `fetch-m4`, poi `synthesize-m4 --inputs
-INVENTARIO` sotto `scripts/run_logged.py`, conservando il terminale di progresso.
-Budget e riferimento sono in `contracts/m4-budget-v1.json` e
-`contracts/m4-reference-v1.json`. Usare `verify-m4 --run SNAPSHOT` per la rilettura.
+Backup verificato, upgrade in staging e confronto di schema/conteggi precedono
+le modifiche al DB. Il downgrade distruttivo è rifiutato: recuperare su un database
+isolato con backup e codice corrispondente, oppure con una migrazione correttiva.
+Non cancellare volumi. Registrare gli esiti dei controlli in [validation.md](validation.md).
 
-Ripetere la stessa sintesi recupera i checkpoint verificati in `data/state/`;
-una directory in `data/curated/m4/` è visibile soltanto dopo il completamento.
-Non cancellare file `pending`, tentativi interrotti, quarantene o checkpoint
-per far passare un retry. Gli hash alterati richiedono un'indagine e una nuova
-root di riproduzione; non una riparazione dello snapshot esistente.
+## Verifiche e CI
 
-Conservare originali e relativi manifest, codice/lock archiviati e snapshot
-nello stesso piano di backup. Il file lock è locale: non montare questo
-protocollo come coordinatore multi-host. RSS e disco della macchina devono
-avere margine anche per altre applicazioni; il limite DuckDB non equivale
-al picco RSS del processo. Gli ID rappresentano record sintetici; nessun
-microdato deve entrare in Git o nelle API. La sola tabella in `distribution/`
-rispetta il formato aggregato documentato, senza pubblicazione automatica.
+Gli [strumenti](../scripts/README.md) comprendono manutenzione e benchmark
+della generazione e del servizio. La CI verifica Python, PostgreSQL/PostGIS, OpenAPI,
+tipi client, frontend, link documentali e smoke Compose. I benchmark onerosi sono
+espliciti e non vengono lanciati per controllare un import o un connettore.
 
-## Cittadinanza: conservazione dello snapshot derivato storico
+Workflow e protezioni GitHub sono cose distinte: i file YAML non dimostrano che
+branch protection o secret scanning siano attivi. Consultare il
+[registro delle verifiche](validation.md) per ciò che è stato effettivamente controllato.
 
-`fetch-citizenship`, `synthesize-citizenship` e `verify-citizenship` seguono il
-[percorso documentato](citizenship.md). I risultati sono in
-`data/curated/citizenship/<run_id>` e dipendono dalla base M4 identificata nel
-manifest. Salvare e ripristinare **entrambi gli snapshot**, gli originali raw,
-i contratti e i sorgenti archiviati. L'audit richiede esplicitamente `--base-run`.
+## Deployment futuro
 
-I retry controllano gli inventari e rileggono i dati. Checkpoint integri sono
-riusati; file corrotti vengono conservati e bloccano il run. I batch temporanei
-interrotti vengono spostati nello stato con un nome distinto. Non cancellare
-evidenze per forzare la ripresa: per una ricostruzione usare una nuova root.
-Misure e log dei tentativi sono in `data/reports/citizenship`; le quarantene
-sono in `data/quarantine`. Il log seguito nel terminale è
-`.tools/citizenship-progress.log`. Nessuna distribuzione pubblica automatica.
+Nessun deployment pubblico è configurato. La scelta dei servizi gestiti deve
+comprendere capacità PostGIS e disco misurate, budget delle connessioni, TLS,
+segreti fuori Git, ruoli separati, backup con restore provato e RPO/RTO concordati.
+Le immagini fissano versioni di linea; digest, scan e SBOM saranno parte della
+release produttiva. Il file lock delle acquisizioni è locale e non coordina host diversi.

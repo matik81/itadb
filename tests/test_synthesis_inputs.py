@@ -7,15 +7,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from itadb.connectors.m2 import acquire_inventory
+from itadb.connectors.inventory import acquire_inventory
 from itadb.pipeline.storage import archive_file, atomic_json
 from itadb.synthesis.inputs import prepare_inputs
 from itadb.synthesis.models import PilotInput
 
 
 def inventory(tmp_path: Path, problem: str = "") -> tuple[Path, Path]:
-    spec = json.loads(Path("contracts/istat-m3-valle-aosta-v1.json").read_text(encoding="utf-8"))
-    fixture = PilotInput.model_validate_json(Path("tests/fixtures/m3-invented.json").read_bytes())
+    spec = json.loads(Path("contracts/istat-pilot-valle-aosta-v1.json").read_text(encoding="utf-8"))
+    fixture = PilotInput.model_validate_json(
+        Path("tests/fixtures/pilot-invented.json").read_bytes()
+    )
     c = fixture.calibration
     spec.update(expected_population=40, expected_households=12)
     paths = {}
@@ -105,13 +107,13 @@ def test_offline_adapter_reconciles_and_archives(
     assert (
         result.calibration.male_by_age
         == PilotInput.model_validate_json(
-            Path("tests/fixtures/m3-invented.json").read_bytes()
+            Path("tests/fixtures/pilot-invented.json").read_bytes()
         ).calibration.male_by_age
     )
     assert sum(result.calibration.household_counts) == 12
     assert len(result.source_hashes) == 17
     monkeypatch.setattr(
-        "itadb.connectors.m2.fetch_static",
+        "itadb.connectors.inventory.fetch_static",
         lambda *args, **kwargs: pytest.fail("No network on cache hit"),
     )
     cached = acquire_inventory(tmp_path, contract, "istat-m3-valle-aosta", "m3")

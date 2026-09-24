@@ -162,7 +162,7 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
 
     def progress(message: str) -> None:
         line = (
-            f"{datetime.now(UTC).isoformat()} M3 {message}; "
+            f"{datetime.now(UTC).isoformat()} Sintesi regionale {message}; "
             f"trascorsi {time.monotonic() - started:.1f}s"
         )
         print(line, flush=True)
@@ -256,7 +256,7 @@ def run_pilot(root: Path, inputs: PilotInput, experiment: Experiment) -> Path:
             }
             atomic_json(stage / "report.json", report)
             (stage / "README.md").write_text(
-                "# Esperimento sintetico M3 — uso locale\n\n"
+                "# Esperimento sintetico regionale — uso locale\n\n"
                 "Persone e famiglie virtuali, prive di corrispondenza con identità reali.\n"
                 "Input, algoritmo, ambiente, seed e checksum: manifest.json e input.json.\n"
                 "Controlli SQL indipendenti, 202 celle sesso/età calibrate esattamente, "

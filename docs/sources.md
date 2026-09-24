@@ -1,22 +1,24 @@
 # Fonti e connettori
 
-## Fonti selezionate
+## Fonti integrate
 
-| Fonte | Interfaccia | Stato nello scaffold |
+| Perimetro | Input ammesso | Uso |
 |---|---|---|
-| ISTAT IstatData | SDMX REST, `https://esploradati.istat.it/SDMXWS/rest` | Campione regionale 2024 acquisito, verificato e pubblicabile in DB/API v2/web |
-| Eurostat | SDMX 2.1, `https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1` | Stessa interfaccia di acquisizione; mapping da implementare |
-| Fixture Itadb | CSV versionato nel repository | Percorso completo verificabile con dati inventati |
+| Popolazione corrente | ISTAT 2025 per comune/sesso/età, geografia 2025 e famiglie a fine 2024 | Generazione nazionale, [workflow](population.md) |
+| Cittadinanza corrente | ISTAT STR/RCS 2025 | Vincoli individuali prima delle famiglie |
+| Aggregati territoriali | Inventario ISTAT multi-periodo revisionato | [Copertura e API v2](sources/territorial-aggregates.md) |
+| Popolazione regionale 2024 | Campione ISTAT di 21 osservazioni | [Ammissione e pubblicazione](sources/istat-population.md) |
+| Fixture inventate | CSV/JSON ridotti e vincoli di carico | Test offline, mai sostituti dei dati osservati |
 
-Fonti candidate successive: confini e variazioni territoriali ISTAT, dati aggregati INPS,
-MEF, Banca d'Italia e amministrazioni. Non sono connettori implementati né banche dati già
-collegate. Valutare disponibilità, licenza, granularità e coerenza prima di selezionarle.
-Non assumere che una banca dati consenta una connessione SQL diretta; usare le interfacce
-pubbliche supportate. Un adapter SQL futuro deve usare credenziali read-only, viste curate,
-watermark e query parametrizzate, senza esporre DSN o SQL nell'API pubblica.
+I [contratti versionati](../contracts/README.md) fissano inventari, checksum,
+periodi, geografia e licenze. Gli originali sono conservati prima della
+trasformazione; il [catalogo dei dati](../data/README.md) ne descrive i percorsi.
+`fetch-national-inputs` acquisisce il solo inventario nazionale revisionato;
+`fetch-citizenship` acquisisce STR/RCS. Riusano gli originali verificati.
 
-Primo contratto reale: [popolazione residente regionale ISTAT](sources/istat-population.md).
-La pagina contiene selezione esatta, licenza, evidenze e comandi riproducibili.
+Il connettore SDMX supporta ISTAT ed Eurostat; per Eurostat non esiste ancora
+un adapter di pubblicazione revisionato. INPS, MEF e Banca d'Italia restano fonti
+candidate, da ammettere con contratto e verifiche prima dell'integrazione.
 
 ## Contratto del connettore
 
@@ -39,11 +41,12 @@ uv run itadb fetch istat --flow AGENCY,FLOW,VERSION --key DIM1.DIM2 \
   --start-period 2025 --end-period 2025
 ```
 
-Questo esempio contiene segnaposto, non una query ISTAT certificata. I test del connettore
-sono offline. È stato acquisito un campione di 21 totali regionali/nazionali per un anno,
-documentato sopra; nessun download esteso a comuni, età o serie storiche.
+Questo esempio contiene segnaposto, non una query ISTAT certificata. I test del
+connettore sono offline. Le acquisizioni effettive sono quelle degli inventari
+versionati: il campione regionale iniziale è distinto dagli input nazionali correnti.
 
-ISTAT dichiara 5 query/minuto per IP e blocchi in caso di superamento. Lo scaffold usa
+La verifica documentata il 23 settembre 2026 riportava un limite ISTAT di
+5 query/minuto per IP e blocchi in caso di superamento. Il connettore usa
 15 secondi tra richieste e un file lock condiviso dai processi sullo stesso archivio.
 Dietro un IP comune, worker su host diversi devono usare un limiter centralizzato o un
 singolo worker di acquisizione. Il lock locale non garantisce una quota globale di rete.

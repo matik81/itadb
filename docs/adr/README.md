@@ -1,25 +1,17 @@
 # Decisioni architetturali
 
-Ogni ADR registra contesto, scelta, alternative, conseguenze e condizioni di revisione.
-Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
+Le decisioni applicabili al prodotto descrivono scelta, motivazione, conseguenze
+e condizioni di revisione. I nuovi cambiamenti durevoli richiedono un ADR;
+la [roadmap](../roadmap.md) distingue gli obiettivi futuri da ciò che è implementato.
 
-| ADR | Scelta | Ragione e condizione di revisione |
-|---|---|---|
-| 0001 | Monorepo, monolite modulare | Transazioni e contratti condivisi; separare servizi solo con necessità operative misurate |
-| 0002 | PostgreSQL/PostGIS + Parquet/DuckDB | Servizio concorrente distinto da batch colonnari; distribuire il lake quando un host non basta |
-| 0003 | Release immutabili + provenienza | Revisioni verificabili; evitare sovrascritture e risposte dipendenti dall'ultimo import implicito |
-| 0004 | API read-only/versionate | Nessun SQL pubblico e limiti espliciti; job asincroni per elaborazioni future |
-| 0005 | Demo evidente, SDMX reale solo raw | Nessuna statistica inventata pubblicata come ufficiale; ogni dataflow richiede adapter e gate |
-| [0006](0006-istat-publication.md) | Pubblicazione ISTAT, snapshot territoriali, API v2 | Revisioni immutabili, stati fedeli alla fonte e integrità temporale con btree_gist |
-| [0007](0007-m2-coverage.md) | Copertura M2, storia e confini | Copertura esplicita, partizioni disgiunte, derivazioni geografiche tracciate; pyshp per gli originali ISTAT |
-| [0008](0008-synthesis-pilot.md) | Sintesi pilota locale senza microcampione | Ricostruzione vincolata, verifica indipendente dei Parquet, incertezza esplicita; nessuna distribuzione dei record virtuali |
-| [0009](0009-exact-demographic-calibration.md) | Congiunta sesso/età esatta | Tutte le 202 celle ISTAT come vincoli; audit bloccante, nuove versioni immutabili e assenza di holdout dichiarata |
-| [0010](0010-model-fidelity-and-m3-reference.md) | Priorità di fedeltà e riferimento unico | Età/sesso, geografia, famiglie; 6+ = 6 e seed 1701; accettazione umana del pilota e avvio M4 |
-| [0011](0011-stable-birth-cohorts.md) | Anno di nascita stabile, età derivata | Convenzione annuale esplicita, classe 100+ censurata, calibrazione e artefatti storici conservati |
-| [0012](0012-national-territorial-snapshots.md) | Snapshot nazionali territoriali riprendibili | Congiunte comunali esatte, budget misurati, checkpoint verificati, microdati locali e soli aggregati preparati per distribuzione |
-| [0013](0013-citizenship-enrichment.md) | Cittadinanza come arricchimento immutabile | Vincoli STR/RCS esatti, attributi M4 conservati, incrocio età–singola cittadinanza sintetico e microdati locali |
-| [0014](0014-ordered-population.md) | Cittadinanza prima delle famiglie | Ordine v5 eseguibile, individui fissati prima della composizione familiare e audit di invarianza; riferimenti storici conservati |
+| Decisione | Ambito |
+|---|---|
+| [0006 — release ISTAT e API v2](0006-istat-publication.md) | Provenienza, revisioni immutabili e integrità temporale |
+| [0007 — copertura territoriale](0007-territorial-coverage.md) | Partizioni disgiunte, geografie e acquisizioni limitate |
+| [0011 — coorti di nascita](0011-stable-birth-cohorts.md) | Età derivata, convenzione annuale e classe aperta |
+| [0014 — ordine delle integrazioni](0014-ordered-population.md) | Cittadinanza prima delle famiglie e audit di invarianza |
+| [0015 — popolazione come prodotto](0015-population-product.md) | PostgreSQL, API v3, frontend e separazione dalla generazione |
 
-Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
-un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,
-una tabella JSONB per 60 milioni di persone. La scelta non esclude rivalutazioni documentate.
+L'[architettura](../architecture.md) adotta un monolite modulare, PostgreSQL/PostGIS
+per il servizio e Parquet/DuckDB per la generazione. Nuovi servizi, indici o
+dipendenze devono rispondere a una necessità misurata.

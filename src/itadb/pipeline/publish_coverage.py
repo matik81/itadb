@@ -1,4 +1,4 @@
-"""Atomic, repeatable publication of validated M2 aggregate evidence."""
+"""Atomic, repeatable publication of validated territorial aggregate evidence."""
 
 import hashlib
 import json
@@ -366,7 +366,8 @@ def publish_coverage(
                 if bundle.is_demo:
                     db.execute(
                         "INSERT INTO catalog.dataset VALUES "
-                        "('demo_m2','demo','M2 — fixture inventata','Test del percorso M2',"
+                        "('demo_m2','demo','Aggregati — fixture inventata',"
+                        "'Test della copertura territoriale',"
                         "'Valori e territori inventati; non usare per analisi.') "
                         "ON CONFLICT DO NOTHING"
                     )

@@ -20,7 +20,7 @@ from itadb.pipeline.storage import sha256_file
 
 
 @pytest.fixture
-def m2_bundle(tmp_path: Path) -> tuple[Bundle, Path]:
+def coverage_bundle(tmp_path: Path) -> tuple[Bundle, Path]:
     """Only invented values, territories and polygons; source demo is mandatory."""
     territories = []
     observations = []

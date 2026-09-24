@@ -1,10 +1,8 @@
 """Local resource measurements and progress; no optional monitoring dependencies."""
 
-import ctypes
-import importlib
 import os
 import platform
-import sys
+import resource
 import threading
 import time
 from collections.abc import Callable
@@ -15,38 +13,8 @@ from itadb.synthesis.national_models import ResourceBudget
 
 
 def peak_rss_bytes() -> int:
-    if sys.platform == "win32":
-
-        class Counters(ctypes.Structure):
-            _fields_ = [("cb", ctypes.c_ulong), ("PageFaultCount", ctypes.c_ulong)] + [
-                (name, ctypes.c_size_t)
-                for name in [
-                    "PeakWorkingSetSize",
-                    "WorkingSetSize",
-                    "QuotaPeakPagedPoolUsage",
-                    "QuotaPagedPoolUsage",
-                    "QuotaPeakNonPagedPoolUsage",
-                    "QuotaNonPagedPoolUsage",
-                    "PagefileUsage",
-                    "PeakPagefileUsage",
-                ]
-            ]
-
-        counters = Counters()
-        counters.cb = ctypes.sizeof(counters)
-        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-        kernel.GetCurrentProcess.restype = ctypes.c_void_p
-        psapi = ctypes.WinDLL("psapi", use_last_error=True)
-        psapi.GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong]
-        if not psapi.GetProcessMemoryInfo(
-            kernel.GetCurrentProcess(), ctypes.byref(counters), counters.cb
-        ):
-            raise OSError("Cannot measure process peak working set")
-        return int(counters.PeakWorkingSetSize)
-    resource = importlib.import_module("resource")
-
-    value = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    return int(value if platform.system() == "Darwin" else value * 1024)
+    # Linux reports ru_maxrss in KiB; expose bytes to the resource budget.
+    return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
 
 
 def disk_bytes(directory: Path) -> int:

@@ -8,13 +8,13 @@ import uvicorn
 
 from itadb.api.app import create_app
 from itadb.config import Settings
-from itadb.connectors.m2 import acquire_inventory, acquire_m2
+from itadb.connectors.inventory import acquire_inventory, acquire_territorial_aggregates
 from itadb.connectors.sdmx import SOURCES, SdmxConnector
-from itadb.pipeline.istat_m2 import build_istat_m2
 from itadb.pipeline.istat_population import check_population_sample
 from itadb.pipeline.publish_coverage import publish_coverage
 from itadb.pipeline.publish_istat import ingest_istat_population
 from itadb.pipeline.runner import ingest_demo
+from itadb.pipeline.territorial_aggregates import build_territorial_aggregates
 from itadb.synthesis.citizenship_inputs import prepare_citizenship_inputs
 from itadb.synthesis.citizenship_models import CitizenshipReference
 from itadb.synthesis.citizenship_runner import run_citizenship, verify_citizenship
@@ -27,7 +27,9 @@ from itadb.synthesis.population_models import PopulationInput, PopulationReferen
 from itadb.synthesis.population_runner import run_population, verify_population
 from itadb.synthesis.runner import run_pilot, verify_run
 
-app = typer.Typer(no_args_is_help=True, help="Itadb data operations. Run from the repository root.")
+app = typer.Typer(
+    no_args_is_help=True, help="Operazioni Itadb. Eseguire dalla root del repository."
+)
 
 
 @app.command()
@@ -139,39 +141,39 @@ def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
     uvicorn.run("itadb.api.app:app", host=host, port=port, access_log=False)
 
 
-@app.command("check-m2")
-def check_m2(
+@app.command("check-territorial-aggregates", rich_help_panel="Aggregati")
+def check_territorial_aggregates(
     inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m2-v1.json"
+        "contracts/istat-territorial-aggregates-v1.json"
     ),
 ) -> None:
-    """Verifica offline copertura, partizioni e riconciliazioni M2, senza pubblicare."""
-    build_istat_m2(Settings().data_dir, inputs, contract)
+    """Verifica offline copertura, partizioni e riconciliazioni territoriali, senza pubblicare."""
+    build_territorial_aggregates(Settings().data_dir, inputs, contract)
 
 
-@app.command("fetch-m2")
-def fetch_m2(
+@app.command("fetch-territorial-aggregates", rich_help_panel="Acquisizione")
+def fetch_territorial_aggregates(
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m2-v1.json"
+        "contracts/istat-territorial-aggregates-v1.json"
     ),
 ) -> None:
-    """Acquisisce il solo inventario M2 revisionato, riusando gli originali verificati."""
-    typer.echo(str(acquire_m2(Settings().data_dir, contract)))
+    """Acquisisce il solo inventario territoriale revisionato, riusando gli originali verificati."""
+    typer.echo(str(acquire_territorial_aggregates(Settings().data_dir, contract)))
 
 
-@app.command("ingest-m2")
-def ingest_m2(
+@app.command("ingest-territorial-aggregates", rich_help_panel="Aggregati")
+def ingest_territorial_aggregates(
     inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m2-v1.json"
+        "contracts/istat-territorial-aggregates-v1.json"
     ),
     supersedes: Annotated[UUID | None, typer.Option()] = None,
     revision_reason: Annotated[str | None, typer.Option()] = None,
 ) -> None:
-    """Verifica e pubblica M2 atomicamente, con avanzamento nel terminale."""
+    """Verifica e pubblica gli aggregati atomicamente, con avanzamento nel terminale."""
     settings = Settings()
-    bundle = build_istat_m2(settings.data_dir, inputs, contract)
+    bundle = build_territorial_aggregates(settings.data_dir, inputs, contract)
     release = publish_coverage(settings, bundle, contract, supersedes, revision_reason)
     typer.echo(json.dumps({"release_id": str(release)}))
 
@@ -185,24 +187,24 @@ def export_openapi(output: Path = Path("docs/api/openapi.json")) -> None:
     )
 
 
-@app.command("fetch-m3")
-def fetch_m3(
+@app.command("fetch-pilot-inputs", rich_help_panel="Acquisizione")
+def fetch_pilot_inputs(
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m3-valle-aosta-v1.json"
+        "contracts/istat-pilot-valle-aosta-v1.json"
     ),
 ) -> None:
-    """Acquisisce il solo inventario aggregato revisionato per il pilota M3."""
+    """Acquisisce il solo inventario aggregato revisionato per la sintesi regionale."""
     typer.echo(str(acquire_inventory(Settings().data_dir, contract, "istat-m3-valle-aosta", "m3")))
 
 
-@app.command("synthesize-m3")
-def synthesize_m3(
+@app.command("synthesize-pilot", rich_help_panel="Strumenti di sintesi")
+def synthesize_pilot(
     inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m3-valle-aosta-v1.json"
+        "contracts/istat-pilot-valle-aosta-v1.json"
     ),
     experiment: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/m3-experiment-v1.json"
+        "contracts/pilot-experiment-v1.json"
     ),
 ) -> None:
     """Genera e verifica un esperimento locale sintetico; non pubblica microdati."""
@@ -214,37 +216,37 @@ def synthesize_m3(
     )
 
 
-@app.command("verify-m3")
-def verify_m3(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
-    """Rilegge i Parquet e ricalcola tutti i gate e i rapporti indipendenti M3."""
+@app.command("verify-pilot", rich_help_panel="Strumenti di sintesi")
+def verify_pilot(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
+    """Rilegge i Parquet e ricalcola tutti i gate e i rapporti indipendenti del pilota."""
     result = verify_run(run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
 
 
-@app.command("fetch-m4")
-def fetch_m4(
+@app.command("fetch-national-inputs", rich_help_panel="Acquisizione")
+def fetch_national_inputs(
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m4-national-v1.json"
+        "contracts/istat-national-v1.json"
     ),
 ) -> None:
     """Acquisisce gli originali nazionali fissati, con riuso e controllo checksum."""
     typer.echo(str(acquire_inventory(Settings().data_dir, contract, "istat-m4-national", "m4")))
 
 
-@app.command("synthesize-m4")
-def synthesize_m4(
+@app.command("synthesize-national", rich_help_panel="Strumenti di sintesi")
+def synthesize_national(
     inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m4-national-v1.json"
+        "contracts/istat-national-v1.json"
     ),
     reference: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/m4-reference-v1.json"
+        "contracts/national-reference-v1.json"
     ),
     budget: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/m4-budget-v1.json"
+        "contracts/national-budget-v1.json"
     ),
 ) -> None:
-    """Riferimento storico M4 senza cittadinanza; per il corrente usare synthesize-population."""
+    """Sintesi nazionale senza cittadinanza; per il corrente usare synthesize-population."""
     root = Settings().data_dir
     directory = run_national(
         root,
@@ -257,8 +259,10 @@ def synthesize_m4(
     )
 
 
-@app.command("verify-m4")
-def verify_m4(run: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
+@app.command("verify-national", rich_help_panel="Strumenti di sintesi")
+def verify_national_command(
+    run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+) -> None:
     """Verifica integrità, vincoli comunali e rapporto statistico/disclosure nazionale."""
     result = verify_national(run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
@@ -276,7 +280,7 @@ def fetch_citizenship(
     )
 
 
-@app.command("synthesize-citizenship")
+@app.command("synthesize-citizenship", rich_help_panel="Strumenti di sintesi")
 def synthesize_citizenship(
     base_run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
     inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
@@ -287,10 +291,10 @@ def synthesize_citizenship(
         "contracts/citizenship-reference-v1.json"
     ),
     budget: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/m4-budget-v1.json"
+        "contracts/national-budget-v1.json"
     ),
 ) -> None:
-    """Arricchimento storico dopo M4; per l'ordine corrente usare synthesize-population."""
+    """Cittadinanza su uno snapshot esistente; per il prodotto usare synthesize-population."""
     root = Settings().data_dir
     base = NationalInput.model_validate_json((base_run / "input.json").read_bytes())
     directory = run_citizenship(
@@ -305,7 +309,7 @@ def synthesize_citizenship(
     )
 
 
-@app.command("verify-citizenship")
+@app.command("verify-citizenship", rich_help_panel="Strumenti di sintesi")
 def verify_citizenship_command(
     run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
     base_run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
@@ -320,7 +324,7 @@ def synthesize_population(
     inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     citizenship_inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/istat-m4-national-v1.json"
+        "contracts/istat-national-v1.json"
     ),
     citizenship_contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
         "contracts/istat-citizenship-v1.json"
@@ -329,7 +333,7 @@ def synthesize_population(
         "contracts/population-reference-v1.json"
     ),
     budget: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
-        "contracts/m4-budget-v1.json"
+        "contracts/national-budget-v1.json"
     ),
 ) -> None:
     """Riferimento corrente: sesso/età, geografia, cittadinanza, poi famiglie."""
@@ -362,3 +366,25 @@ def verify_population_command(
     """Verifica lo snapshot corrente e gli attributi fissati prima delle famiglie."""
     result = verify_population(run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
+
+
+@app.command("publish-population")
+def publish_population_command(
+    run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+) -> None:
+    """Pubblica nel database applicativo una popolazione già generata e verificata."""
+    from itadb.population.publish import publish_population
+
+    snapshot_id = publish_population(Settings(), run)
+    typer.echo(json.dumps({"snapshot_id": snapshot_id, "data_kind": "synthetic"}))
+
+
+@app.command("publish-population-boundaries")
+def publish_population_boundaries_command(
+    snapshot_id: Annotated[int, typer.Option(min=1)],
+) -> None:
+    """Aggiunge i confini provinciali dalla fonte geografica già archiviata dello snapshot."""
+    from itadb.population.cartography import publish_boundaries
+
+    count = publish_boundaries(Settings(), snapshot_id)
+    typer.echo(json.dumps({"snapshot_id": snapshot_id, "provinces": count}))

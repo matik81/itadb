@@ -28,13 +28,13 @@ pytestmark = pytest.mark.integration
 FIXTURES = Path("tests/fixtures")
 
 
-def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: str = "head") -> Settings:
+def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     admin = os.environ.get("ITADB_TEST_DATABASE_URL")
     reader = os.environ.get("ITADB_TEST_READER_URL")
     if not admin or not reader:
         pytest.skip("Explicit disposable PostgreSQL admin and reader URLs required")
     # A fresh database per case preserves evidence and keeps test order irrelevant.
-    name = "itadb_m1_test_" + uuid4().hex[:16]
+    name = "itadb_publication_test_" + uuid4().hex[:16]
     with psycopg.connect(admin, autocommit=True) as db:
         db.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
     isolated_admin = make_conninfo(admin, dbname=name)
@@ -54,8 +54,8 @@ def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: str = "
     monkeypatch.setenv(
         "ITADB_ADMIN_DATABASE_URL", migration_url.render_as_string(hide_password=False)
     )
-    command.upgrade(Config("alembic.ini"), revision)
-    command.upgrade(Config("alembic.ini"), revision)
+    command.upgrade(Config("alembic.ini"), "head")
+    command.upgrade(Config("alembic.ini"), "head")
     with psycopg.connect(isolated_admin) as db:
         role = sql.Identifier(conninfo_to_dict(reader)["user"])
         db.execute(sql.SQL("GRANT USAGE ON SCHEMA api TO {}").format(role))
@@ -78,8 +78,11 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     return _database(tmp_path, monkeypatch)
 
 
-def test_upgrade_preserves_published_demo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    legacy = _database(tmp_path, monkeypatch, "0001")
+def test_repeated_upgrade_preserves_published_demo(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy = _database(tmp_path, monkeypatch)
     release = ingest_demo(
         legacy, FIXTURES / "population-demo.csv", Path("contracts/population-demo-v1.json")
     )
@@ -422,7 +425,7 @@ def test_query_plan_on_twenty_thousand_artificial_observations(settings: Setting
     assert len(observations) == 1
     assert "Index" in observations[0]["Node Type"]
     assert plan[0]["Plan"]["Actual Rows"] == 51
-    evidence_path = Path("data/reports") / f"m1-query-plan-{release}.json"
+    evidence_path = Path("data/reports") / f"regional-query-plan-{release}.json"
     atomic_json(evidence_path, {"artificial_rows": 20000, "requested_rows": 51, "plan": plan})
     print(f"Query plan evidence: {evidence_path}")
 

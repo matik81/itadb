@@ -1,67 +1,43 @@
 # ADR 0011 — coorti di nascita stabili e tempo annuale
 
-Stato: adottato su richiesta dell'utente il 23 settembre 2026.
-Integra gli ADR 0009/0010 e sostituisce la rappresentazione individuale
-dell'età nei nuovi esperimenti, conservando le versioni precedenti.
+Stato: adottata. Data: 23 settembre 2026.
 
 ## Contesto
 
-L'età materializzata in M3 v2 descrive solo il riferimento iniziale. Per
-avanzare nel tempo l'utente richiede un anno di nascita che resti stabile.
-Le fonti ammesse contengono conteggi per età, non compleanni individuali;
-la classe 100+ non identifica un anno di nascita puntuale.
+Le fonti contengono conteggi per età, senza compleanni individuali. Una coorte
+di nascita stabile consente di derivare l'età a un riferimento annuale esplicito.
+La classe 100+ non identifica un anno di nascita puntuale.
 
-## Scelta
+## Decisione
 
-La regola unica `year-start-cohort/1` usa il confine annuale al 1° gennaio,
-prima dei compleanni dell'anno entrante. Per l'anno Y:
+La regola `year-start-cohort/1` usa il 1° gennaio prima dei compleanni:
+`age = Y - birth_year - 1`. Al 1° gennaio 2025, 0 anni corrispondono alla
+coorte 2024, 30 anni alla coorte 1994 e 99 anni alla coorte 1925.
+Sono coorti sintetiche convenzionali, non anni individuali osservati.
 
-`age = Y - birth_year - 1`
+Per 100+, `birth_year=null` e `birth_year_upper_bound=1924`: nato entro il
+1924. Esattamente uno dei due campi è valorizzato. Il limite inferiore dell'età
+avanza nel tempo; non diventa un'età esatta. Un individuo inizialmente di 99
+anni diventa invece di 100 anni secondo la convenzione annuale.
 
-Nel pilota, 0 anni al 01/01/2022 diventano `birth_year=2021`, 30 anni
-diventano 1991, 99 anni diventano 1922. Sono coorti sintetiche assegnate
-secondo una convenzione, non anni individuali osservati. Non si postulano
-mese e giorno, né si pretende di risolvere il caso del compleanno al 1° gennaio.
+`age_at_year_start` restituisce `AnnualAge(years, is_lower_bound)` e rifiuta
+campi ambigui, anni non interi e riferimenti anteriori alla coorte. I Parquet
+conservano la coorte; l'audit SQL ricostruisce l'età alla data di riferimento
+e verifica tutte le celle ammesse e i vincoli familiari. Il database serve
+l'età dello snapshot senza interpretarla come un attributo osservato individuale.
 
-Per la classe 100+, `birth_year=null` e `birth_year_upper_bound=1921`:
-«nato entro il 1921». Esattamente uno dei due campi è valorizzato.
-Il limite inferiore dell'età avanza a 101+ nel 2023, 102+ nel 2024, ecc.
-Un individuo inizialmente di 99 anni diventa invece esattamente di 100
-secondo la convenzione annuale: non viene confuso con la classe aperta.
-
-L'helper `age_at_year_start` restituisce `AnnualAge(years, is_lower_bound)`
-e rifiuta campi ambigui, anni non interi e riferimenti anteriori alla coorte.
-Il generatore non conserva più `age` nel Parquet. I conteggi di calibrazione
-restano quelli dell'input v2, e l'audit SQL indipendente ricostruisce l'età
-alla data iniziale per controllare tutte le 202 celle e i vincoli familiari.
-
-Schema persone `m3-persons/3`, algoritmo/audit `3.0.0`, rapporto `m3-report/3`.
-Manifest e rapporto registrano regola, formula, riferimento, classe aperta,
-natura sintetica e razionale. Il verificatore rifiuta metadati incompatibili
-anche se il rapporto è stato nuovamente hashato. Input e contratti delle
-fonti/seed restano invariati; nessuna nuova dipendenza, migrazione o API.
+Manifest e rapporto registrano formula, riferimento, classe aperta e natura
+sintetica. Il verificatore rifiuta metadati incompatibili. La conversione non
+consuma numeri casuali e conserva gli altri attributi individuali.
 
 ## Alternative e conseguenze
 
-- Conservare anche un'età modificabile creerebbe due valori potenzialmente
-  discordanti. L'età è quindi solo derivata; i dati originali di calibrazione
-  conservano le classi osservate.
-- Usare `Y - birth_year` senza convenzione sposterebbe le coorti di un anno
-  rispetto al confine precedente i compleanni. La regola adottata è esplicita
-  e coperta da esempi e test, inclusa l'età zero.
-- Scegliere un compleanno convenzionale o casuale aggiungerebbe dettaglio
-  privo di evidenza e un calendario non richiesto dalla simulazione annuale.
-- Assegnare a tutti i 100+ una nascita nel 1921 trasformerebbe un limite in
-  un dato puntuale; campionare anni più antichi richiederebbe una distribuzione
-  della coda non disponibile. Conserviamo quindi l'informazione censurata.
+Un'età modificabile insieme alla coorte introdurrebbe valori potenzialmente
+discordanti. Assegnare compleanni convenzionali aggiungerebbe dettaglio privo
+di evidenza. Trattare tutti i 100+ come centenari esatti perderebbe l'informazione
+censurata; una distribuzione della coda richiederebbe dati aggiuntivi.
 
-La conversione non consuma numeri casuali: a parità di input, seed e ipotesi
-familiare, identità, sesso e appartenenza restano gli stessi. Nuovi esperimenti
-hanno identità distinta e conservano gli output v1/v2, verificabili con il
-codice registrato. Si mantiene il riferimento 6+ = 6 e seed 1701, senza
-scegliere nuove repliche sulla base dei risultati.
-
-Il calcolo temporale non implementa mortalità, nuove nascite, migrazioni o
-dinamiche familiari, e non attesta conteggi osservati negli anni successivi.
-Evidenze sui compleanni o sulla coda 100+, oppure un'esigenza infra-annuale,
-richiederanno una nuova policy con confronto al riferimento precedente.
+Il calcolo temporale non implementa mortalità, nascite, migrazioni o dinamiche
+familiari e non attesta conteggi osservati negli anni successivi. Nuove evidenze
+sui compleanni o esigenze infra-annuali richiedono una nuova regola e un confronto
+con il [riferimento del modello](../model-fidelity.md).

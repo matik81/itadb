@@ -1,8 +1,11 @@
 .env
 .env.*
 !.env.example
+!.env.test.example
 .venv/
 .tools/
+compose.override.yaml
+compose.override.yml
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -19,6 +22,7 @@ data/curated/
 data/quarantine/
 data/state/
 data/reports/
+data/benchmarks/
 *.log
 .DS_Store
 .codex/config.local.toml

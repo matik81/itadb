@@ -34,6 +34,9 @@ def test_end_to_end_idempotency_read_only_and_immutability(settings: Settings) -
         assert db.execute(
             "SELECT count(*) FROM stats.observation WHERE release_id=%s", (release,)
         ).fetchone() == (3,)
+        assert db.execute(
+            "SELECT upstream_url FROM catalog.release WHERE id=%s", (release,)
+        ).fetchone() == ("urn:itadb:fixture:population-demo",)
         with pytest.raises(psycopg.errors.RaiseException):
             db.execute("UPDATE stats.observation SET value=9 WHERE release_id=%s", (release,))
         with pytest.raises(psycopg.errors.RaiseException):

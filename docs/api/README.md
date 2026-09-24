@@ -1,4 +1,60 @@
-# API pubbliche v1 e v2
+# API della popolazione e delle evidenze
+
+## v3 — popolazione sintetica
+
+Tutti i percorsi seguenti sono GET. Dietro il proxy locale hanno prefisso `/api`.
+
+| Percorso | Contenuto |
+|---|---|
+| `/v3/populations` | Snapshot pubblicati, conteggi e natura sintetica |
+| `/v3/populations/{id}` | Riferimento, fonti, modello, rapporto e controlli DB |
+| `/v3/populations/{id}/map` | Confini di regioni, province/UTS e comuni, con marcatori comunali |
+| `/v3/populations/{id}/municipalities` | Ricerca nome/codice, regione e cursore |
+| `/v3/populations/{id}/persons` | Individui filtrati per comune, sesso, età e cittadinanza |
+| `/v3/populations/{id}/persons/{person_id}` | Individuo della versione selezionata |
+| `/v3/populations/{id}/households` | Famiglie per comune e dimensione |
+| `/v3/populations/{id}/households/{household_id}` | Famiglia e tutti i componenti |
+| `/v3/populations/{id}/distributions` | Istogrammi sesso/età con filtri territoriali e individuali |
+| `/v3/populations/{id}/validation` | Conteggi confrontati, celle discordanti e scostamento massimo |
+| `/v3/populations/{id}/comparison` | Singoli vincoli di un comune e conteggi sintetici corrispondenti |
+
+Le liste di persone e famiglie richiedono `municipality_code` a sei cifre;
+`limit` è al massimo 500 e `next_cursor` va passato come `after`. Mantenere
+snapshot, filtri, `sort_by` e `direction` invariati tra pagine. Cambiare una
+selezione azzera il cursore. Gli ID individuali sono locali allo snapshot.
+Età 100 con `age_is_lower_bound=true` significa 100+. L'API corrente non
+contiene latitudine/longitudine individuali: `/map` dichiara espressamente
+`representation=municipality_aggregates`.
+
+La mappa restituisce `regions`, `provinces`, `municipality_boundaries` e
+`municipalities`. I confini sono GeoJSON semplificati per visualizzazione;
+non sono geometrie catastali. `region_code` filtra province, confini e marker
+comunali, mantenendo le regioni come contesto nazionale. Le liste geografiche
+sono limitate a 1.000 province e 10.000 comuni per snapshot. Le province
+degli snapshot precedenti alla migrazione cartografica vanno caricate con
+`publish-population-boundaries`; fino ad allora la relativa lista è vuota.
+
+La web app aggrega i conteggi comunali per le modalità Regioni e Province e
+mostra i confini del livello scelto e dei livelli superiori. Cambiando modalità
+conserva i genitori selezionati e azzera selezioni figlie, ricerca ed elenco.
+Dalle schede regionali si passa alle province, dalle province ai comuni;
+i record individuali restano consultabili per comune. I totali cartografici
+includono anche i comuni senza coordinate.
+
+Le distribuzioni derivano dai record importati. `/distributions` accetta
+`region_code` a due cifre, `province_code` a tre e `municipality_code` a sei,
+oltre a sesso, cittadinanza ed età. I filtri si intersecano e restituiscono
+al massimo 202 celle sesso/età; territori incompatibili producono una lista
+vuota. I filtri individuali aggiornano l'istogramma e l'elenco, mentre cerchi
+e schede territoriali riportano i totali senza filtri individuali.
+`/comparison` richiede un
+comune e il tipo `sex_age`, `foreign_age`, `citizenship` o `household_size`.
+Il rapporto originale della generazione mantiene il proprio storico
+`public_release=false`; la pubblicazione applicativa ha una propria identità
+e controlli distinti, descritti nell'[ADR 0015](../adr/0015-population-product.md).
+
+## API degli aggregati v1 e v2
+
 
 FastAPI espone OpenAPI 3.1 a `/openapi.json`, Swagger a `/docs`, ReDoc a `/redoc`.
 Nel Compose il prefisso esterno è `/api`: <http://localhost:8080/api/docs>.
@@ -51,7 +107,8 @@ release: pagina vuota. DB indisponibile o timeout: 503. Gli errori gestiti seguo
 `application/problem+json` con request_id. Il gateway può emettere 429; il suo corpo è
 quello di Nginx. La risposta contiene sempre un nuovo X-Request-ID generato dall'app.
 
-Nessuna scrittura, SQL arbitrario, ricerca individuale o download massivo via API sincrona.
+Le API v1/v2 non espongono individui. Nessuna API accetta scritture, SQL arbitrario
+o download individuali nazionali illimitati tramite una singola richiesta.
 Le API pubbliche di lettura non richiedono login nella v0.1. Prima della produzione definire
 fair-use, caching, budget di risorse e monitoraggio. Export grandi saranno job asincroni
 con manifest e URL firmati, non una pagina JSON senza limite.
@@ -96,10 +153,10 @@ Gli artefatti sono un inventario di provenienza; l'API non espone percorsi del
 filesystem né serve download arbitrari. Le viste v2 e il ruolo reader escludono
 sempre draft, artefatti e verifiche non pubblicati. La readiness verifica anche
 la presenza e i permessi reader su tutte le viste v2, incluse copertura,
-territori, crosswalk e confini, senza scandire dati. Uno schema precedente a M2
+territori, crosswalk e confini, senza scandire dati. Uno schema privo delle viste di copertura
 o una vista mancante produce 503 su `/health/ready`; `/health/live` resta indipendente.
 
-## M2 — copertura e geografie
+## Copertura e geografie
 
 | Endpoint GET | Filtri e limiti |
 |---|---|
@@ -109,12 +166,12 @@ o una vista mancante produce 503 su `/health/ready`; `/health/live` resta indipe
 | `/v2/crosswalks` | `release_id` obbligatorio; `after`, `limit` da 1 a 500; fonte, decorrenza, codici e peso |
 | `/v2/releases/{uuid}/territories/{id}/boundary` | Un MultiPolygon GeoJSON semplificato, 0,001 gradi e massimo 20.000 vertici |
 
-In M2 serie e periodo della release sono la selezione iniziale: leggere `coverage`
+Nelle pubblicazioni multiserie, serie e periodo della release sono la selezione iniziale: leggere `coverage`
 per tutte le combinazioni disponibili. Il conteggio copre tutti i livelli della
 selezione, non solo quello della pagina. Un livello non coperto restituisce una
 pagina vuota; non significa popolazione zero. Totali territoriali e categorie
 totali non vanno sommati ai rispettivi dettagli. Il filtro livello è opzionale
-per compatibilità; la web app M2 lo imposta sempre.
+per compatibilità; l’esploratore degli aggregati lo imposta sempre.
 
 ### Ordinamento e filtri delle tabelle
 
@@ -139,4 +196,4 @@ La dimensione massima resta 500 righe. Nessuna modifica alle route v1.
 Confine assente o oltre il budget: 404. La forma GeoJSON può essere usata per
 consultazione, non per misure catastali. Crosswalk `structural` ha peso null:
 non autorizza a distribuire i valori dei predecessori. Snapshot e codice da soli
-non sostituiscono lo schema territoriale versionato. [Copertura e derivazioni](../sources/istat-m2.md).
+non sostituiscono lo schema territoriale versionato. [Copertura e derivazioni](../sources/territorial-aggregates.md).

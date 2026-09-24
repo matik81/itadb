@@ -162,7 +162,7 @@ def _prepare(root: Path, inventory: Path, contract: Path, base: NationalInput) -
             raise ValueError("Citizenship source corrupted")
         originals[name] = payload
         hashes[name], hashes[name + "_manifest"] = payload_hash, manifest_digest
-    print("Riconciliazione STR/RCS con tutte le celle M4", flush=True)
+    print("Riconciliazione STR/RCS con tutte le celle demografiche nazionali", flush=True)
     foreign = read_str(originals["str"], spec["profiles"]["str"])
     rcs = read_rcs(originals["rcs"], spec["profiles"]["rcs"], spec["population_reference"][:4])
     if set(foreign) != {m.code for m in base.municipalities}:

@@ -311,6 +311,199 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v3/populations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshots */
+        get: operations["snapshots_v3_populations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot */
+        get: operations["snapshot_v3_populations__snapshot_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comparison
+         * @description Observed input constraints and corresponding counts from imported synthetic records.
+         */
+        get: operations["comparison_v3_populations__snapshot_id__comparison_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/distributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Distributions */
+        get: operations["distributions_v3_populations__snapshot_id__distributions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/households": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Households */
+        get: operations["households_v3_populations__snapshot_id__households_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/households/{household_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Household */
+        get: operations["household_v3_populations__snapshot_id__households__household_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Population Map
+         * @description Representative municipality locations, never synthetic individual residences.
+         */
+        get: operations["population_map_v3_populations__snapshot_id__map_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/municipalities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Municipalities */
+        get: operations["municipalities_v3_populations__snapshot_id__municipalities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/persons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Persons */
+        get: operations["persons_v3_populations__snapshot_id__persons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/persons/{person_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Person */
+        get: operations["person_v3_populations__snapshot_id__persons__person_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v3/populations/{snapshot_id}/validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Validation */
+        get: operations["validation_v3_populations__snapshot_id__validation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -517,6 +710,222 @@ export interface components {
             /** Value */
             value: string | null;
         };
+        /** PopulationBoundary */
+        PopulationBoundary: {
+            /** Code */
+            code: string;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            };
+        };
+        /** PopulationComparison */
+        PopulationComparison: {
+            /** Actual */
+            actual: number;
+            /** Category */
+            category: number;
+            /** Expected */
+            expected: number;
+            /** Kind */
+            kind: string;
+            /** Sex */
+            sex: string;
+        };
+        /** PopulationDistribution */
+        PopulationDistribution: {
+            /** Age */
+            age: number;
+            /** Persons */
+            persons: number;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "M" | "F";
+        };
+        /** PopulationEvidence */
+        PopulationEvidence: {
+            /**
+             * Data Kind
+             * @constant
+             */
+            data_kind: "synthetic";
+            /**
+             * Household Reference
+             * Format: date
+             */
+            household_reference: string;
+            /** Households */
+            households: number;
+            /** Id */
+            id: number;
+            /** Is Fixture */
+            is_fixture: boolean;
+            /** Located Persons */
+            located_persons: number;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /** Municipalities */
+            municipalities: number;
+            /** Persons */
+            persons: number;
+            /** Provenance */
+            provenance: {
+                [key: string]: unknown;
+            };
+            /** Publication Checks */
+            publication_checks: {
+                [key: string]: unknown;
+            };
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /**
+             * Reference Date
+             * Format: date
+             */
+            reference_date: string;
+            /** Report */
+            report: {
+                [key: string]: unknown;
+            };
+            /** Run Id */
+            run_id: string;
+        };
+        /** PopulationMap */
+        PopulationMap: {
+            /**
+             * Individual Coordinates Available
+             * @default false
+             * @constant
+             */
+            individual_coordinates_available: false;
+            /** Municipalities */
+            municipalities: components["schemas"]["PopulationMunicipality"][];
+            /** Municipality Boundaries */
+            municipality_boundaries: components["schemas"]["PopulationBoundary"][];
+            /** Provinces */
+            provinces: components["schemas"]["PopulationBoundary"][];
+            /** Regions */
+            regions: components["schemas"]["PopulationRegion"][];
+            /**
+             * Representation
+             * @default municipality_aggregates
+             * @constant
+             */
+            representation: "municipality_aggregates";
+        };
+        /** PopulationMunicipality */
+        PopulationMunicipality: {
+            /** Code */
+            code: string;
+            /** Households */
+            households: number;
+            /** Latitude */
+            latitude: number | null;
+            /**
+             * Location Kind
+             * @default municipality_representative_point
+             * @constant
+             */
+            location_kind: "municipality_representative_point";
+            /** Longitude */
+            longitude: number | null;
+            /** Name */
+            name: string;
+            /** Persons */
+            persons: number;
+            /** Province Code */
+            province_code: string;
+            /** Province Name */
+            province_name: string;
+            /** Region Code */
+            region_code: string;
+            /** Region Name */
+            region_name: string;
+        };
+        /** PopulationMunicipalityPage */
+        PopulationMunicipalityPage: {
+            /** Items */
+            items: components["schemas"]["PopulationMunicipality"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+        };
+        /** PopulationRegion */
+        PopulationRegion: {
+            /** Code */
+            code: string;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            } | null;
+            /** Households */
+            households: number;
+            /** Name */
+            name: string;
+            /** Persons */
+            persons: number;
+        };
+        /** PopulationSnapshot */
+        PopulationSnapshot: {
+            /**
+             * Data Kind
+             * @constant
+             */
+            data_kind: "synthetic";
+            /**
+             * Household Reference
+             * Format: date
+             */
+            household_reference: string;
+            /** Households */
+            households: number;
+            /** Id */
+            id: number;
+            /** Is Fixture */
+            is_fixture: boolean;
+            /** Located Persons */
+            located_persons: number;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /** Municipalities */
+            municipalities: number;
+            /** Persons */
+            persons: number;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /**
+             * Reference Date
+             * Format: date
+             */
+            reference_date: string;
+            /** Run Id */
+            run_id: string;
+        };
+        /** PopulationValidation */
+        PopulationValidation: {
+            /** Actual */
+            actual: number;
+            /** Cells */
+            cells: number;
+            /** Expected */
+            expected: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sex_age" | "foreign_age" | "citizenship" | "household_size";
+            /** Max Absolute Error */
+            max_absolute_error: number;
+            /** Mismatched Cells */
+            mismatched_cells: number;
+        };
         /** Problem */
         Problem: {
             /** Detail */
@@ -667,6 +1076,81 @@ export interface components {
             license_url: string;
             /** Name */
             name: string;
+        };
+        /** SyntheticHousehold */
+        SyntheticHousehold: {
+            /**
+             * Data Kind
+             * @constant
+             */
+            data_kind: "synthetic";
+            /** Household Id */
+            household_id: number;
+            /** Municipality Code */
+            municipality_code: string;
+            /** Size */
+            size: number;
+        };
+        /** SyntheticHouseholdDetail */
+        SyntheticHouseholdDetail: {
+            /**
+             * Data Kind
+             * @constant
+             */
+            data_kind: "synthetic";
+            /** Household Id */
+            household_id: number;
+            /** Members */
+            members: components["schemas"]["SyntheticPerson"][];
+            /** Municipality Code */
+            municipality_code: string;
+            /** Size */
+            size: number;
+        };
+        /** SyntheticHouseholdPage */
+        SyntheticHouseholdPage: {
+            /** Items */
+            items: components["schemas"]["SyntheticHousehold"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+        };
+        /** SyntheticPerson */
+        SyntheticPerson: {
+            /** Age */
+            age: number;
+            /** Age Is Lower Bound */
+            age_is_lower_bound: boolean;
+            /** Birth Year */
+            birth_year: number | null;
+            /** Birth Year Upper Bound */
+            birth_year_upper_bound: number | null;
+            /** Citizenship Code */
+            citizenship_code: string;
+            /**
+             * Data Kind
+             * @constant
+             */
+            data_kind: "synthetic";
+            /** Household Id */
+            household_id: number | null;
+            /** Municipality Code */
+            municipality_code: string;
+            /** Person Id */
+            person_id: number;
+            /** Reference Adult */
+            reference_adult: boolean;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "M" | "F";
+        };
+        /** SyntheticPersonPage */
+        SyntheticPersonPage: {
+            /** Items */
+            items: components["schemas"]["SyntheticPerson"][];
+            /** Next Cursor */
+            next_cursor: number | null;
         };
         /** TerritoryItem */
         TerritoryItem: {
@@ -1463,6 +1947,485 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TerritoryPage"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    snapshots_v3_populations_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationSnapshot"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    snapshot_v3_populations__snapshot_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationEvidence"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    comparison_v3_populations__snapshot_id__comparison_get: {
+        parameters: {
+            query: {
+                municipality_code: string;
+                kind?: "sex_age" | "foreign_age" | "citizenship" | "household_size";
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationComparison"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    distributions_v3_populations__snapshot_id__distributions_get: {
+        parameters: {
+            query?: {
+                municipality_code?: string | null;
+                region_code?: string | null;
+                sex?: ("M" | "F") | null;
+                citizenship_code?: string | null;
+                age_min?: number;
+                age_max?: number;
+                province_code?: string | null;
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationDistribution"][];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    households_v3_populations__snapshot_id__households_get: {
+        parameters: {
+            query: {
+                municipality_code: string;
+                size?: number | null;
+                sort_by?: "household_id" | "size";
+                direction?: "asc" | "desc";
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyntheticHouseholdPage"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    household_v3_populations__snapshot_id__households__household_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyntheticHouseholdDetail"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    population_map_v3_populations__snapshot_id__map_get: {
+        parameters: {
+            query?: {
+                region_code?: string | null;
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationMap"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    municipalities_v3_populations__snapshot_id__municipalities_get: {
+        parameters: {
+            query?: {
+                region_code?: string | null;
+                search?: string | null;
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationMunicipalityPage"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    persons_v3_populations__snapshot_id__persons_get: {
+        parameters: {
+            query: {
+                municipality_code: string;
+                sex?: ("M" | "F") | null;
+                citizenship_code?: string | null;
+                age_min?: number;
+                age_max?: number;
+                sort_by?: "person_id" | "age" | "sex" | "citizenship_code" | "household_id";
+                direction?: "asc" | "desc";
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyntheticPersonPage"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    person_v3_populations__snapshot_id__persons__person_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: number;
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyntheticPerson"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    validation_v3_populations__snapshot_id__validation_get: {
+        parameters: {
+            query?: {
+                municipality_code?: string | null;
+            };
+            header?: never;
+            path: {
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopulationValidation"][];
                 };
             };
             /** @description Unprocessable Content */

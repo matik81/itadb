@@ -11,8 +11,7 @@ Il quarto conserva i conteggi delle classi dimensionali delle famiglie, ma la
 composizione per età e cittadinanza è ancora casuale e non calibrata.**
 Questo è l'ordine delle [priorità di fedeltà, versione 5](model-fidelity.md),
 concordato il 24 settembre 2026 e applicato alla pipeline corrente
-`population-reference/1`. Le precedenti integrazioni restano documentate
-come riferimenti storici.
+`population-reference/1`.
 
 | Passaggio | Dati esterni | Utilizzo nella sintesi | Fedeltà attuale |
 |---|---|---|---|
@@ -21,10 +20,9 @@ come riferimenti storici.
 | **3. Cittadinanza** | Fonti ISTAT **STR** e **RCS** al **1° gennaio 2025** | Assegnano una categoria di cittadinanza a ogni individuo, conservando i margini STR/RCS | **Conteggi STR/RCS esatti**; incrocio età–singola cittadinanza sintetico |
 | **4. Famiglie** | Conteggi censuari ISTAT per comune e numero di componenti al **31 dicembre 2024** | Determinano numero di famiglie e classi dimensionali | **Composizione ancora grezza**: conteggi per classe esatti, componenti casuali rispetto a età e cittadinanza |
 
-Sesso/età, geografia e conteggi familiari sono integrati nel riferimento
-nazionale [M4](synthesis-m4.md), dopo il [pilota M3](synthesis-m3.md) in Valle d'Aosta.
-Fonti, riferimenti e checksum M4 sono fissati nel
-[contratto degli input](../contracts/istat-m4-national-v1.json).
+Sesso/età, geografia e conteggi familiari usano lo stesso riferimento nazionale
+2024/2025. Fonti, riferimenti e checksum sono fissati nel
+[contratto degli input](../contracts/istat-national-v1.json).
 
 Per la cittadinanza sono state integrate due fonti complementari:
 
@@ -33,18 +31,17 @@ Per la cittadinanza sono state integrate due fonti complementari:
 - [RCS — Popolazione residente per cittadinanza o paese di nascita](https://demo.istat.it/app/?i=RCS&a=2025&l=it):
   conteggi per comune, sesso e singola cittadinanza.
 
-I file riconciliano esattamente con M4. La [nuova versione arricchita](citizenship.md)
-assegna `citizenship_code` a tutti i **58.943.464 individui**: 53.572.213 nella
+I file riconciliano esattamente con la base demografica nazionale. Il riferimento
+corrente assegna `citizenship_code` a tutti i **58.943.464 individui**: 53.572.213 nella
 categoria italiana e 5.371.251 nella popolazione straniera, inclusi 525 apolidi.
-La base M4 originale è conservata immutabile.
-L'associazione fra età e specifica cittadinanza è sintetica e documentata:
+L'associazione tra età e specifica cittadinanza è sintetica e documentata:
 questo incrocio non è osservato nelle tavole disponibili.
 
 Per le famiglie, i componenti sono assegnati casualmente entro lo stesso
 comune, con almeno un adulto per famiglia e assegnazione di tutti i minori.
 Nel percorso corrente età e cittadinanza sono già fissate prima di formare
 le famiglie. **Non sono calibrate né le relazioni di età
-fra componenti né la composizione per cittadinanza**, incluse le frequenze
+tra componenti né la composizione per cittadinanza**, incluse le frequenze
 delle famiglie italiane, straniere e miste. Non sono integrate relazioni di
 parentela osservate. La classe 6+ è rappresentata con 6 componenti;
 560.159 adulti restano senza assegnazione familiare.
@@ -79,26 +76,30 @@ anche uno scambio che conservi i totali deve essere rifiutato.
 Il riordino conserva la regola casuale familiare; non introduce correlazioni
 familiari osservate. [Metodo e compatibilità](adr/0014-ordered-population.md).
 
-Da root, con gli inventari archiviati da `fetch-m4` e `fetch-citizenship`:
+Da root, acquisire gli inventari fissati nei contratti (gli originali già verificati
+vengono riusati), poi usare i percorsi stampati nei comandi successivi:
 
 ```sh
-uv run python scripts/run_logged.py --label "Popolazione ordinata" --log .tools/population-progress.log -- uv run itadb synthesize-population --inputs data/state/m4-official-inputs.json --citizenship-inputs data/state/citizenship-official-inputs.json
+uv run python scripts/run_logged.py --label "Input nazionali" --log .tools/national-inputs.log -- uv run itadb fetch-national-inputs
+uv run python scripts/run_logged.py --label "Input cittadinanza" --log .tools/citizenship-inputs.log -- uv run itadb fetch-citizenship
+uv run python scripts/run_logged.py --label "Popolazione ordinata" --log .tools/population-progress.log -- uv run itadb synthesize-population --inputs PERCORSO_INVENTARIO_NAZIONALE --citizenship-inputs PERCORSO_INVENTARIO_CITTADINANZA
 uv run python scripts/run_logged.py --label "Audit popolazione" --log .tools/population-progress.log -- uv run itadb verify-population --run data/curated/population/RUN_ID
 ```
 
-Gli inventari indicati sono quelli locali conservati per il riferimento;
-in una nuova acquisizione usare i percorsi effettivamente stampati dai comandi.
-Su Windows seguire il log con `scripts/watch-progress.ps1`.
+I nomi `PERCORSO_INVENTARIO_*` e `RUN_ID` sono segnaposto: sostituirli con
+i percorsi degli inventari e l’identificativo dello snapshot appena prodotti.
+Seguire il log con `tail -n 30 -F .tools/population-progress.log`.
 Le fonti vengono nuovamente ammesse prima della generazione. Gli snapshot
 completati sono in `data/curated/population/`, i checkpoint in `data/state/`,
 log e misure in `data/reports/population/`. Un retry verifica gli artefatti;
 corruzioni o file inattesi bloccano il completamento e conservano le evidenze.
+L'identità del run include anche il checksum del codice archiviato: una modifica
+dei sorgenti, anche strutturale, produce una nuova identità per una nuova esecuzione.
+Gli snapshot precedenti restano verificabili senza rigenerarli.
 
-Il benchmark corrente è `scripts/benchmark_population.py --population
+Il benchmark corrente è `uv run python -m scripts.benchmarks.population --population
 1000000` oppure `10000000`, con `--recovery` e `--reverse-order` per le prove
 di ripresa e riproduzione. Sono fixture inventate, distinte dal run nazionale.
-I comandi `synthesize-m4` e `synthesize-citizenship` e i rispettivi benchmark
-riproducono i riferimenti storici. I loro verificatori restano disponibili.
 
 Il run nazionale corrente è
 `24a56e3bdb58fb1af523ea1b6019e8de04292ecdf11105fc6885cacc4903b76c`:
@@ -106,4 +107,28 @@ Il run nazionale corrente è
 quelli prima delle famiglie. La generazione e l'audit inline hanno richiesto
 267,99 s monitorati, con picco RSS 1,64 GiB; l'audit successivo 35,47 s.
 I margini osservati hanno errore zero e la fase familiare conserva tutti
-gli attributi precedenti. [Verifiche eseguite](validation.md#ordine-eseguibile-della-popolazione).
+gli attributi precedenti. [Verifiche eseguite](validation.md#integrità-della-popolazione).
+
+
+## Pubblicazione applicativa dello snapshot verificato
+
+Il prodotto corrente aggiunge un passaggio esplicito dopo la generazione:
+
+```sh
+uv run python scripts/run_logged.py --label "Pubblicazione popolazione" --log .tools/population-publication.log -- uv run itadb publish-population --run data/curated/population/RUN_ID
+```
+
+Il comando verifica lo snapshot e i contratti delle fonti archiviati, carica
+individui e famiglie completi in PostgreSQL e ne ricalcola le distribuzioni.
+Solo la versione verificata diventa visibile nelle API v3 e nel frontend.
+La pubblicazione è atomica e idempotente; il log e i rapporti sono conservati
+in `data/reports/population-publication/`. Un errore produce rollback e
+quarantena. L'importatore applicativo rifiuta le fixture inventate.
+
+Gli snapshot Parquet e il campo `public_release=false` restano
+immutabili. Il catalogo applicativo è una nuova evidenza di pubblicazione,
+collegata a run ID e checksum. La pubblicazione applicativa segue l’[ADR 0015](adr/0015-population-product.md).
+
+La mappa corrente usa la geografia 2025 degli stessi input. Gli aggregati statistici
+conservano le proprie geografie 2020/2021/2024. I marcatori rappresentano comuni; nessuna coordinata di
+residenza viene assegnata implicitamente ai singoli individui.

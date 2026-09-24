@@ -1,4 +1,4 @@
-"""Deterministic enrichment of immutable M4 persons from admitted STR/RCS margins."""
+"""Deterministic enrichment of immutable synthetic persons from admitted STR/RCS margins."""
 
 import csv
 import hashlib

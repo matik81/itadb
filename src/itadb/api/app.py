@@ -31,6 +31,8 @@ from itadb.api.models import (
     Source,
     TerritoryPage,
 )
+from itadb.api.population import router as population_router
+from itadb.api.population_repository import PopulationRepository
 from itadb.api.repository import PostgresRepository, PostgresRepositoryV2, Repository, RepositoryV2
 from itadb.config import Settings
 
@@ -63,12 +65,14 @@ def create_app(
     settings: Settings | None = None,
     repo: Repository | None = None,
     repo_v2: RepositoryV2 | None = None,
+    population_repo: PopulationRepository | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         if repo is not None:
+            application.state.population_repository = population_repo
             application.state.repository = repo
             application.state.repository_v2 = repo_v2 or repo
             yield
@@ -82,6 +86,7 @@ def create_app(
             kwargs={"connect_timeout": 5, "application_name": "itadb-api"},
         )
         pool.open(wait=False)
+        application.state.population_repository = population_repo or PopulationRepository(pool)
         application.state.repository = PostgresRepository(pool)
         application.state.repository_v2 = PostgresRepositoryV2(pool)
         try:
@@ -90,18 +95,20 @@ def create_app(
             pool.close()
 
     app = FastAPI(
-        title="Itadb Public API",
+        title="Itadb — popolazione sintetica",
         root_path=settings.root_path,
         version=__version__,
         lifespan=lifespan,
         description=(
-            "Versioned aggregate evidence. No real-person records. "
+            "Verified synthetic population snapshots and their statistical "
+            "evidence. No real-person records. "
             "Only published releases are visible. Demo data are explicitly labelled. "
             "Values are decimal strings; missing and suppressed values are null."
         ),
         license_info={"name": "Apache-2.0", "identifier": "Apache-2.0"},
         responses={422: {"model": Problem}, 503: {"model": Problem}},
     )
+    app.include_router(population_router)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -164,9 +171,11 @@ def create_app(
         return {"status": "ok", "version": __version__}
 
     @app.get("/health/ready", tags=["health"])
-    def ready(db: Repo, db_v2: RepoV2) -> dict[str, str]:
+    def ready(request: Request, db: Repo, db_v2: RepoV2) -> dict[str, str]:
         db.ping()
         db_v2.ping()
+        if request.app.state.population_repository is not None:
+            request.app.state.population_repository.ping()
         return {"status": "ready"}
 
     @app.get("/v1/sources", response_model=list[Source], tags=["catalog"])

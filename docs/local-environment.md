@@ -1,64 +1,131 @@
-# Audit dell'ambiente locale
+# Ambiente di sviluppo Linux
 
-Rilevazione: 23 settembre 2026, Windows 11 Pro 64 bit, build 26200. Workspace Windows.
-24 processori logici; 65.939.009.536 byte RAM (circa 61,4 GiB); circa 1,49 TiB liberi su C:.
-WSL2 attivo con Ubuntu e filesystem Linux quasi vuoto. Lo spazio apparente del disco WSL
-è virtuale e condivide il disco fisico: non sommarlo allo spazio libero di Windows.
+La baseline è Linux, con Ubuntu e WSL2 come ambiente di riferimento. Tutti i
+comandi si eseguono in Bash dalla root del clone. In WSL2 conservare clone,
+virtualenv, dipendenze e dati nel filesystem Linux.
 
-| Strumento | Stato iniziale verificato | Azione |
-|---|---|---|
-| Git Windows | 2.55.0, credential manager configurato | Già utilizzabile |
-| Node.js | 24.19.0 | Già utilizzabile |
-| npm | 11.17.0 | Usare npm.cmd in PowerShell |
-| VS Code | Presente nel PATH | Nessuna installazione richiesta |
-| WSL2 / Ubuntu | Disponibile; Python 3.14.4, Git 2.53.0 | Non riutilizzare la venv Windows qui |
-| Python Windows | Solo alias Microsoft Store, nessun runtime rilevato | Python 3.13 gestito con uv |
-| uv | Non presente nel PATH | Copia portabile locale preparata in .tools/uv |
-| Docker / Compose | Non presenti né in Windows né in Ubuntu | Da installare per stack completo locale |
-| PostgreSQL / psql | Non presenti | Forniti dal container; installazione nativa non necessaria |
-| GitHub CLI | Non presente; GitHub credential già in Git | Copia portabile locale preparata in .tools/gh |
-| pnpm | Non presente | Non necessario: il progetto usa npm |
+## Requisiti
 
-## Preparato durante lo scaffold
+| Strumento | Versione o requisito |
+|---|---|
+| Git | Disponibile nel PATH |
+| Python | 3.13, versione fissata in `.python-version` e gestibile da uv |
+| uv | 0.12.17, come nella CI e nel Dockerfile |
+| Node.js | 24, versione fissata in `.node-version` |
+| npm | Fornito con Node; installazione da `package-lock.json` |
+| Docker | Engine raggiungibile e plugin Compose v2 o successivo |
+| Bash | Shell per i comandi documentati |
 
-Senza modificare installazioni globali: uv 0.12.17, GitHub CLI 2.101.0 e Python 3.13.15 in
-`.tools/`, virtualenv `.venv/`, dipendenze Python e `apps/web/node_modules/`.
-Queste directory sono ignorate da Git e non vengono pubblicate. I lockfile sono versionati.
+Docker deve essere accessibile dall’utente della shell; in WSL2 abilitare
+l’integrazione del motore con la distribuzione Ubuntu. PostgreSQL/PostGIS
+sono forniti dal container: non occorre installarli sull’host. GitHub CLI
+è facoltativa e non serve per build, test o avvio.
 
-La verifica TLS iniziale falliva con il trust store predefinito di Node/uv. È stata risolta
-per processo tramite `NODE_USE_SYSTEM_CA=1` e `uv --system-certs`, usando le CA Windows.
-Non sono state disabilitate verifiche TLS né cambiate le execution policy di PowerShell.
-Per un comando uv che possa risincronizzare dipendenze usare il flag anche con `run`
-(`uv --system-certs run ...`). Requests/pip-audit usa un trust store separato: configurare
-`REQUESTS_CA_BUNDLE` con un bundle approvato dal sistema se si desidera eseguire l'audit
-localmente; il workflow Linux lo ha completato correttamente.
+Verificare gli strumenti senza cambiare il sistema:
 
-## Raccomandazioni dell'audit iniziale
+```sh
+bash scripts/doctor.sh
+```
 
-1. **Docker Desktop con backend WSL2 e Compose v2**, oppure Docker Engine+Compose in Ubuntu.
-   Scegliere una sola modalità e verificarla con `docker version` e `docker compose version`.
-   Valutare i termini applicabili di Docker Desktop al proprio contesto.
-2. **uv nel PATH**, consigliato per uso ordinario: `winget install --id astral-sh.uv -e`.
-   In alternativa usare la copia locale; uv gestisce Python 3.13 per questo repository.
-3. **GitHub CLI nel PATH**, consigliato: `winget install --id GitHub.cli -e` e configurare
-   l'accesso interattivo quando necessario. Git già dispone di credenziali utilizzabili.
+## Primo avvio
 
-Non sono necessari PostgreSQL nativo, Redis, Java, Spark, Kubernetes o pnpm per la v0.1.
-Non è stata eseguita alcuna installazione globale o di Docker durante questo lavoro.
-Il controllo `scripts/doctor.ps1` permette di aggiornare l'inventario senza modifiche.
+Dopo il clone, dalla root:
 
-## Aggiornamento durante M1, 23 settembre 2026
+```sh
+cp -n .env.example .env
+uv sync --locked
+npm --prefix apps/web ci
+docker compose up -d --build --wait
+```
 
-Docker Desktop è ora disponibile: Docker Engine 29.8.0 e Compose utilizzabili.
-Lo stack locale DB/API/web è stato avviato; PostgreSQL 17.5/PostGIS 3.5 serve
-la demo e il primo dataset ISTAT. La tabella sopra descrive lo stato iniziale.
+Il catalogo iniziale della popolazione è vuoto. Per popolarlo seguire il
+[workflow della popolazione](population.md), quindi pubblicare lo snapshot
+verificato con `uv run itadb publish-population --run PERCORSO`. Il comando
+usa gli originali e i contratti in `ITADB_DATA_DIR`. Le fixture degli
+aggregati inventati restano testabili via CLI/API v1 e non popolano la nuova web app.
+Web: <http://localhost:8080>. API: <http://localhost:8080/api/docs>.
+Le credenziali di esempio servono esclusivamente allo sviluppo locale.
 
-L'eseguibile è in `%LOCALAPPDATA%/Programs/DockerDesktop/resources/bin`.
-Se il terminale non lo trova, aggiungere la directory al PATH del solo processo
-prima dei comandi Compose; anche il credential helper deve essere raggiungibile.
-La configurazione locale del trust store usata per le build resta fuori Git.
+Per lavorare sui processi applicativi nell’host, avviare solo il database:
 
-Per M1 è stato creato il container separato `itadb-m1-test-db`, porta 55432,
-con volume persistente `itadb_m1_test_postgres`. I database di test e quello
-di verifica del restore sono conservati. Non usare gli URL del database
-applicativo per eseguire la suite di integrazione.
+```sh
+docker compose up -d --wait db
+docker compose run --rm migrate
+uv run itadb serve
+```
+
+In un secondo terminale, dalla root, eseguire
+`npm --prefix apps/web run dev` e aprire <http://localhost:5173>.
+Se lo stack completo è già attivo, fermare prima i servizi applicativi con
+`docker compose stop api web` per liberare la porta API.
+
+La CLI Python legge `.env` nella root. Vite viene avviato in `apps/web` e usa
+il backend locale sulla porta 8000 come default; per cambiarlo, impostare
+`VITE_API_BASE_URL` nell’ambiente della shell o in `apps/web/.env.local`.
+La build Compose usa `/api`, servito dal proxy sullo stesso host.
+
+## Verifiche
+
+I comandi completi per lint, tipi, test, OpenAPI e build sono nel
+[README](../README.md#verifiche-di-sviluppo). Per una prima verifica:
+
+```sh
+uv run pytest -m 'not integration'
+npm --prefix apps/web test
+npm --prefix apps/web run build
+```
+
+## PostgreSQL dedicato ai test
+
+Il file `compose.test.yaml` avvia un progetto Compose indipendente, con un
+volume dedicato e PostgreSQL esposto solo su `127.0.0.1:55432`. Non include
+API, frontend o dati dell’applicazione. Non usare gli URL applicativi nei test.
+
+```sh
+cp -n .env.test.example .env.test
+set -a
+source .env.test
+set +a
+docker compose --env-file .env.test -f compose.test.yaml up -d --wait
+ITADB_ADMIN_DATABASE_URL="$ITADB_TEST_DATABASE_URL" \
+  API_DB_PASSWORD="$ITADB_TEST_READER_PASSWORD" \
+  uv run python scripts/migrate.py
+uv run pytest -m integration
+```
+
+`.env.test` è locale e ignorato da Git. Le variabili esplicite amministrativa
+e reader puntano allo stesso database di test; il ruolo amministrativo può
+creare i database isolati usati dalla suite. Se la porta è occupata, cambiare
+`ITADB_TEST_PORT` e la porta in entrambi gli URL in `.env.test`.
+Le password negli URL devono essere percent-encoded; mantenere coerenti gli
+URL e le password del container e del ruolo reader.
+
+Il comando di migrazione si può ripetere. I test conservano i database creati
+e il volume. Per fermare il server senza rimuoverli:
+
+```sh
+docker compose --env-file .env.test -f compose.test.yaml stop
+```
+
+## Certificati e rete
+
+Le verifiche TLS restano abilitate. Se la rete richiede una CA aggiuntiva,
+installare il certificato pubblico approvato nel trust store della distribuzione.
+`UV_SYSTEM_CERTS=true` e `NODE_USE_SYSTEM_CA=1` consentono a uv e Node di usare
+il trust store di sistema. Requests/pip-audit può richiedere `REQUESTS_CA_BUNDLE`;
+Node supporta anche `NODE_EXTRA_CA_CERTS`. Configurare i percorsi del proprio
+bundle nell’ambiente locale, senza versionare certificati o override della macchina.
+Le build Docker usano un trust store separato e devono ricevere la CA approvata
+se necessario. Non disabilitare TLS per aggirare errori di connessione.
+
+## Dati e log
+
+`.env`, `.env.test`, `.venv`, `node_modules`, `.tools` e gli archivi sotto `data/`
+restano locali. Il filesystem `data/` e il volume Compose `evidence` sono distinti;
+condividere esplicitamente gli originali quando si passa tra CLI host e pipeline
+container. Non cancellare volumi o evidenze per ripetere una prova.
+
+Per attività lunghe usare `uv run python scripts/run_logged.py --label "Fase" -- COMANDO`.
+Il terminale mostra avanzamento, durata ed esito. Un secondo terminale può seguire
+il log con `tail -n 30 -F .tools/task-progress.log`. Non includere credenziali o dati
+personali nei comandi e nei log destinati alla condivisione.

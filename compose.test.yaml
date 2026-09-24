@@ -1,0 +1,18 @@
+name: itadb-test
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: itadb_test
+      POSTGRES_USER: itadb
+      POSTGRES_PASSWORD: ${ITADB_TEST_POSTGRES_PASSWORD:-test_admin_only}
+    ports: ["127.0.0.1:${ITADB_TEST_PORT:-55432}:5432"]
+    volumes: ["test_postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U itadb -d itadb_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    shm_size: 256mb
+volumes:
+  test_postgres_data:

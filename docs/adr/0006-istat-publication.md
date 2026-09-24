@@ -1,6 +1,6 @@
 # ADR 0006 — release ISTAT, snapshot territoriali e API v2
 
-Stato: adottata per M1. Data: 23 settembre 2026.
+Stato: adottata. Data: 23 settembre 2026.
 
 ## Contesto
 
@@ -39,7 +39,7 @@ inserimenti concorrenti sovrapposti: uno deve fallire anche fuori dalla pipeline
 Un controllo solo Python non protegge altre scritture o gare concorrenti.
 Classificare l'assenza di flag come osservazione diretta altererebbe il significato.
 Estendere retroattivamente v1 cambierebbe il suo enum; mantenerla evita tale rottura.
-La validità di un giorno limita deliberatamente il riuso: M2 dovrà introdurre
-evidenze territoriali storiche e mapping fusioni/scissioni prima di altre date.
+La validità di un giorno limita il riuso: altre date richiedono evidenze
+territoriali e collegamenti documentati per fusioni e scissioni.
 L'estensione e gli indici vengono verificati su PostgreSQL/PostGIS reale;
 nessuna affermazione di capacità nazionale deriva da questa decisione.

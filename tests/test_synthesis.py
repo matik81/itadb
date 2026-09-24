@@ -19,7 +19,7 @@ from itadb.synthesis.runner import run_pilot, verify_run
 
 @pytest.fixture
 def pilot() -> PilotInput:
-    return PilotInput.model_validate_json(Path("tests/fixtures/m3-invented.json").read_bytes())
+    return PilotInput.model_validate_json(Path("tests/fixtures/pilot-invented.json").read_bytes())
 
 
 @pytest.fixture
@@ -345,7 +345,7 @@ def test_retry_identity_concurrency_and_cli(
     report = json.loads((directory / "report.json").read_text(encoding="utf-8"))
     assert report["schema_version"] == "m3-report/3"
     assert report["person_model"] == expected_model
-    result = CliRunner().invoke(app, ["verify-m3", "--run", str(directory)])
+    result = CliRunner().invoke(app, ["verify-pilot", "--run", str(directory)])
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["verified"] is True
     other = run_pilot(tmp_path, pilot, Experiment(seeds=[17, 19], large_household_sizes=[6, 8]))
