@@ -39,7 +39,7 @@ jobs:
           POSTGRES_PASSWORD: test_admin_only
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U itadb -d itadb_test"
+          --health-cmd "pg_isready -h 127.0.0.1 -U itadb -d itadb_test"
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       ITADB_ADMIN_DATABASE_URL: postgresql://itadb:test_admin_only@localhost:5432/itadb_test

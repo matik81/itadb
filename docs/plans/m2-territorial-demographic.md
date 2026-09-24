@@ -34,9 +34,9 @@ Non generare individui sintetici (M3/M4).
 ## Stato
 
 Fasi 1–6 completate sul branch `feat/m2-territorial-demographic-coverage`:
-[PR #13](https://github.com/matik81/itadb/pull/13).
+PR #13.
 Fonti, perimetro e derivazioni sono in `docs/sources/istat-m2.md`; esiti dei test,
-backup/restore, pubblicazione Windows/Linux e HTTP in `docs/validation.md`;
+backup/restore, pubblicazione e HTTP in `docs/validation.md`;
 benchmark del milione di aggregati in `docs/benchmarks/m2.md`.
 
 La verifica visiva interattiva è stata completata tramite Playwright e Chrome,

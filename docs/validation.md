@@ -1,5 +1,46 @@
 # Registro delle verifiche
 
+Le sezioni storiche conservano misure ed esiti delle revisioni indicate.
+Il sistema operativo delle postazioni originarie è omesso dall’estratto pubblico;
+questi tempi non sono benchmark della baseline Linux corrente. I rapporti e
+gli snapshot originali restano negli archivi locali, con i relativi checksum.
+
+## Baseline Linux — 24 settembre 2026
+
+Verifica da una copia dei 211 file distribuibili, senza `.env`, virtualenv,
+`node_modules`, dati o override della postazione. Python 3.13.15, Node 24.19.0,
+Ubuntu/WSL2. Procedura corrente nella [guida Linux](local-environment.md).
+
+- `uv sync --locked` e `npm ci` riusciti; audit npm: zero vulnerabilità segnalate.
+  Ruff check/format, mypy, TypeScript, Prettier e build frontend passati.
+- **284 test Python non di integrazione e 17 test frontend passati**.
+- **38 test di integrazione passati** su un server PostGIS nuovo, creato da
+  `compose.test.yaml`, con volume separato e migrazioni eseguite due volte.
+  Nessun test saltato nelle due selezioni Python. Restano avvisi di deprecazione
+  delle dipendenze e della configurazione Alembic.
+- Corretto il controllo di salute PostgreSQL in Compose e CI: verifica TCP
+  esplicita per attendere il server definitivo, senza accettare quello temporaneo
+  usato dall’immagine durante l’inizializzazione. La prima prova da zero ha
+  rilevato questa condizione; la seconda, su un altro volume nuovo, è riuscita.
+- OpenAPI e tipi client rigenerati senza differenze; lockfile invariati.
+- Build Docker e avvio dello stack completo su porte e volumi isolati riusciti.
+  La rete locale richiede una CA aggiuntiva: il primo tentativo senza bundle
+  è fallito con `UnknownIssuer`; la prova riuscita usa il bundle approvato in
+  configurazione esterna al repository, con verifica TLS attiva.
+- Web, readiness, fonti, release e OpenAPI: HTTP 200. Due importazioni demo
+  hanno prodotto una sola release con tre osservazioni. Verificati gli URI
+  del progetto e gli asset frontend. Nessuna verifica visiva del browser.
+- Scansione dei file distribuibili: nessun identificativo personale cercato,
+  percorso host personale o istruzione del precedente ambiente. Link Markdown
+  locali validi; sintassi Bash degli esempi verificata senza acquisizioni live.
+  I valori e gli identificativi dei benchmark storici sono invariati.
+
+Log locali sotto `~/.local/state/itadb-repository-cleanup/`. Container di verifica
+fermati, database e volumi conservati. Nessuna nuova sintesi nazionale, modifica
+ai dati applicativi, riscrittura della cronologia Git o esecuzione della CI remota.
+La scansione riguarda i file correnti: i metadati e i contenuti dei vecchi commit
+non sono stati anonimizzati. Nessun commit o push incluso in questa verifica.
+
 ## M3 — sintesi pilota
 
 ### Revisione v3 — coorti di nascita stabili
@@ -108,7 +149,7 @@ Verifiche del 23 settembre 2026, dopo la richiesta di corrispondenza 1:1.
   tutti i nuovi file invariati. I **102 file dei tre esperimenti precedenti**
   risultano tutti immutati.
 - Nessuna modifica DB/API/web. Le suite DB e web non sono state rieseguite
-  localmente per questa revisione; la [CI della PR](https://github.com/matik81/itadb/pull/14/checks)
+  localmente per questa revisione; la CI della PR #14
   verifica Python, PostgreSQL, web e Compose sul commit proposto.
 
 Nuovo esperimento:
@@ -130,7 +171,7 @@ il rapporto lo dichiara. Restano da svolgere revisione scientifica esterna
 e valutazione disclosure; nessun microdato è distribuito.
 
 Generazione e audit: **4,78 s** in una singola esecuzione locale, **10.615.513 byte**
-complessivi. Windows AMD64, Python 3.13.15, DuckDB 1.5.5; stesso limite DuckDB
+complessivi. Ambiente storico x86_64, Python 3.13.15, DuckDB 1.5.5; stesso limite DuckDB
 di 256 MB/un thread, senza misura del picco RAM o capacità nazionale.
 Evidenze locali: `data/curated/m3/HASH/`,
 `data/reports/m3/acceptance-exact-HASH-83f49c2f744c48a29552e24cbd1aa68b.json`,
@@ -193,7 +234,7 @@ fissata a posteriori una soglia per dichiarare valido il modello.
 
 Misura locale singola: preparazione, generazione e audit in **4,30 s**;
 30 Parquet più input/report/manifest occupano **10.627.232 byte**.
-Windows AMD64, Python 3.13.15, DuckDB 1.5.5, DuckDB a un thread e limite
+Ambiente storico x86_64, Python 3.13.15, DuckDB 1.5.5, DuckDB a un thread e limite
 256 MB. Il limite DuckDB non è una misura della RAM totale del processo;
 picco RSS, concorrenza di carico e capacità nazionale **non misurati**.
 Nessuna estrapolazione a M4. Evidenze locali escluse da Git:
@@ -206,10 +247,9 @@ composizioni familiari non validate rispetto a una congiunta osservata.
 Gli esperimenti restano locali, `experimental_not_certified`, senza
 pubblicazione di microdati nelle API, nel web o nella PR.
 
-Verifica eseguita il 23 settembre 2026. Repository pubblico:
-[matik81/itadb](https://github.com/matik81/itadb).
+Verifica eseguita il 23 settembre 2026 sul repository pubblico del progetto.
 
-## Controlli locali Windows
+## Controlli locali iniziali
 
 - Python 3.13.15: 24 test unitari/contratto superati; 3 test di integrazione richiedono
   PostgreSQL e sono eseguiti separatamente in GitHub.
@@ -227,14 +267,14 @@ lo stesso controllo è stato eseguito con successo in CI Linux, senza disabilita
 
 ## PostgreSQL e container su GitHub Actions
 
-[CI completa passata](https://github.com/matik81/itadb/actions/runs/35795918660):
+CI completa passata (run storico `35795918660`):
 unit/contratti, frontend, migrazioni ripetute, integrazione PostgreSQL/PostGIS e smoke
 Docker Compose. Il percorso di importazione demo è stato eseguito contro un DB reale;
 testati idempotenza, immutabilità, privilegi reader, paginazione, rollback del gate e
 pruning a una partizione. Il Compose costruisce entrambe le immagini, avvia i servizi,
 importa la demo e verifica web e API attraverso Nginx.
 
-[Audit dipendenze passato](https://github.com/matik81/itadb/actions/runs/35795812590):
+Audit dipendenze passato (run storico `35795812590`):
 pip-audit e npm audit. Questi controlli rilevano vulnerabilità conosciute nei pacchetti;
 non costituiscono una revisione di sicurezza completa del prodotto.
 
@@ -245,14 +285,14 @@ upgrade da database vuoto e avvio Compose riusciti. Le correzioni sono nella cro
 ## Prova di capacità colonnare
 
 `uv run python scripts/benchmark.py`, 1.000.000 righe artificiali, DuckDB 1.5.5,
-Windows, limite 1 GiB e 4 thread: Parquet 1.817.914 byte, scrittura circa 0,091 s,
+Ambiente storico, limite 1 GiB e 4 thread: Parquet 1.817.914 byte, scrittura circa 0,091 s,
 aggregazione su 8.000 codici circa 0,008 s. Dati regolari a bassissima entropia, cache
 non controllata: prova funzionale del percorso colonnare, **non** stima di produzione
 o benchmark della popolazione italiana. Nessun test nazionale 1:1 è stato eseguito.
 
 ## Configurazione GitHub verificata
 
-Repository pubblico, branch principale main, CODEOWNERS @matik81, Discussions abilitate,
+Repository pubblico, branch principale main, Discussions abilitate,
 cancellazione automatica dei branch dopo merge. Abilitati segnalazioni private di
 vulnerabilità, Dependabot security updates, secret scanning e push protection.
 Le protezioni del branch si verificano nelle impostazioni GitHub; il relativo stato
@@ -299,7 +339,7 @@ successiva, descritta sotto, completa il [piano](plans/m1-istat-population.md).
 
 ## Pubblicazione ISTAT locale, 23 settembre 2026
 
-Secondo incremento, con Docker Desktop disponibile e PostgreSQL 17.5/PostGIS 3.5
+Secondo incremento, con Docker disponibile e PostgreSQL 17.5/PostGIS 3.5
 in container. I test usano un server separato dallo stack applicativo.
 
 - **90 test Python superati: 77 unitari/contratto e 13 di integrazione PostgreSQL**,
@@ -333,7 +373,7 @@ in container. I test usano un server separato dallo stack applicativo.
 
 Release corrente: `eaef6df9-96db-58bd-9b9d-9e203d89d030`, successiva a
 `4d602369-9057-57a0-9942-9d0ac9bcb91e`. La revisione rende portabili i checksum
-dei contratti tra Windows e Linux (terminatori LF); tutti i valori statistici
+dei contratti tra ambienti distinti (terminatori LF); tutti i valori statistici
 sono invariati e la prima release resta consultabile. Rapporto di verifica HTTP:
 `data/reports/m1-publication-eaef6df9-96db-58bd-9b9d-9e203d89d030.json`.
 
@@ -356,7 +396,7 @@ convertiti in dati osservati. Storia territoriale e altri periodi restano in M2.
   dei comuni dopo aver misurato incoerenze nei confini fonte tra livelli.
   Rapporti locali `m2-geometry-audit.json` e `m2-hierarchy-audit.json` in `data/reports/`.
 - Release ufficiale **`85e67cbd-ced9-5a5d-85b5-8e1b2ca3141e`**, riprodotta con lo
-  stesso UUID su Windows e Linux grazie ai terminatori LF dei JSON generati.
+  stesso UUID su ambienti distinti grazie ai terminatori LF dei JSON generati.
   Evidenze applicative nel volume `itadb_evidence`; fixture solo nei DB di test.
 - Verifica HTTP attraverso Nginx: **16.147 osservazioni confrontate** con gli
   input, sei serie incluse famiglie comunali, età 0 e 100+, tutti gli attributi
@@ -377,7 +417,7 @@ convertiti in dati osservati. Storia territoriale e altri periodi restano in M2.
   formattazione, mypy, TypeScript, build web e installazione lock verificati.
   Gli schemi API preesistenti e tutte le route v1 sono invariati.
 - **26 controlli** nella verifica visuale e interattiva con **Playwright 1.63.0 e Chrome
-  153.0.8010.53** su Windows, contro lo stack reale `http://localhost:8080`.
+  153.0.8010.53** contro lo stack reale `http://localhost:8080`.
   Controllati desktop a 1440 px e viewport a 768, 390 e 320 px: nessun overflow
   orizzontale della pagina; tabelle scorrevoli internamente, categoria completa
   leggibile, provenienza e checksum consultabili. Nessuna prova su dispositivo
@@ -546,7 +586,7 @@ delle misure; tutti i dati originali e sintetici restano fuori da Git.
 
 ### Benchmark realmente eseguiti
 
-Windows AMD64, Ryzen 9 9900X, 24 CPU logiche, 65.939.009.536 byte RAM;
+Ambiente storico x86_64, Ryzen 9 9900X, 24 CPU logiche, 65.939.009.536 byte RAM;
 Python 3.13.15, DuckDB 1.5.5. Budget preventivi: RSS 8 GiB, directory di lavoro
 40 GiB, tempo 7.200 s; DuckDB 2 GiB e due thread, massimo 5M per batch.
 
@@ -577,12 +617,12 @@ SLA, distribuzioni p95/p99 o stime di prestazioni su altri sistemi.
 
 ### Controlli del repository
 
-- `uv sync --locked`, Ruff check/format, mypy per Windows e Linux: passati.
+- `uv sync --locked`, Ruff check/format, mypy in ambienti distinti: passati.
 - Python non integration: **219 passati**, 38 deselected perché eseguiti
   separatamente; nessun test saltato nel perimetro selezionato.
 - PostgreSQL su database dedicato `itadb_m4_test_7be9191e7d6d`, migrazioni
   eseguite due volte: **38 passati**, 219 deselected. Nessun volume eliminato.
-- Frontend: `npm.cmd ci` (audit zero vulnerabilità), typecheck, format,
+- Frontend: `npm ci` (audit zero vulnerabilità), typecheck, format,
   **17 test**, build passati. OpenAPI e tipi client rigenerati senza drift.
 - 30 nuovi test coprono parser/zeri dimostrati, dati mancanti/stimati,
   integrità, coorti, comuni/famiglie, ordine dei batch, recupero, checksum,
@@ -636,7 +676,7 @@ archiviati prima del commit, working tree dirty dichiarato.
 | 10M inventato, due tentativi con recupero | 7,83 + 9,77 s | 1.066,99 MiB | 38,20 MiB | 6,60 s |
 | 58.943.464 nazionale | 86,13 s | 1.093,04 MiB | 249,60 MiB | 45,07 s |
 
-Macchina: Ryzen 9 9900X, 24 CPU logiche, Windows AMD64; Python 3.13.15,
+Macchina: Ryzen 9 9900X, 24 CPU logiche, ambiente storico x86_64; Python 3.13.15,
 DuckDB 1.5.5. Il runner include audit completo della base, arricchimento e
 audit inline; esclude ammissione iniziale e parte della finalizzazione.
 CLI nazionale: 92,2 s. Snapshot finale: 261.766.895 byte. Il disco è campionato
@@ -647,7 +687,7 @@ sono esclusi. Budget rispettati: 8 GiB RSS, 40 GiB disco, 7.200 s, DuckDB
 Controlli: **266 test Python non integration passati**, inclusi **47 nuovi
 test** per STR/RCS, conservazione degli attributi, schema, recupero,
 riproducibilità, corruzione, metadati alterati, artefatti inattesi e budget.
-Ruff check/format e mypy Windows/Linux passati. OpenAPI senza modifiche.
+Ruff check/format e mypy passati. OpenAPI senza modifiche.
 I 38 test PostgreSQL sono esclusi dal comando locale di questa iterazione;
 nessuna modifica a DB, API o frontend. La CI della PR esegue anche PostgreSQL,
 web e Compose; il suo esito è nei controlli della PR.
@@ -667,11 +707,11 @@ sesso/età → geografia → cittadinanza → famiglie. Il percorso corrente
 non richiede un precedente snapshot sintetico di famiglie.
 
 - **284 test Python non integration passati**, di cui 18 nuovi per ordine
-  effettivo, invarianti fra fasi, confronto con il metodo storico, recupero
-  fra fasi e batch, retry, input incompatibili, corruzione, artefatti inattesi,
+  effettivo, invarianti tra fasi, confronto con il metodo storico, recupero
+  tra fasi e batch, retry, input incompatibili, corruzione, artefatti inattesi,
   budget e metadati alterati. I test rifiutano anche uno scambio di cittadinanze
   durante la fase familiare che lasci esatti i conteggi aggregati.
-- Ruff check/format, mypy Windows/Linux e OpenAPI senza drift passati.
+- Ruff check/format, mypy e OpenAPI senza drift passati.
   38 integrazioni PostgreSQL escluse dalla suite locale di questa iterazione;
   nessuna modifica a DB, API, dipendenze o web. La CI della PR esegue anche
   PostgreSQL, web e Compose sul commit finale.
@@ -712,7 +752,7 @@ compreso l'artefatto prima delle famiglie. Stessi budget precedenti: DuckDB
 Il runner misura generazione, scritture e audit inline; esclude ammissione
 e parte della finalizzazione. Disco campionato ogni secondo nella directory
 di lavoro, esclusi raw, altri snapshot e log. Audit indipendente successivo
-in un processo separato. Macchina Windows AMD64, Ryzen 9 9900X, 24 CPU logiche,
+in un processo separato. Ambiente storico x86_64, Ryzen 9 9900X, 24 CPU logiche,
 Python 3.13.15 e DuckDB 1.5.5. Misure locali, non SLA.
 
 Il riordino conserva la regola casuale familiare. Non sono state calibrate

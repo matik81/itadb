@@ -110,7 +110,7 @@ class SdmxConnector:
     ) -> AcquiredArtifact:
         headers = {
             "Accept": accept,
-            "User-Agent": "itadb/0.1 (+https://github.com/matik81/itadb)",
+            "User-Agent": "itadb/0.1",
         }
         client = self.client or httpx.Client(
             timeout=httpx.Timeout(60, connect=10),

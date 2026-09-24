@@ -13,7 +13,7 @@ from itadb.config import Settings
 from itadb.pipeline.storage import archive_file, atomic_json, sha256_file
 from itadb.pipeline.validate import QualityError, normalize_demo
 
-TRANSFORM_VERSION = "population-demo/1.0.0"
+TRANSFORM_VERSION = "population-demo/1.0.1"
 LICENSE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
 
 
@@ -72,7 +72,7 @@ def _run(
                         release_id,
                         report["reference_period"],
                         now,
-                        "https://github.com/matik81/itadb/blob/main/tests/fixtures/population-demo.csv",
+                        "urn:itadb:fixture:population-demo",
                         checksum,
                         TRANSFORM_VERSION,
                         contract_hash,

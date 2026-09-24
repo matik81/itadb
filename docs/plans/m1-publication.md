@@ -40,7 +40,7 @@ backup pre-migrazione ripristinato in un DB isolato. Dettagli ed evidenze nel
 
 ## Verifica e limiti
 
-Docker Desktop disponibile in questa sessione. Container di test separato
+Docker disponibile in questa sessione. Container di test separato
 `itadb-m1-test-db`, porta locale 55432, volume persistente dedicato; non eliminare
 volumi o evidenze. Il campione reale non è un benchmark nazionale.
 `LAST_UPDATE` resta distinto dalla pubblicazione upstream non accertata (`null`).

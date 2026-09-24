@@ -22,7 +22,7 @@ di riferimento. Il quarto passaggio legge questo file e aggiunge soltanto
 `household_id` e `reference_adult` al Parquet finale, mantenendo lo schema
 finale compatibile con il precedente arricchimento.
 
-L'audit SQL indipendente confronta ogni attributo fra individui e persone
+L'audit SQL indipendente confronta ogni attributo tra individui e persone
 finali. Verifica STR e RCS su entrambi, oltre agli stessi vincoli nazionali
 e familiari già adottati. Il file prima delle famiglie resta nello snapshot,
 inventariato e protetto da checksum. Checkpoint, retry, budget e quarantena
@@ -51,6 +51,6 @@ Età–singola cittadinanza e relazioni familiari restano sintetiche e non
 calibrate su congiunte osservate. Nessuna nuova dipendenza, API o tabella DB.
 
 Le prove coprono ordine effettivo, invarianti, compatibilità storica,
-interruzioni fra fasi e batch, ripresa, ordine inverso, input incompatibili,
+interruzioni tra fasi e batch, ripresa, ordine inverso, input incompatibili,
 corruzione e metadati alterati. Le misure eseguite sono registrate nella
 [validazione](../validation.md) e nel [piano](../plans/population-order.md).

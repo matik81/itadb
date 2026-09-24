@@ -29,8 +29,8 @@ riordinare non introduce una calibrazione delle relazioni familiari.
 1. Separati assegnazione della cittadinanza e composizione familiare;
    `individuals.parquet` viene scritto prima di qualunque famiglia nel batch.
 2. Registrati ordine, riferimento e artefatto prima delle famiglie nell'identità.
-3. Passati 284 test Python, lint e tipi Windows/Linux. Audit di invarianza,
-   recupero fra fasi e batch, retry, corruzione e mancato completamento verificati.
+3. Passati 284 test Python, lint e tipi verificati. Audit di invarianza,
+   recupero tra fasi e batch, retry, corruzione e mancato completamento verificati.
 4. Benchmark 1M, 10M e nazionale eseguiti entro i budget; audit separato passato.
    Riproduzione 10M: 11 file identici. Confronto nazionale: 214 Parquet finali
    identici allo storico; riferimenti precedenti verificati, retry nazionale passato.

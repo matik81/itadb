@@ -34,7 +34,7 @@ versione del motore e ambiente sono parte dell'identità riproducibile.
 Il codice `999` indica apolidia, non cittadinanza sconosciuta. La definizione
 ISTAT considera italiano chi possiede anche la cittadinanza italiana.
 
-L'ipotesi unica è la scambiabilità delle cittadinanze specifiche fra gli
+L'ipotesi unica è la scambiabilità delle cittadinanze specifiche tra gli
 stranieri dello stesso comune e sesso. La distribuzione risultante per età
 e specifica cittadinanza è sintetica, non osservata. Non si ricavano legami
 familiari, cittadinanza dei figli, acquisizioni o paese di nascita.
@@ -68,7 +68,7 @@ L'[ADR 0014](0014-ordered-population.md) applica l'ordine al nuovo riferimento
 eseguibile corrente. Il metodo e i metadati storici di questo riferimento
 restano invariati.
 Il riferimento M4 originale resta una base immutabile, non una popolazione
-alternativa fra cui scegliere a posteriori.
+alternativa tra cui scegliere a posteriori.
 
 Lo snapshot arricchito è locale, `public_release=false`. La disclosure
 considera anche la cittadinanza nei quasi-identificatori; l'aumento di

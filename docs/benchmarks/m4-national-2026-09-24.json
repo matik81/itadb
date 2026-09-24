@@ -10,7 +10,7 @@
   "runtime": {
     "python": "3.13.15",
     "duckdb": "1.5.5",
-    "os": "Windows AMD64"
+    "os": null
   },
   "benchmarks": [
     {
@@ -64,7 +64,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -86,7 +86,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -112,7 +112,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -136,7 +136,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -228,5 +228,6 @@
     "elapsed_seconds": 17.33171079994645,
     "peak_process_rss_bytes": 1041395712,
     "status": "passed"
-  }
+  },
+  "publication_note": "Estratto storico: sistema operativo originario omesso; misure e identificativi invariati. Non è un benchmark della baseline Linux corrente. Gli originali restano negli archivi locali."
 }

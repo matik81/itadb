@@ -9,7 +9,7 @@
   "runtime": {
     "python": "3.13.15",
     "duckdb": "1.5.5",
-    "platform": "Windows",
+    "platform": null,
     "machine": "AMD64"
   },
   "national_run_id": "d7ab8f19cc590fa6cba0a9ea9964f3ee0dcde5327b0019c8f63d48e896dab6a5",
@@ -25,7 +25,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -48,7 +48,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -72,7 +72,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -95,7 +95,7 @@
       "disk_sample_interval_seconds": 1,
       "budget_passed": true,
       "hardware": {
-        "platform": "Windows",
+        "platform": null,
         "architecture": "AMD64",
         "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
         "logical_cpus": 24
@@ -208,5 +208,6 @@
     "Disco campionato nella directory di lavoro; base, raw, altri tentativi e log esterni esclusi",
     "10M con interruzione e recupero comprende due tentativi e riletture della base",
     "Congiunta eta-singola cittadinanza sintetica; relazioni familiari non calibrate; microdati locali"
-  ]
+  ],
+  "publication_note": "Estratto storico: sistema operativo originario omesso; misure e identificativi invariati. Non è un benchmark della baseline Linux corrente. Gli originali restano negli archivi locali."
 }

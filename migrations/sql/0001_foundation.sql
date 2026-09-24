@@ -196,7 +196,7 @@ SELECT q.release_id, q.check_name, q.passed, q.details FROM catalog.quality_resu
 JOIN catalog.release r ON r.id=q.release_id WHERE r.status='published';
 
 INSERT INTO catalog.source VALUES
-('demo','Itadb — fixture dimostrativa','https://github.com/matik81/itadb','https://creativecommons.org/publicdomain/zero/1.0/',true),
+('demo','Itadb — fixture dimostrativa','urn:itadb:demo','https://creativecommons.org/publicdomain/zero/1.0/',true),
 ('istat','ISTAT','https://www.istat.it','https://www.istat.it/note-legali/',false),
 ('eurostat','Eurostat','https://ec.europa.eu/eurostat','https://ec.europa.eu/eurostat/about-us/policies/copyright',false);
 INSERT INTO catalog.dataset VALUES

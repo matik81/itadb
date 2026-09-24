@@ -37,7 +37,7 @@
       "runtime": {
         "python": "3.13.15",
         "duckdb": "1.5.5",
-        "platform": "Windows",
+        "platform": null,
         "machine": "AMD64"
       },
       "manifest_sha256": "b5c74e581dc9fedc02ea3add9dc2b175a39d120e6165bc3c2d20f40ae5140e43",
@@ -99,7 +99,7 @@
           "disk_sample_interval_seconds": 1,
           "budget_passed": true,
           "hardware": {
-            "platform": "Windows",
+            "platform": null,
             "architecture": "AMD64",
             "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
             "logical_cpus": 24
@@ -198,7 +198,7 @@
       "runtime": {
         "python": "3.13.15",
         "duckdb": "1.5.5",
-        "platform": "Windows",
+        "platform": null,
         "machine": "AMD64"
       },
       "manifest_sha256": "002cd108544abfdaf5e15495a89a7353157248c5bead526480aeb33017c6a303",
@@ -260,7 +260,7 @@
           "disk_sample_interval_seconds": 1,
           "budget_passed": true,
           "hardware": {
-            "platform": "Windows",
+            "platform": null,
             "architecture": "AMD64",
             "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
             "logical_cpus": 24
@@ -283,7 +283,7 @@
           "disk_sample_interval_seconds": 1,
           "budget_passed": true,
           "hardware": {
-            "platform": "Windows",
+            "platform": null,
             "architecture": "AMD64",
             "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
             "logical_cpus": 24
@@ -382,7 +382,7 @@
       "runtime": {
         "python": "3.13.15",
         "duckdb": "1.5.5",
-        "platform": "Windows",
+        "platform": null,
         "machine": "AMD64"
       },
       "manifest_sha256": "f0125af1adb2926bc4e399d90c057ee080d5c8919e1ea74339f3be1d3842fc8d",
@@ -444,7 +444,7 @@
           "disk_sample_interval_seconds": 1,
           "budget_passed": true,
           "hardware": {
-            "platform": "Windows",
+            "platform": null,
             "architecture": "AMD64",
             "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
             "logical_cpus": 24
@@ -528,5 +528,6 @@
     "status": "passed",
     "cli_elapsed_seconds": 45.8,
     "run_id": "24a56e3bdb58fb1af523ea1b6019e8de04292ecdf11105fc6885cacc4903b76c"
-  }
+  },
+  "publication_note": "Estratto storico: sistema operativo originario omesso; misure e identificativi invariati. Non è un benchmark della baseline Linux corrente. Gli originali restano negli archivi locali."
 }

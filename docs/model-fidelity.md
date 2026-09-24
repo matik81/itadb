@@ -17,7 +17,7 @@ attributi degli agenti. [Decisione iniziale M3](adr/0010-model-fidelity-and-m3-r
 | 1 | Sesso ed età | Conteggi esatti per comune/sesso/età al 1° gennaio 2025 | 100+ è una classe aperta; la coorte di nascita è sintetica |
 | 2 | Geografia amministrativa | Conteggi territoriali esatti e gerarchia comune–provincia/UTS–regione coerente | Assegnazione al comune, senza localizzazione individuale interna |
 | 3 | Cittadinanza | STR: stranieri per comune/sesso/età; RCS: singole cittadinanze per comune/sesso; entrambi esatti | L'incrocio età–singola cittadinanza resta sintetico |
-| 4 | Composizione delle famiglie | Conteggi per comune e classe dimensionale esatti | Composizione casuale vincolata, grezza per età e cittadinanza; nessuna calibrazione delle relazioni fra componenti |
+| 4 | Composizione delle famiglie | Conteggi per comune e classe dimensionale esatti | Composizione casuale vincolata, grezza per età e cittadinanza; nessuna calibrazione delle relazioni tra componenti |
 
 L'esattezza dei primi tre gruppi riguarda i margini e le congiunte osservate
 elencate, non tutte le combinazioni degli attributi individuali. Per le famiglie,
@@ -136,9 +136,9 @@ Gli ID e tutti gli attributi M4 restano identici, le famiglie sono copiate
 byte per byte. Il riferimento precedente rimane un'evidenza immutabile.
 
 Seed 1701, namespace distinto per la cittadinanza. L'ipotesi unica è la
-scambiabilità delle cittadinanze specifiche entro comune e sesso fra gli
+scambiabilità delle cittadinanze specifiche entro comune e sesso tra gli
 stranieri selezionati per età. Permette di conservare i margini disponibili
-senza inventare una correlazione osservata fra età e singola cittadinanza.
+senza inventare una correlazione osservata tra età e singola cittadinanza.
 L'arrivo di tale congiunta, o di evidenze sulle cittadinanze nella famiglia,
 richiederà un nuovo riferimento e un confronto esplicito. Finché assenti,
 quelle relazioni restano sintetiche e non validate.
@@ -147,7 +147,7 @@ quelle relazioni restano sintetiche e non validate.
 
 Il 24 settembre 2026 l'utente ha richiesto esplicitamente di anticipare la
 cittadinanza al terzo posto e spostare le famiglie al quarto. Il razionale
-è rendere evidente la differenza fra i conteggi individuali e territoriali
+è rendere evidente la differenza tra i conteggi individuali e territoriali
 esatti e la composizione familiare ancora grezza per età e cittadinanza.
 
 Il nuovo ordine guida il riepilogo, la valutazione e gli sviluppi successivi.

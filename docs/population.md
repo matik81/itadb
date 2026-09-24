@@ -37,14 +37,14 @@ I file riconciliano esattamente con M4. La [nuova versione arricchita](citizensh
 assegna `citizenship_code` a tutti i **58.943.464 individui**: 53.572.213 nella
 categoria italiana e 5.371.251 nella popolazione straniera, inclusi 525 apolidi.
 La base M4 originale è conservata immutabile.
-L'associazione fra età e specifica cittadinanza è sintetica e documentata:
+L'associazione tra età e specifica cittadinanza è sintetica e documentata:
 questo incrocio non è osservato nelle tavole disponibili.
 
 Per le famiglie, i componenti sono assegnati casualmente entro lo stesso
 comune, con almeno un adulto per famiglia e assegnazione di tutti i minori.
 Nel percorso corrente età e cittadinanza sono già fissate prima di formare
 le famiglie. **Non sono calibrate né le relazioni di età
-fra componenti né la composizione per cittadinanza**, incluse le frequenze
+tra componenti né la composizione per cittadinanza**, incluse le frequenze
 delle famiglie italiane, straniere e miste. Non sono integrate relazioni di
 parentela osservate. La classe 6+ è rappresentata con 6 componenti;
 560.159 adulti restano senza assegnazione familiare.
@@ -88,7 +88,7 @@ uv run python scripts/run_logged.py --label "Audit popolazione" --log .tools/pop
 
 Gli inventari indicati sono quelli locali conservati per il riferimento;
 in una nuova acquisizione usare i percorsi effettivamente stampati dai comandi.
-Su Windows seguire il log con `scripts/watch-progress.ps1`.
+Seguire il log con `tail -n 30 -F .tools/population-progress.log`.
 Le fonti vengono nuovamente ammesse prima della generazione. Gli snapshot
 completati sono in `data/curated/population/`, i checkpoint in `data/state/`,
 log e misure in `data/reports/population/`. Un retry verifica gli artefatti;

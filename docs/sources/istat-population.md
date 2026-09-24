@@ -94,7 +94,7 @@ sono state limitate a 20 MB per metadati e 100 kB per dati. Gli estratti XML nei
 test sono derivati, con licenza e modifiche dichiarate; i conteggi della fixture
 CSV sono inventati e diversi dai dati ufficiali.
 
-## Riprodurre da PowerShell
+## Riprodurre da Bash
 
 Questi comandi effettuano tre richieste live esplicite: metadati del dataflow,
 DSD con codelist e campione filtrato. Il connettore condivide il limite locale
@@ -102,14 +102,22 @@ di una richiesta ogni 15 secondi, inferiore alle
 [5 richieste/minuto dichiarate da ISTAT](https://www.istat.it/classificazioni-e-strumenti/web-services-sdmx/).
 Non rilanciare le acquisizioni per rieseguire il controllo offline.
 
-```powershell
-$uvPath = if (Get-Command uv -ErrorAction SilentlyContinue) { 'uv' } else { '.tools/uv/uv.exe' }
-$flow = & $uvPath run itadb fetch-structure istat --resource dataflow --agency IT1 --identifier 22_289_DF_DCIS_POPRES1_1 --version 1.0 --references none | ConvertFrom-Json
-$dsd = & $uvPath run itadb fetch-structure istat --resource datastructure --agency IT1 --identifier DCIS_POPRES1 --version 1.0 --references all | ConvertFrom-Json
-$contract = Get-Content -Raw -Encoding utf8 contracts/istat-population-regions-v1.json | ConvertFrom-Json
-$areas = $contract.territories.PSObject.Properties.Name -join '+'
-$sample = & $uvPath run itadb fetch istat --flow IT1,22_289_DF_DCIS_POPRES1_1,1.0 --key "A.$areas.JAN.9.TOTAL.99" --start-period 2024-01-01 --end-period 2024-01-01 | ConvertFrom-Json
-& $uvPath run itadb check-istat-population --acquisition $sample.manifest --structure $dsd.manifest --dataflow $flow.manifest
+```sh
+set -euo pipefail
+mkdir -p .tools
+uv run itadb fetch-structure istat --resource dataflow --agency IT1 \
+  --identifier 22_289_DF_DCIS_POPRES1_1 --version 1.0 --references none > .tools/istat-flow.json
+uv run itadb fetch-structure istat --resource datastructure --agency IT1 \
+  --identifier DCIS_POPRES1 --version 1.0 --references all > .tools/istat-dsd.json
+areas=$(uv run python -c 'import json; print("+".join(json.load(open("contracts/istat-population-regions-v1.json"))["territories"]))')
+uv run itadb fetch istat --flow IT1,22_289_DF_DCIS_POPRES1_1,1.0 \
+  --key "A.$areas.JAN.9.TOTAL.99" --start-period 2024-01-01 \
+  --end-period 2024-01-01 > .tools/istat-sample.json
+flow_manifest=$(uv run python -c 'import json; print(json.load(open(".tools/istat-flow.json"))["manifest"])')
+dsd_manifest=$(uv run python -c 'import json; print(json.load(open(".tools/istat-dsd.json"))["manifest"])')
+sample_manifest=$(uv run python -c 'import json; print(json.load(open(".tools/istat-sample.json"))["manifest"])')
+uv run itadb check-istat-population --acquisition "$sample_manifest" \
+  --structure "$dsd_manifest" --dataflow "$flow_manifest"
 ```
 
 L'ultimo comando lavora senza rete né PostgreSQL. I tre argomenti indicano i
@@ -130,16 +138,18 @@ timestamp dei metadati: verificare la nuova evidenza senza sostituire la precede
 Dopo migrazioni e configurazione del ruolo reader, usare gli stessi manifest e
 l'originale della pagina di licenza, conservato durante la verifica:
 
-```powershell
-& $uvPath run itadb ingest-istat-population --acquisition $sample.manifest --structure $dsd.manifest --dataflow $flow.manifest --license-evidence PERCORSO_HTML_LICENZA
+```sh
+uv run itadb ingest-istat-population --acquisition "$sample_manifest" \
+  --structure "$dsd_manifest" --dataflow "$flow_manifest" \
+  --license-evidence PERCORSO_HTML_LICENZA
 ```
 
 Nel Compose eseguire il comando con `docker compose run --rm pipeline itadb ...`
-e percorsi interni all'archivio `/app/data`. Gli originali acquisiti sul filesystem
-Windows vanno prima trasferiti nell'archivio del worker, conservando bytes, hash
-e manifest. Tutti i worker di uno stesso catalogo devono condividere l'archivio.
-La copia già presente in questa installazione è nel volume `itadb_evidence`;
-gli input sono registrati in `/app/data/state/m1-official-inputs.json`.
+e percorsi interni all'archivio `/app/data`. Gli originali acquisiti sull’host
+vanno prima copiati nel volume `evidence` del worker, conservando byte, hash
+e manifest. Tutti i worker di uno stesso catalogo devono condividere l’archivio.
+Il clone iniziale non contiene queste acquisizioni: i percorsi dei manifest
+derivano dai risultati dei comandi precedenti.
 
 Il contratto verifica il checksum della pagina licenza già revisionata. Una nuova
 pagina scaricata può avere bytes differenti: non aggiornare il checksum alla cieca;
@@ -159,7 +169,7 @@ ignora il solo Header di risposta SDMX, non gli aggiornamenti semantici.
 
 I contratti nel repository usano terminatori LF. La versione 1.0.1 del contratto
 di pubblicazione fissa il checksum portabile dell'onboarding; l'adeguamento
-rispetto alla prima pubblicazione Windows è registrato come revisione con
+rispetto alla prima pubblicazione è registrato come revisione con
 valori invariati. Gli originali dei contratti precedenti restano tra gli artefatti.
 
 La release corrente verificata nello stack locale è

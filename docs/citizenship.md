@@ -48,11 +48,11 @@ prevale quando una persona ne possiede anche un'altra; il modello assegna
 una sola categoria statistica, non una lista di passaporti.
 
 Sesso/età degli stranieri e totali per cittadinanza sono calibrati esattamente.
-L'associazione fra **età e specifica cittadinanza è sintetica**, ottenuta
+L'associazione tra **età e specifica cittadinanza è sintetica**, ottenuta
 mescolando in modo deterministico le cittadinanze entro comune e sesso.
 La composizione delle famiglie resta casuale sia per età, entro i vincoli
 M4, sia per cittadinanza, assegnata senza considerare la famiglia. Non sono
-calibrate le relazioni fra componenti né le frequenze di famiglie italiane,
+calibrate le relazioni tra componenti né le frequenze di famiglie italiane,
 straniere e miste; sono esatti soltanto i conteggi familiari per classe dimensionale.
 Non si rappresentano acquisizioni, trasmissione ai figli, migrazioni o
 cambiamenti di cittadinanza negli anni successivi.
@@ -69,12 +69,11 @@ uv run python scripts/run_logged.py --label "Assegnazione cittadinanza" --log .t
 uv run python scripts/run_logged.py --label "Audit cittadinanza" --log .tools/citizenship-progress.log -- uv run itadb verify-citizenship --base-run data/curated/m4/BASE_HASH --run data/curated/citizenship/HASH
 ```
 
-Su Windows il log è seguito con
-`scripts/watch-progress.ps1 -LogPath .tools/citizenship-progress.log`.
+Seguire il log con `tail -n 30 -F .tools/citizenship-progress.log`.
 Il runner stampa fase, batch, popolazione, tempo e misure RAM/disco.
 Budget: 8 GiB RSS, 40 GiB nella directory di lavoro, 7.200 s, DuckDB 2 GiB e
 due thread. I batch seguono quelli della base, fino a 5M; l'audit della base
-è incluso nel tempo del runner. Sono limiti controllati fra fasi, non limiti
+è incluso nel tempo del runner. Sono limiti controllati tra fasi, non limiti
 RAM imposti dal sistema operativo.
 
 Il risultato contiene `input.json`, `report.json`, `manifest.json` e, per

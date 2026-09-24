@@ -89,7 +89,7 @@ uv run python scripts/run_logged.py --label "Carico 1M" --log .tools/m4-progress
 uv run python scripts/run_logged.py --label "Carico 10M e recupero" --log .tools/m4-progress.log -- uv run python scripts/benchmark_m4.py --population 10000000 --recovery
 ```
 
-Su Windows `scripts/watch-progress.ps1 -LogPath .tools/m4-progress.log` segue
+Il comando `tail -n 30 -F .tools/m4-progress.log` segue
 il log in un terminale. Il runner stampa fase, batch, residenti, elapsed,
 picchi RAM/disco ed esito; il wrapper mostra heartbeat anche durante rete e test.
 Il monitor campiona il disco ogni secondo; il picco RSS proviene dal sistema

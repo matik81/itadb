@@ -193,7 +193,6 @@ export function App() {
             Esplora
           </a>
           <a href={`${API_BASE}/docs`}>API</a>
-          <a href="https://github.com/matik81/itadb">GitHub ↗</a>
         </nav>
       </header>
       <main id="content">
@@ -521,11 +520,15 @@ export function App() {
                 <dl>
                   <dt>Fonte</dt>
                   <dd>
-                    <a href={release.upstream_url}>
-                      {sources.find((item) => item.id === release.source_id)?.name ??
-                        release.source_id}{' '}
-                      ↗
-                    </a>
+                    {release.is_demo ? (
+                      'Fixture dimostrativa inclusa nel progetto'
+                    ) : (
+                      <a href={release.upstream_url}>
+                        {sources.find((item) => item.id === release.source_id)?.name ??
+                          release.source_id}{' '}
+                        ↗
+                      </a>
+                    )}
                   </dd>
                   <dt>Acquisita</dt>
                   <dd>{dateTime(release.retrieved_at)}</dd>

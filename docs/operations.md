@@ -8,9 +8,9 @@ idempotente. `docker compose stop` arresta i servizi; `down` rimuove i container
 i volumi. **Non usare `down -v` su dati da conservare.** Le fixture del repository sono
 separate dagli originali scaricati, esclusi da Git.
 
-Su Windows scegliere una sola modalità per virtualenv e node_modules: quella Windows
-oppure quella WSL. Non riutilizzare `.venv` tra i due sistemi. Per grandi importazioni,
-preferire filesystem Linux nativo in WSL o volumi Docker rispetto a `/mnt/c`.
+Lavorare nel filesystem Linux, anche in WSL2, e creare `.venv` e `node_modules`
+dai lockfile nel clone corrente. Prerequisiti e test su database isolato sono
+nella [guida dell’ambiente](local-environment.md).
 
 ## Confine dello scaffold
 
@@ -85,9 +85,8 @@ una correzione forward; non eliminare volumi o forzare un downgrade.
 Per le attività lunghe usare `scripts/run_logged.py --label "Fase" -- COMANDO`:
 output seguito in tempo reale, heartbeat ogni dieci secondi, durata e codice
 finale nel log `.tools/m2-progress.log`. Non passare credenziali negli argomenti
-e non registrare payload personali. Su Windows un terminale dedicato può seguire
-`scripts/watch-progress.ps1`. La direttiva è anche in AGENTS.md e nelle istruzioni
-generali locali di Codex.
+e non registrare payload personali. Un terminale dedicato può seguire
+`tail -n 30 -F .tools/m2-progress.log`. La direttiva è anche in AGENTS.md.
 
 Il benchmark `scripts/benchmark_m2.py` richiede `ITADB_TEST_DATABASE_URL`, schema
 migrato e catalogo vuoto. Produce solo aggregati inventati su un server di test:
@@ -96,7 +95,7 @@ misura caricamento, query, dimensione DB, WAL e piano; non è un test di sintesi
 
 ## GitHub
 
-Repository pubblico `matik81/itadb`. CI su push main/PR: lint, tipi, unit, contratto OpenAPI,
+CI su push main/PR: lint, tipi, unit, contratto OpenAPI,
 test PostGIS e smoke Compose. Workflow con permessi contents:read e action fissate a SHA.
 Dependabot propone aggiornamenti; audit dipendenze settimanale. Richiedere i controlli e
 una revisione sulle PR, vietare force push, abilitare segnalazioni private, secret scanning

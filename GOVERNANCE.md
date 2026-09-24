@@ -1,6 +1,6 @@
 # Governance iniziale
 
-Maintainer iniziale: @matik81. Le decisioni tecniche durevoli si registrano come ADR.
+I maintainer gestiscono revisioni e rilasci. Le decisioni tecniche durevoli si registrano come ADR.
 Le proposte pubbliche vengono discusse in issue/PR; una modifica delle finalità del
 progetto richiede discussione esplicita, non una modifica silenziosa del codice.
 

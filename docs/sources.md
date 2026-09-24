@@ -8,6 +8,11 @@
 | Eurostat | SDMX 2.1, `https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1` | Stessa interfaccia di acquisizione; mapping da implementare |
 | Fixture Itadb | CSV versionato nel repository | Percorso completo verificabile con dati inventati |
 
+La demo usa gli identificativi `urn:itadb:demo` per la fonte e
+`urn:itadb:fixture:population-demo` per la fixture
+`tests/fixtures/population-demo.csv`. Sono riferimenti interni al progetto,
+non pagine web; la UI presenta la fonte demo come testo.
+
 Fonti candidate successive: confini e variazioni territoriali ISTAT, dati aggregati INPS,
 MEF, Banca d'Italia e amministrazioni. Non sono connettori implementati né banche dati già
 collegate. Valutare disponibilità, licenza, granularità e coerenza prima di selezionarle.

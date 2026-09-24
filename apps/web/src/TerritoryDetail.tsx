@@ -169,9 +169,13 @@ export function TerritoryDetail({ observation, coverage, release, sourceName, on
             <dd>{statuses[observation.status]}</dd>
             <dt>Fonte</dt>
             <dd>
-              <a href={release.upstream_url} target="_blank" rel="noreferrer">
-                {sourceName} ↗
-              </a>
+              {release.is_demo ? (
+                'Fixture dimostrativa inclusa nel progetto'
+              ) : (
+                <a href={release.upstream_url} target="_blank" rel="noreferrer">
+                  {sourceName} ↗
+                </a>
+              )}
             </dd>
             <dt>Licenza</dt>
             <dd>

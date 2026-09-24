@@ -39,4 +39,4 @@ La versione nominale di una DSD può restare invariata: registrare anche SHA-256
 Il campione non prova validità storica di tutti i territori o prestazioni nazionali.
 Nell'onboarding iniziale Docker/PostgreSQL non erano disponibili localmente e i
 test di integrazione non erano stati eseguiti. Sono stati eseguiti nella fase di
-pubblicazione successiva, dopo che Docker Desktop è diventato disponibile.
+pubblicazione successiva, dopo che Docker è diventato disponibile.

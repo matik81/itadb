@@ -29,7 +29,7 @@ versionate e un solo modello di riferimento, con assunzioni e razionali esplicit
 `uv run mypy`; `uv run pytest -m "not integration"`.
 Frontend: `npm --prefix apps/web ci`, poi `typecheck`, `test`, `build` tramite `run`.
 OpenAPI: `uv run itadb export-openapi` e `npm --prefix apps/web run api:types`.
-Su Windows usare `npm.cmd`; se uv manca ma `.tools/uv/uv.exe` esiste, usare quello.
+Baseline: Linux, con Ubuntu/WSL2 come riferimento; usare Bash, `uv` e `npm` nel PATH.
 I test di integrazione richiedono URL di test espliciti: vedi README.md.
 
 ## Definition of done

@@ -2,6 +2,8 @@
 
 **Una base statistica aperta, interrogabile e verificabile della società italiana.**
 
+Sviluppo su Linux, con Ubuntu/WSL2 come riferimento: [guida di avvio e test](docs/local-environment.md).
+
 Itadb mira a costruire una popolazione sintetica 1:1: individui e famiglie virtuali,
 coerenti con evidenze demografiche, sociali ed economiche. Gli agenti non saranno
 persone reali. Questo repository parte dal fondamento: dati territoriali aggregati,
@@ -70,7 +72,7 @@ producono Parquet immutabili, checkpoint verificati e ripresa dopo interruzione.
 `fetch-m4`, `synthesize-m4` e `verify-m4` gestiscono il percorso locale.
 Prove effettive a 1M, 10M e volume nazionale misurano RAM/disco/tempo;
 il run nazionale ha richiesto circa tre minuti, con circa 1,09 GiB di picco RSS
-su questa macchina, senza estrapolazioni dal pilota.
+nell’ambiente della misura storica, senza estrapolazioni dal pilota.
 Restano espliciti 560.159 adulti non assegnati e l'assenza di validazione
 esterna delle composizioni familiari. La [valutazione disclosure](docs/reviews/m4-disclosure.md)
 mantiene i microdati locali e prepara solo 400 aggregati regionali decennali;
@@ -113,11 +115,12 @@ oggi il progetto a un cloud. [Decisioni e capacità](docs/architecture.md).
 
 ## Avvio con Docker Compose
 
-Requisiti: Git e Docker Engine/Desktop con Compose v2. I comandi non installano software
-di sistema. Da PowerShell usare `Copy-Item .env.example .env`; da Linux `cp .env.example .env`.
+Ambiente supportato: Linux, con Ubuntu/WSL2 come riferimento. Requisiti: Git e
+Docker Engine con Compose v2 o successivo. Dalla root del clone, in Bash:
 
 ```sh
-docker compose up --build -d
+cp -n .env.example .env
+docker compose up --build -d --wait
 docker compose run --rm pipeline itadb ingest-demo
 ```
 
@@ -145,9 +148,8 @@ npm --prefix apps/web ci
 npm --prefix apps/web run dev
 ```
 
-Su questa macchina PowerShell blocca `npm.ps1`: usare `npm.cmd`. In presenza delle CA
-aziendali usare `NODE_USE_SYSTEM_CA=1` e `uv --system-certs`; non disattivare TLS.
-[Audit locale e installazioni](docs/local-environment.md).
+La [guida Linux](docs/local-environment.md) descrive prerequisiti, diagnostica,
+certificati, configurazione frontend e database dedicato ai test.
 
 ## Verifiche
 
@@ -170,7 +172,9 @@ database di test e `ITADB_TEST_READER_URL` al ruolo reader dello stesso database
 `uv run pytest -m integration`. La CI li esegue su un servizio PostGIS isolato.
 I test M1 creano database dedicati `itadb_m1_test_*` nello stesso server di test:
 il ruolo amministrativo deve poter creare database. Non puntarli al server applicativo.
-Database e volumi non vengono cancellati automaticamente.
+Database e volumi non vengono cancellati automaticamente. Il file
+`compose.test.yaml` e la [procedura locale](docs/local-environment.md#postgresql-dedicato-ai-test)
+permettono di creare lo stesso ambiente isolato su Linux.
 
 ## Struttura
 
