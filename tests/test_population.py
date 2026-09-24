@@ -4,6 +4,7 @@ from pathlib import Path
 
 import duckdb
 import pytest
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from itadb.cli import app
@@ -265,10 +266,17 @@ def test_contract_and_cli() -> None:
         Path("contracts/population-reference-v1.json").read_bytes()
     )
     assert reference == PopulationReference()
-    result = CliRunner().invoke(app, ["synthesize-population", "--help"])
+    result = CliRunner().invoke(
+        app,
+        ["synthesize-population", "--help"],
+        terminal_width=60,
+        color=True,
+    )
     assert result.exit_code == 0
-    assert "base-run" not in result.stdout
-    assert "citizenship-inputs" in result.stdout
+    command = get_command(app).commands["synthesize-population"]
+    options = {option for parameter in command.params for option in parameter.opts}
+    assert "--base-run" not in options
+    assert "--citizenship-inputs" in options
 
 
 @pytest.mark.parametrize("damage", ["age_exceeds_cell", "coverage", "date", "household_capacity"])
