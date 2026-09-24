@@ -34,7 +34,7 @@ def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     if not admin or not reader:
         pytest.skip("Explicit disposable PostgreSQL admin and reader URLs required")
     # A fresh database per case preserves evidence and keeps test order irrelevant.
-    name = "itadb_m1_test_" + uuid4().hex[:16]
+    name = "itadb_publication_test_" + uuid4().hex[:16]
     with psycopg.connect(admin, autocommit=True) as db:
         db.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
     isolated_admin = make_conninfo(admin, dbname=name)
@@ -425,7 +425,7 @@ def test_query_plan_on_twenty_thousand_artificial_observations(settings: Setting
     assert len(observations) == 1
     assert "Index" in observations[0]["Node Type"]
     assert plan[0]["Plan"]["Actual Rows"] == 51
-    evidence_path = Path("data/reports") / f"m1-query-plan-{release}.json"
+    evidence_path = Path("data/reports") / f"regional-query-plan-{release}.json"
     atomic_json(evidence_path, {"artificial_rows": 20000, "requested_rows": 51, "plan": plan})
     print(f"Query plan evidence: {evidence_path}")
 

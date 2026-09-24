@@ -156,14 +156,14 @@ def _prepare(root: Path, inventory: Path, contract: Path) -> NationalInput:
     archived, digest = archive_file(contract, root / "raw")
     spec = json.loads(archived.read_text(encoding="utf-8"))
     if spec["name"] != "istat-m4-national" or spec["version"] != "1.0.0":
-        raise ValueError("Unsupported M4 source contract")
+        raise ValueError("Unsupported national source contract")
     paths = json.loads(inventory.read_text(encoding="utf-8"))
     if set(paths) != set(spec["sources"]):
         raise ValueError("Inventory differs from the reviewed source contract")
     originals: dict[str, Path] = {}
     hashes = {"contract": digest}
     for name, expected in spec["sources"].items():
-        print(f"Originale M4: {name}", flush=True)
+        print(f"Originale nazionale: {name}", flush=True)
         path = Path(paths[name])
         manifest_path, manifest_digest = archive_file(path, root / "raw")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

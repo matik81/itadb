@@ -40,7 +40,7 @@ Il rapporto originale della generazione mantiene il proprio storico
 `public_release=false`; la pubblicazione applicativa ha una propria identità
 e controlli distinti, descritti nell'[ADR 0015](../adr/0015-population-product.md).
 
-## API storiche v1 e v2
+## API degli aggregati v1 e v2
 
 
 FastAPI espone OpenAPI 3.1 a `/openapi.json`, Swagger a `/docs`, ReDoc a `/redoc`.
@@ -140,10 +140,10 @@ Gli artefatti sono un inventario di provenienza; l'API non espone percorsi del
 filesystem né serve download arbitrari. Le viste v2 e il ruolo reader escludono
 sempre draft, artefatti e verifiche non pubblicati. La readiness verifica anche
 la presenza e i permessi reader su tutte le viste v2, incluse copertura,
-territori, crosswalk e confini, senza scandire dati. Uno schema precedente a M2
+territori, crosswalk e confini, senza scandire dati. Uno schema privo delle viste di copertura
 o una vista mancante produce 503 su `/health/ready`; `/health/live` resta indipendente.
 
-## M2 — copertura e geografie
+## Copertura e geografie
 
 | Endpoint GET | Filtri e limiti |
 |---|---|
@@ -153,12 +153,12 @@ o una vista mancante produce 503 su `/health/ready`; `/health/live` resta indipe
 | `/v2/crosswalks` | `release_id` obbligatorio; `after`, `limit` da 1 a 500; fonte, decorrenza, codici e peso |
 | `/v2/releases/{uuid}/territories/{id}/boundary` | Un MultiPolygon GeoJSON semplificato, 0,001 gradi e massimo 20.000 vertici |
 
-In M2 serie e periodo della release sono la selezione iniziale: leggere `coverage`
+Nelle pubblicazioni multiserie, serie e periodo della release sono la selezione iniziale: leggere `coverage`
 per tutte le combinazioni disponibili. Il conteggio copre tutti i livelli della
 selezione, non solo quello della pagina. Un livello non coperto restituisce una
 pagina vuota; non significa popolazione zero. Totali territoriali e categorie
 totali non vanno sommati ai rispettivi dettagli. Il filtro livello è opzionale
-per compatibilità; la web app M2 lo imposta sempre.
+per compatibilità; l’esploratore degli aggregati lo imposta sempre.
 
 ### Ordinamento e filtri delle tabelle
 
@@ -183,4 +183,4 @@ La dimensione massima resta 500 righe. Nessuna modifica alle route v1.
 Confine assente o oltre il budget: 404. La forma GeoJSON può essere usata per
 consultazione, non per misure catastali. Crosswalk `structural` ha peso null:
 non autorizza a distribuire i valori dei predecessori. Snapshot e codice da soli
-non sostituiscono lo schema territoriale versionato. [Copertura e derivazioni](../sources/istat-m2.md).
+non sostituiscono lo schema territoriale versionato. [Copertura e derivazioni](../sources/territorial-aggregates.md).

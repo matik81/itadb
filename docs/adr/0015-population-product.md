@@ -9,9 +9,7 @@ delle API e dei frontend. La generazione resta un workflow separato, eseguito
 da CLI e consultabile nel repository e nella documentazione. L'applicazione
 non esegue sintesi durante le richieste HTTP.
 
-Questa decisione supera per il percorso corrente il vincolo «nessuna tabella,
-API o frontend» delle ADR 0012–0014. Non modifica il modello statistico, gli
-snapshot preesistenti o il loro campo storico `public_release=false`. Una
+Gli snapshot di generazione conservano il campo `public_release=false`. Una
 pubblicazione applicativa distinta identifica lo snapshot verificato mediante
 run ID e checksum del manifest. L'esposizione pubblica e la configurazione del
 deployment saranno passi successivi espliciti, come richiesto dall'utente.
@@ -27,8 +25,8 @@ dai record importati accelerano mappe e istogrammi e vengono confrontate con
 i vincoli di origine. Le misure nazionali effettive sono registrate a parte.
 
 Le API v3 espongono popolazione, famiglie, territori, distribuzioni, provenienza
-e verifiche. Le API storiche restano compatibili, ma il frontend principale
-non richiede una release M2 per esplorare la popolazione. Nessun endpoint
+e verifiche. Le API v1/v2 restano disponibili; il frontend principale
+non richiede una release di aggregati per esplorare la popolazione. Nessun endpoint
 accetta SQL libero o un percorso locale fornito dal client.
 
 ## Esperienza e geografia
@@ -37,7 +35,7 @@ La web app presenta una mappa scura a pieno schermo con pannelli di filtro,
 istogrammi e navigazione dei record. «Metodo e verifiche» mostra la sequenza
 effettiva, le fonti degli input dello snapshot, le assunzioni e il confronto
 tra vincoli e popolazione generata. I territori usano la geografia del medesimo
-riferimento, senza riutilizzare implicitamente confini M2 di anni diversi.
+riferimento, senza riutilizzare implicitamente confini di aggregati di anni diversi.
 
 Le coordinate individuali non esistono nel riferimento corrente. I simboli
 comunali sono dichiarati aggregati e non sono posizioni di persone. Una futura

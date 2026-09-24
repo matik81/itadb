@@ -8,8 +8,8 @@ from itadb.pipeline.coverage import Bundle, reaggregate_exact, validate_bundle
 from itadb.pipeline.validate import QualityError
 
 
-def test_complete_disjoint_fixture(m2_bundle: tuple[Bundle, Path]) -> None:
-    report = validate_bundle(m2_bundle[0])
+def test_complete_disjoint_fixture(coverage_bundle: tuple[Bundle, Path]) -> None:
+    report = validate_bundle(coverage_bundle[0])
     assert all(report["checks"].values())
     assert report["equations_checked"] == 22
 
@@ -36,8 +36,8 @@ def test_complete_disjoint_fixture(m2_bundle: tuple[Bundle, Path]) -> None:
         "mixed_demo",
     ],
 )
-def test_invalid_evidence_fails_closed(m2_bundle: tuple[Bundle, Path], problem: str) -> None:
-    b = m2_bundle[0].model_copy(deep=True)
+def test_invalid_evidence_fails_closed(coverage_bundle: tuple[Bundle, Path], problem: str) -> None:
+    b = coverage_bundle[0].model_copy(deep=True)
     if problem == "duplicate":
         b.observations.append(b.observations[0])
     elif problem == "missing":
@@ -77,9 +77,9 @@ def test_invalid_evidence_fails_closed(m2_bundle: tuple[Bundle, Path], problem: 
 
 
 def test_exact_merge_conserves_counts_and_refuses_structural_split(
-    m2_bundle: tuple[Bundle, Path],
+    coverage_bundle: tuple[Bundle, Path],
 ) -> None:
-    merge, split = m2_bundle[0].changes
+    merge, split = coverage_bundle[0].changes
     assert reaggregate_exact(
         dict(zip(merge.from_keys, [Decimal(7), Decimal(9)], strict=True)), [merge]
     ) == {merge.to_keys[0]: Decimal(16)}

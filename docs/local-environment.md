@@ -42,7 +42,7 @@ Il catalogo iniziale della popolazione è vuoto. Per popolarlo seguire il
 [workflow della popolazione](population.md), quindi pubblicare lo snapshot
 verificato con `uv run itadb publish-population --run PERCORSO`. Il comando
 usa gli originali e i contratti in `ITADB_DATA_DIR`. Le fixture degli
-aggregati M0 restano testabili via CLI/API v1 e non popolano la nuova web app.
+aggregati inventati restano testabili via CLI/API v1 e non popolano la nuova web app.
 Web: <http://localhost:8080>. API: <http://localhost:8080/api/docs>.
 Le credenziali di esempio servono esclusivamente allo sviluppo locale.
 
@@ -127,5 +127,5 @@ container. Non cancellare volumi o evidenze per ripetere una prova.
 
 Per attività lunghe usare `uv run python scripts/run_logged.py --label "Fase" -- COMANDO`.
 Il terminale mostra avanzamento, durata ed esito. Un secondo terminale può seguire
-il log con `tail -n 30 -F .tools/m2-progress.log`. Non includere credenziali o dati
+il log con `tail -n 30 -F .tools/task-progress.log`. Non includere credenziali o dati
 personali nei comandi e nei log destinati alla condivisione.

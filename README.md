@@ -118,6 +118,7 @@ vengono sovrascritte. [Operazioni e misure](docs/operations.md).
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy
+uv run python scripts/check_docs.py
 uv run pytest -m "not integration"
 uv run itadb export-openapi
 npm --prefix apps/web run api:types
@@ -130,10 +131,10 @@ npm --prefix apps/web run build
 I test di integrazione richiedono un server PostgreSQL/PostGIS **dedicato ai
 test**, migrato e con ruolo reader. Impostare `ITADB_TEST_DATABASE_URL` e
 `ITADB_TEST_READER_URL` dello stesso database, quindi `uv run pytest -m integration`.
-Alcuni test creano database `itadb_m1_test_*`: il ruolo deve poterli creare.
+Alcuni test creano database `itadb_publication_test_*`: il ruolo deve poterli creare.
 Non usare il server applicativo. [Procedura](docs/local-environment.md#postgresql-dedicato-ai-test).
 
-## Struttura e storia
+## Struttura del repository
 
 ```text
 src/itadb/connectors/    acquisizione limitata delle fonti
@@ -141,15 +142,19 @@ src/itadb/synthesis/     generazione e audit riproducibili
 src/itadb/population/    pubblicazione degli snapshot nel database
 src/itadb/api/           API della popolazione e delle evidenze
 apps/web/               mappa, esplorazione, metodo e verifiche
-contracts/              contratti versionati di input e modello
+contracts/              contratti versionati e indice per funzione
+scripts/                manutenzione e benchmark
+data/                   archivio locale, escluso da Git salvo la guida
+docs/                   guide correnti per argomento
 migrations/             baseline PostgreSQL/PostGIS e successive revisioni immutabili
-src/itadb/pipeline/      archivio e pipeline storiche degli aggregati
+src/itadb/pipeline/      acquisizione e pubblicazione degli aggregati
 ```
 
-Le tappe M0–M2 hanno costruito l'archivio delle evidenze e le API v1/v2 degli
-aggregati; restano compatibili e conservate. M3 è il pilota della Valle d'Aosta;
-M4 e l'arricchimento di cittadinanza sono riferimenti storici riproducibili.
-Il prodotto corrente usa `population-reference/1` e le API v3.
+Il prodotto usa `population-reference/1` e le API v3. Le API v1/v2 servono
+gli aggregati statistici. L’[indice della documentazione](docs/README.md)
+raccoglie metodo, procedure e obiettivi del prodotto.
+Per orientarsi: [contratti](contracts/README.md), [dati locali](data/README.md),
+[strumenti](scripts/README.md).
 
 - [Architettura](docs/architecture.md), [modello dati](docs/data-model.md), [API](docs/api/README.md)
 - [Popolazione e workflow](docs/population.md), [priorità di fedeltà](docs/model-fidelity.md)

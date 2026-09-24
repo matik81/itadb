@@ -1,28 +1,24 @@
-# Governance iniziale
+# Governance
 
-I maintainer gestiscono revisioni e rilasci. Le decisioni tecniche durevoli si registrano come ADR.
-Le proposte pubbliche vengono discusse in issue/PR; una modifica delle finalità del
-progetto richiede discussione esplicita, non una modifica silenziosa del codice.
+I maintainer gestiscono revisioni e rilasci. Le decisioni tecniche durevoli
+si registrano come ADR. Le proposte pubbliche vengono discusse in issue/PR;
+un cambiamento delle finalità del progetto richiede una decisione esplicita.
 
-Per la fase iniziale non sono dichiarati un comitato scientifico, partnership, SLA o
-certificazioni inesistenti. La validazione scientifica resta distinta dalla verifica software e dalla
-calibrazione. Su richiesta dell'utente, l'ADR 0015 porta la popolazione
-sintetica verificata nel database, nelle API e nel frontend, con ipotesi e
-limiti espliciti. Questo sviluppo non dichiara una certificazione scientifica.
-La scelta dei servizi gestiti e il deployment pubblico saranno passi successivi.
+La popolazione sintetica verificata è servita dal database, dalle API e dal
+frontend, con ipotesi e limiti visibili. La verifica del software e la calibrazione
+non equivalgono a validazione scientifica esterna o certificazione del modello.
+Non sono dichiarati comitati scientifici, partnership o SLA non istituiti.
+Il deployment pubblico e la scelta dei servizi gestiti restano obiettivi futuri.
 
-La revisione umana di progetto può accettare un modello di lavoro con limiti
-espliciti e consentire lo sviluppo successivo. È distinta dalla revisione
-scientifica esterna e dalle condizioni di distribuzione dei microdati.
-L'[esito M3](docs/reviews/m3-human-review.md) chiude questa revisione iniziale
-con accettazione dell'allocazione familiare casuale vincolata e avvio M4.
+La [graduatoria di fedeltà](docs/model-fidelity.md) stabilisce l'ordine:
+**sesso/età → geografia → cittadinanza → famiglie**. Le revisioni si concordano
+con l'utente e si motivano in un ADR. Ogni versione adottata ha un riferimento
+unico, con fonti, parametri, seed, assunzioni e limiti espliciti. Le analisi di
+sensibilità non sostituiscono implicitamente quel riferimento.
 
-La [graduatoria di fedeltà](docs/model-fidelity.md) è evolutiva: età/sesso,
-distribuzione geografica, composizione familiare sono le priorità iniziali.
-Le revisioni della graduatoria si concordano con l'utente e si motivano in un
-ADR. Ogni versione adottata ha un riferimento unico e assunzioni esplicite;
-analisi di sensibilità e modelli futuri non sostituiscono implicitamente quel
-riferimento. Fonti e artefatti delle versioni precedenti restano conservati.
+Gli artefatti pubblicati sono immutabili. Le correzioni producono nuove versioni,
+confrontate con le precedenti; nessun individuo sintetico viene associato a una
+persona reale. La composizione familiare resta una proprietà del modello.
 
-Prima della collaborazione regolare: proteggere main, richiedere la CI e revisione,
+Prima della collaborazione regolare: proteggere main, richiedere CI e revisione,
 abilitare segnalazioni private di vulnerabilità e nominare ulteriori maintainer.

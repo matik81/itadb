@@ -119,7 +119,7 @@ def verify_citizenship(directory: Path, base: Path) -> dict[str, Any]:
     expected = snapshot_files(len(groups))
     if set(manifest["files"]) != expected:
         raise ValueError("Unexpected citizenship snapshot layout")
-    print("Audit della base M4", flush=True)
+    print("Audit dello snapshot nazionale di base", flush=True)
     verify_national(base)
     by_code = {m.code: m for m in inputs.municipalities}
     audits = []
@@ -222,7 +222,7 @@ def run_citizenship(
                 input_path.write_bytes(input_bytes)
             monitor = RunMonitor(stage, budget, emit)
             monitor.start()
-            monitor.check("verifica completa dello snapshot M4 di partenza")
+            monitor.check("verifica completa dello snapshot nazionale di partenza")
             verify_national(base)
             by_code = {m.code: m for m in inputs.municipalities}
             audits = {}

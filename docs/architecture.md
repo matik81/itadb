@@ -23,10 +23,9 @@ flowchart TB
   A -. futuro .-> M[App mobile]
 ```
 
-Le pipeline M0–M2 e le API v1/v2 conservano gli aggregati e le evidenze
-storiche. Non sono una dipendenza della popolazione: il suo importatore usa
-la geografia e i contratti dello stesso snapshot 2025, senza passare dalle
-osservazioni M2 di altri anni.
+Le API v1/v2 servono gli aggregati statistici e le loro evidenze.
+L’importatore della popolazione usa la geografia e i contratti dello stesso
+snapshot 2025, indipendentemente dagli aggregati di altri anni.
 
 ## Archivio e database
 
@@ -74,6 +73,10 @@ La web app React/Vite è statica. La mappa usa SVG per i confini regionali e
 Canvas per i punti comunali, con zoom, trascinamento, controlli da tastiera e
 ricerca territoriale alternativa. Istogrammi ed elenchi sono moduli sovrapposti.
 La sezione Metodo collega fonti, modello e verifiche allo snapshot selezionato.
+
+I componenti dell’esploratore degli aggregati e i relativi test sono
+raccolti in `apps/web/src/evidence/`. Non sono montati dalla web app corrente;
+le API v1/v2 rimangono disponibili per l'archivio degli aggregati.
 
 Il riferimento corrente assegna comuni ma non coordinate individuali. I
 punti comunali sono rappresentativi dei territori e dichiarati aggregati.

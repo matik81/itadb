@@ -217,7 +217,7 @@ def run_national(
 
     def emit(message: str) -> None:
         line = (
-            f"{datetime.now(UTC).isoformat()} M4 {message}; "
+            f"{datetime.now(UTC).isoformat()} Sintesi nazionale {message}; "
             f"trascorsi {time.monotonic() - started:.1f}s"
         )
         print(line, flush=True)

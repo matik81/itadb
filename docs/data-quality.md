@@ -1,112 +1,53 @@
 # Qualità, riproducibilità e limiti
 
-## Gate implementati sul dataset demo
+## Popolazione corrente
 
-Intestazione esatta; almeno una riga; codici nel namespace demo; nomi non vuoti; data ISO
-valida e compatibile con il vintage demo; conteggi interi non negativi entro int64;
-chiave territorio/periodo unica; un solo periodo. DuckDB normalizza in Parquet con tipi
-espliciti. Dopo COPY il numero di osservazioni deve coincidere con quello validato.
-I gate sono implementati dall'adapter demo, non da un motore generico che interpreti
-qualsiasi JSON. Il contratto è versionato e incluso nell'identità della release.
+Il riferimento `population-reference/1` applica le [priorità v5](model-fidelity.md).
+I controlli sono implementati nei moduli `synthesis/` e `population/`; il
+workflow riproducibile è descritto in [population.md](population.md).
 
-Gli errori bloccano la pubblicazione; un QualityError produce report di quarantena e run
-fallito. Errori tecnici conservano il codice del tipo di eccezione nel run. La transazione
-fa rollback di tutti i dati di servizio della release. Un file Parquet eventualmente
-prodotto prima del rollback è un artefatto orfano, mai una release pubblicata.
+| Fase | Controllo bloccante | Evidenza |
+|---|---|---|
+| Acquisizione | Inventario finito, limite di byte, URL e checksum del contratto | Originali e manifest in `raw/` |
+| Ammissione | Provenienza, licenza, schema, territori, periodi e riconciliazioni coerenti | Input ammessi e rapporti di ammissione |
+| Generazione | Congiunte demografiche e margini STR/RCS esatti; budget e vincoli familiari | Parquet e checkpoint per batch |
+| Audit indipendente | Rilettura SQL, schemi, ID, relazioni, margini, hash e invarianza degli attributi prima/dopo le famiglie | Manifest e rapporto dello snapshot |
+| Importazione | Audit ripetuto, originali verificati, COPY e confronto delle distribuzioni PostgreSQL | Controlli di pubblicazione nel database |
+| Servizio | Snapshot pubblicati, ruolo reader, query parametrizzate, filtri e limiti | Test API e PostgreSQL |
 
-L'identità è deterministica su dataset + SHA-256 originale + versione trasformazione +
-SHA-256 contratto. Retry identici non duplicano osservazioni; ogni tentativo ha run distinto.
-Lock di file protegge i file sullo stesso host, advisory lock transazionale protegge la
-pubblicazione tra host. La v0.1 presuppone che le definizioni di dimensione siano curate
-da un solo flusso amministrativo; onboarding parallelo richiederà lock anche sulle dimensioni.
+I retry verificano gli artefatti esistenti. File inattesi, corruzioni, input
+incompatibili e gate falliti impediscono il completamento o la pubblicazione.
+Checkpoint, tentativi interrotti e quarantene restano evidenze; non vanno cancellati
+per forzare la ripresa. Gli snapshot completati sono immutabili.
 
-Un crash di processo può lasciare un run `running`: un reconciler operativo, non ancora
-implementato, dovrà identificarlo tramite timeout e verificare transazione/artefatti.
-Non promettiamo exactly-once su sistemi distribuiti: la pubblicazione DB è atomica e
-idempotente, il filesystem non partecipa alla transazione PostgreSQL.
+La pubblicazione nel DB è atomica e idempotente. Il filesystem non partecipa
+alla transazione PostgreSQL: un errore nel rapporto locale dopo il commit viene
+segnalato con `published=true` e snapshot ID; il retry riconosce il commit.
+[Recupero e operazioni](operations.md).
 
-## Gate richiesti per dati reali
+## Cosa dimostrano i controlli
 
-- Schema e DSD; domini e codelist; copertura territoriale e temporale attesa.
-- Unità e scale, valute/prezzi correnti o costanti, definizioni delle categorie.
-- Riconciliazione con totali ufficiali, disaggregazioni, tolleranze documentate.
-- Variazioni anomale tra release e revisione delle differenze, senza correggere automaticamente.
-- Distinzione tra osservato, stimato, mancante e soppresso; preservare i flag upstream.
-- Geometrie valide, SRID, copertura e versione dei confini.
+I conteggi calibrati coincidono con le celle osservate disponibili. Questo non
+costituisce validazione esterna della composizione familiare o dell'incrocio
+età–singola cittadinanza. Il modello dichiara ipotesi, residui e assenza di dati
+fuori calibrazione. Gli individui sono sintetici, senza corrispondenza con persone reali.
 
-### Primo gate reale implementato: campione regionale ISTAT
+Fixture e benchmark inventati verificano il software e i carichi; non sono dati
+osservati. L'importatore applicativo rifiuta le fixture. La distribuzione pubblica
+resta soggetta alla [governance](../GOVERNANCE.md); il completamento tecnico non
+implica revisione scientifica esterna o deployment pubblico.
 
-`itadb check-istat-population` verifica offline il contratto
-`contracts/istat-population-regions-v1.json`: provenienza e hash di dati/metadati,
-DSD e codelist, codici e significati selezionati, intestazioni esatte, anno 2024,
-chiave unica, 20 regioni più Italia, conteggi int64 non negativi e somma regionale
-uguale al totale upstream. Flag e note non revisionati bloccano il controllo;
-gli attributi accettati sono conservati nel rapporto. Zero resta un valore valido.
+## Aggregati statistici
 
-Originali e manifest sono archiviati prima della verifica. Il rapporto locale
-`validated_sample` non è una release e non è esposto dalle API. Input identici
-riusano il rapporto verificandone il contenuto, senza overwrite; input nuovi
-producono un nuovo rapporto. Errori di qualità/provenienza finiscono in quarantena.
-Il successivo comando `ingest-istat-population` applica anche il contratto
-`istat-population-publication-v1.json`: corrispondenza dei contratti e della licenza,
-limite Numeric(20,6), snapshot giornaliero, COPY da Parquet e verifica del conteggio
-e del totale dopo caricamento. Pubblicazione, osservazioni, artefatti e quality sono
-in una sola transazione. Il run fallito e la quarantena restano dopo il rollback.
-Anche il DB rifiuta pubblicazione v2 con righe mancanti, gate falliti o artefatti incompleti.
+Le API v1/v2 conservano i controlli per demo, popolazione regionale e copertura
+territoriale: namespace distinti, flag upstream, partizioni disgiunte, gerarchie,
+geometrie e riconciliazioni. I contratti e le procedure sono descritti nelle guide di
+[popolazione regionale](sources/istat-population.md) e
+[copertura territoriale](sources/territorial-aggregates.md).
 
-L'identità della release ISTAT comprende raw, contratto di pubblicazione (che fissa
-l'hash del contratto onboarding), trasformazione e XML canonici privati del solo Header SDMX.
-Una nuova acquisizione identica non produce doppioni. Cambiamenti richiedono
-`--supersedes` con il predecessore corrente e `--revision-reason`; il report registra
-le differenze numeriche. Due revisioni concorrenti non possono creare rami.
-È una revisione umana esplicita, non un rilevatore statistico di anomalie.
-Storia territoriale e crosswalk sono implementati nel perimetro M2.
-Vedere [evidenze e limiti](sources/istat-population.md).
+## Verifiche di sviluppo
 
-M2 aggiunge copertura esatta per serie/periodo/vintage, gerarchie temporali,
-partizioni disgiunte per sesso, età, dimensione familiare e occupazione delle
-abitazioni. Intervalli di età sono semiaperti; 100+ usa il limite convenzionale
-1000, senza inferire un'età reale massima. Sono vietati totali inclusi tra le
-parti e somme di unità, periodi o vintage diversi. Il gate geometrico conserva
-originali e riparazioni revisionate; la pubblicazione confronta integralmente
-Parquet e DB, compresi stato e attributi upstream. Vedi [M2](sources/istat-m2.md).
-
-## Gate richiesti per la sintesi
-
-Margini territoriali, distribuzioni congiunte, composizione familiare, vincoli logici e
-copertura, nell'ordine delle [priorità di fedeltà](model-fidelity.md).
-Validazione su statistiche non usate nella calibrazione quando disponibili,
-con assenze dichiarate; confronto tra seed e
-quantificazione dell'incertezza. I margini non determinano univocamente le correlazioni:
-ipotesi modellistiche, errori e bias vanno pubblicati insieme ai risultati.
-La coerenza statistica non rende uno scenario una previsione certa o una stima causale.
-Prima di rilasciare microdati sintetici servono valutazioni di rischio di re-identificazione
-e di disclosure, anche in assenza di corrispondenza intenzionale con individui reali.
-
-### Pilota locale M3 implementato
-
-Il [pilota](synthesis-m3.md) riconcilia input 2021/2022 fissati, rifiuta flag,
-dimensioni o provenienza non revisionati e verifica fattibilità prima della
-generazione. Un audit SQL separato rilegge i Parquet e controlla schema, ID,
-riferimenti, cardinalità, adulto per famiglia, minori assegnati, 202 celle sesso/età esatte
-e residuo dichiarato. Gli errori impediscono il completamento atomico e
-conservano quarantena/tentativo; retry identici verificano tutti gli artefatti.
-
-La congiunta puntuale sesso/età è un vincolo del generatore: TVD ed errori
-per cella devono essere zero e sono etichettati come calibrazione.
-Il rapporto dichiara l'assenza di validazione fuori calibrazione; l'uguaglianza
-ai conteggi ISTAT non costituisce evidenza esterna sul modello familiare.
-Sono riportati tutti i seed e gli scenari, con intervalli empirici e deviazione
-standard delle statistiche familiari, senza variabilità demografica artificiale.
-Questi controlli certificano integrità del software e conservazione dei margini,
-non accuratezza delle composizioni familiari. La revisione scientifica esterna
-e la valutazione disclosure non sono state eseguite; nessuna release pubblica
-di microdati è consentita dal percorso implementato.
-
-La [revisione umana di progetto M3](reviews/m3-human-review.md) accetta
-l'allocazione familiare casuale vincolata come prima versione. Il riferimento
-adottato è univoco (6+ = 6, seed 1701), con razionale e residuo espliciti;
-le restanti repliche sono sensibilità. Tale accettazione consente lo sviluppo
-M4, senza attestare fedeltà familiare non misurata o distribuzione comunale
-già implementata. Le nuove versioni dovranno conservare i vincoli prioritari
-e dichiarare per ogni proprietà cosa è osservato, calibrato o ipotizzato.
+La suite comprende casi di successo, retry, corruzione, input incompatibili,
+mancata pubblicazione, accesso reader e paginazione. Eseguire i controlli del
+[README](../README.md#verifiche-di-sviluppo) e i test su PostgreSQL isolato.
+Esiti recenti e limiti sono in [validation.md](validation.md).

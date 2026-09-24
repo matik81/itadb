@@ -1,4 +1,4 @@
-"""Versioned constraints for territorial reconstruction, separate from the M3 pilot."""
+"""Versioned constraints for national territorial reconstruction."""
 
 import hashlib
 from datetime import date, timedelta

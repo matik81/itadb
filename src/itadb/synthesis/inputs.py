@@ -27,10 +27,10 @@ def _prepare(root: Path, inventory: Path, contract: Path) -> PilotInput:
     archived, contract_hash = archive_file(contract, root / "raw")
     spec = json.loads(archived.read_text(encoding="utf-8"))
     if spec["name"] != "istat-m3-valle-aosta" or spec["version"] != "1.0.0":
-        raise ValueError("Unsupported M3 input contract")
+        raise ValueError("Unsupported regional input contract")
     paths = json.loads(inventory.read_text(encoding="utf-8"))
     if set(paths) != set(spec["sources"]):
-        raise ValueError("Source inventory differs from the M3 contract")
+        raise ValueError("Source inventory differs from the regional contract")
     originals: dict[str, Path] = {}
     hashes = {"contract": contract_hash}
     for name, expected in spec["sources"].items():
@@ -42,7 +42,7 @@ def _prepare(root: Path, inventory: Path, contract: Path) -> PilotInput:
             raise ValueError("Acquisition timestamp requires timezone")
         original, digest = archive_file(Path(paths[name]).parent / "payload", root / "raw")
         if digest != expected["sha256"] or original.stat().st_size != expected["bytes"]:
-            raise ValueError(f"Corrupt M3 evidence: {name}")
+            raise ValueError(f"Corrupt regional evidence: {name}")
         originals[name] = original
         hashes[name] = digest
         hashes[name + "_manifest"] = manifest_hash

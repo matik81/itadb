@@ -1,10 +1,9 @@
-# Primo campione ISTAT: popolazione residente regionale
+# ISTAT: popolazione residente regionale
 
 Verifica del 23 settembre 2026, fuso Europe/Rome (acquisizioni il 22 settembre in UTC).
-Stato: **pubblicato nello stack locale**, consultabile via API v2 e web app.
+Stato: **pubblicato nello stack locale**, consultabile via API v2.
 Contratto: [istat-population-regions-v1.json](../../contracts/istat-population-regions-v1.json).
 Contratto di pubblicazione: [istat-population-publication-v1.json](../../contracts/istat-population-publication-v1.json).
-Piani: [onboarding](../plans/m1-istat-population.md) e [pubblicazione](../plans/m1-publication.md).
 
 ## Fonte, significato e perimetro
 
@@ -128,7 +127,7 @@ riscriverlo. Una nuova acquisizione o revisione produce una nuova evidenza.
 Un errore di qualità o provenienza conserva un report in `data/quarantine/` e
 non produce un report di successo. Nessuno di questi comandi pubblica nel DB.
 
-Il comando generico `fetch` conserva il limite di 100 MB dello scaffold;
+Il comando generico `fetch` conserva il limite di 100 MB del connettore;
 la query qui documentata è selettiva e il gate accetta al massimo 100 kB e 21 righe.
 Le nuove acquisizioni potrebbero avere hash diversi per aggiornamenti upstream o
 timestamp dei metadati: verificare la nuova evidenza senza sostituire la precedente.
@@ -176,13 +175,13 @@ La release corrente verificata nello stack locale è
 [`eaef6df9-96db-58bd-9b9d-9e203d89d030`](http://localhost:8080/api/v2/releases/eaef6df9-96db-58bd-9b9d-9e203d89d030),
 successiva a `4d602369-9057-57a0-9942-9d0ac9bcb91e`. Tutti i 21 valori e gli
 attributi upstream sono stati confrontati tra API e CSV originale; i 72 controlli
-qualità sono passati. [Registro della verifica](../validation.md#pubblicazione-istat-locale-23-settembre-2026).
+qualità sono passati.
 
-## Limiti del perimetro M1
+## Limiti della selezione
 
 La validità territoriale attestata è solo `[2024-01-01,2024-01-02)`, con gerarchia
 Italia/regioni e namespace versionato. Il DB impedisce sovrapposizioni e date
-fuori validità. Confini, crosswalk e fusioni/scissioni su altri periodi restano
-in M2; non sono dedotti da questa selezione. La data di pubblicazione upstream
+fuori validità. Confini, crosswalk e fusioni/scissioni su altri periodi richiedono
+la [copertura territoriale](territorial-aggregates.md); non sono dedotti da questa selezione. La data di pubblicazione upstream
 rimane non accertata. Nessuna prova di prestazioni su scala nazionale o di
 popolazione sintetica è stata eseguita.
