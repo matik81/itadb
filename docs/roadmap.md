@@ -1,9 +1,15 @@
 # Roadmap verificabile
 
 Per il modello sintetico vale la [graduatoria di fedeltà](model-fidelity.md):
-età/sesso al primo posto, regioni/province/UTS/comuni al secondo e composizione
-familiare al terzo.
+età/sesso al primo posto, regioni/province/UTS/comuni al secondo, cittadinanza
+al terzo e composizione familiare al quarto (versione 5).
+I primi tre gruppi hanno conteggi esatti alle granularità osservate; la
+composizione familiare per età e cittadinanza resta casuale e non calibrata,
+pur conservando i conteggi delle classi dimensionali.
 L'ordine è evolutivo e ogni versione adottata deve avere un riferimento unico.
+L'[allineamento della pipeline](plans/population-order.md) applica la
+cittadinanza prima della composizione familiare, con conservazione verificata
+degli attributi individuali durante l'ultimo passaggio.
 
 ## M0 — fondazione riproducibile (questo scaffold)
 Scopo: repository pubblico, istruzioni Codex, contratti e CI; percorso demo originale →

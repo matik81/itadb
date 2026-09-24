@@ -73,6 +73,13 @@ usa circa 1,09 GiB RSS e 240 MiB per lo snapshot, senza proiezione nazionale
 nel DB. Identità di input/codice/ambiente e rename locale rendono verificabili
 retry e completamento. [ADR 0012](adr/0012-national-territorial-snapshots.md).
 
+Il riferimento corrente [population-reference/1](population.md#pipeline-corrente)
+riusa ammissioni e partizioni territoriali, eseguendo sesso/età, geografia,
+cittadinanza e infine famiglie. Un Parquet intermedio conserva gli individui
+dei primi tre passaggi; la fase familiare lo legge e l'audit verifica che ne
+conservi tutti gli attributi. I due riferimenti precedenti restano verificabili
+come evidenze storiche. [ADR 0014](adr/0014-ordered-population.md).
+
 L'individuo statistico non è un agente LLM e non richiede un processo per persona.
 La generazione nazionale è vettorizzata, per blocchi territoriali, riproducibile con seed
 e versioni di input/algoritmo. Vietata la ricostruzione o associazione a identità reali.

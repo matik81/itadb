@@ -8,6 +8,9 @@ loro composizione resta una baseline casuale vincolata.
 La successiva [integrazione della cittadinanza](citizenship.md) produce uno
 snapshot derivato con `citizenship_code`, conservando tutti gli attributi e
 le famiglie di questa base. Il riferimento descritto qui resta immutabile.
+Il [percorso corrente](population.md#pipeline-corrente) genera direttamente
+dagli input ammessi e assegna la cittadinanza prima di comporre le famiglie.
+Questo documento e i comandi M4 descrivono il riferimento storico.
 
 ## Fonti e riferimento unico
 

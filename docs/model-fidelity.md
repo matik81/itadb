@@ -1,13 +1,30 @@
 # Priorità di fedeltà del modello
 
-Versione 4, aggiornata il 24 settembre 2026 per l'integrazione della cittadinanza.
-Le prime tre priorità adottate nella versione 1 dalla revisione umana M3 restano
-invariate; la cittadinanza viene aggiunta come quarta proprietà.
+Versione 5, aggiornata il 24 settembre 2026 su richiesta dell'utente:
+**sesso/età → geografia → cittadinanza → famiglie**.
+La cittadinanza passa dal quarto al terzo posto; la composizione familiare
+dal terzo al quarto. I primi tre gruppi rispettano esattamente i conteggi
+osservati disponibili; le relazioni familiari per età e cittadinanza sono
+ancora casuali e non calibrate.
 La graduatoria è una decisione di progetto evolutiva: orienta lavoro e
 valutazione delle versioni, senza attribuire uguale affidabilità a tutti gli
-attributi degli agenti. [Decisione](adr/0010-model-fidelity-and-m3-reference.md).
+attributi degli agenti. [Decisione iniziale M3](adr/0010-model-fidelity-and-m3-reference.md).
 
-## Graduatoria iniziale
+## Graduatoria corrente — versione 5
+
+| Priorità | Proprietà | Fedeltà verificata | Limite |
+|---|---|---|---|
+| 1 | Sesso ed età | Conteggi esatti per comune/sesso/età al 1° gennaio 2025 | 100+ è una classe aperta; la coorte di nascita è sintetica |
+| 2 | Geografia amministrativa | Conteggi territoriali esatti e gerarchia comune–provincia/UTS–regione coerente | Assegnazione al comune, senza localizzazione individuale interna |
+| 3 | Cittadinanza | STR: stranieri per comune/sesso/età; RCS: singole cittadinanze per comune/sesso; entrambi esatti | L'incrocio età–singola cittadinanza resta sintetico |
+| 4 | Composizione delle famiglie | Conteggi per comune e classe dimensionale esatti | Composizione casuale vincolata, grezza per età e cittadinanza; nessuna calibrazione delle relazioni fra componenti |
+
+L'esattezza dei primi tre gruppi riguarda i margini e le congiunte osservate
+elencate, non tutte le combinazioni degli attributi individuali. Per le famiglie,
+numero e classi dimensionali calibrati non rendono attendibile la composizione.
+Il [riepilogo della popolazione](population.md) adotta lo stesso ordine.
+
+## Graduatoria iniziale M3 — storica
 
 | Priorità | Proprietà | Obiettivo di fedeltà | Stato effettivo in M3 |
 |---|---|---|---|
@@ -22,8 +39,9 @@ motivando il loro ordine e i criteri verificabili di fedeltà.
 ## Come applicare le priorità
 
 - Un miglioramento familiare non può modificare i conteggi vincolanti di età,
-  sesso o territorio. Le priorità guidano lo sviluppo; non autorizzano ad
-  allentare silenziosamente vincoli già adottati, neppure quelli sulle famiglie.
+  sesso, territorio o cittadinanza (STR e RCS). Le priorità guidano lo sviluppo;
+  non autorizzano ad allentare silenziosamente vincoli già adottati, neppure
+  quelli sulle famiglie.
 - Si confrontano dati dello stesso universo, periodo e definizione territoriale.
   In caso di incompatibilità si conserva l'evidenza e si blocca la versione
   interessata: non si aggiustano conteggi ufficiali per far funzionare il modello.
@@ -98,7 +116,11 @@ Nel riferimento M4 originale la graduatoria non cambia. L'estensione successiva
 e una nuova versione. La distribuzione pubblica dei microdati rimane subordinata
 alle condizioni della governance.
 
-## Versione 4 — cittadinanza dopo gli attributi già integrati
+## Versione 4 — cittadinanza dopo gli attributi già integrati (storica)
+
+L'ordine di priorità di questa versione è superato dalla versione 5.
+Rimane documentato per interpretare il riferimento eseguibile e gli artefatti
+prodotti prima della nuova decisione.
 
 L'utente ha identificato la cittadinanza come quarta integrazione e ne ha
 richiesto l'implementazione il 24 settembre 2026. Ordine del riferimento
@@ -120,3 +142,29 @@ senza inventare una correlazione osservata fra età e singola cittadinanza.
 L'arrivo di tale congiunta, o di evidenze sulle cittadinanze nella famiglia,
 richiederà un nuovo riferimento e un confronto esplicito. Finché assenti,
 quelle relazioni restano sintetiche e non validate.
+
+## Versione 5 — cittadinanza prima delle famiglie
+
+Il 24 settembre 2026 l'utente ha richiesto esplicitamente di anticipare la
+cittadinanza al terzo posto e spostare le famiglie al quarto. Il razionale
+è rendere evidente la differenza fra i conteggi individuali e territoriali
+esatti e la composizione familiare ancora grezza per età e cittadinanza.
+
+Il nuovo ordine guida il riepilogo, la valutazione e gli sviluppi successivi.
+Le famiglie conservano i vincoli esistenti: stesso comune, almeno un adulto,
+assegnazione dei minori, classi dimensionali e convenzione 6+ = 6.
+Gli individui, con età e cittadinanza già fissate, sono raggruppati
+casualmente entro questi vincoli, senza calibrare le relazioni familiari.
+Un miglioramento della composizione dovrà preservare anche i margini STR/RCS,
+oltre ai conteggi demografici, territoriali e dimensionali già adottati.
+
+La richiesta successiva dell'utente applica questo ordine anche alla pipeline.
+Il riferimento corrente `population-reference/1` registra la versione 5,
+le priorità e l'ordine di esecuzione. Per ogni batch salva gli individui con
+cittadinanza prima delle famiglie e verifica tutti gli attributi fissati dai
+primi tre passaggi dopo la composizione familiare. [Decisione eseguibile](adr/0014-ordered-population.md).
+
+Contratti, manifest e verificatori dei riferimenti storici `m4-reference/1`
+e `citizenship-reference/1` conservano le rispettive priorità. Restano
+riproduzioni storiche esplicite; il percorso corrente è `synthesize-population`.
+Le evidenze già prodotte restano immutabili e verificabili.

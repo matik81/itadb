@@ -656,3 +656,66 @@ Non eseguite: validazione osservata dell'incrocio età–singola cittadinanza,
 calibrazione delle relazioni familiari per cittadinanza, revisione scientifica
 esterna e distribuzione pubblica dei microdati. Il nuovo attributo resta
 una categoria sintetica calibrata su fonti aggregate.
+
+## Ordine eseguibile della popolazione
+
+Verifiche del 24 settembre 2026. [Riferimento corrente](population.md),
+[ADR 0014](adr/0014-ordered-population.md),
+[misure e fingerprint](benchmarks/population-order-2026-09-24.json). Il contratto
+`population-reference/1` registra le priorità v5 e l'ordine effettivo
+sesso/età → geografia → cittadinanza → famiglie. Il percorso corrente
+non richiede un precedente snapshot sintetico di famiglie.
+
+- **284 test Python non integration passati**, di cui 18 nuovi per ordine
+  effettivo, invarianti fra fasi, confronto con il metodo storico, recupero
+  fra fasi e batch, retry, input incompatibili, corruzione, artefatti inattesi,
+  budget e metadati alterati. I test rifiutano anche uno scambio di cittadinanze
+  durante la fase familiare che lasci esatti i conteggi aggregati.
+- Ruff check/format, mypy Windows/Linux e OpenAPI senza drift passati.
+  38 integrazioni PostgreSQL escluse dalla suite locale di questa iterazione;
+  nessuna modifica a DB, API, dipendenze o web. La CI della PR esegue anche
+  PostgreSQL, web e Compose sul commit finale.
+- Ammissione ripetuta degli originali nazionali e STR/RCS già archiviati,
+  senza nuovi download. Run completo su **58.943.464 individui**, 7.896 comuni,
+  107 province/UTS, 20 regioni e 26.670.169 famiglie. Residuo: 560.159 adulti.
+- Errore zero su 1.594.992 celle sesso/età, 1.594.992 celle STR e 375.226
+  celle RCS non nulle. Cittadinanza: 53.572.213 italiani, 5.371.251 stranieri,
+  inclusi 525 apolidi. Conservazione riga per riga dei nove attributi degli
+  individui prima delle famiglie, inclusi ID e cittadinanza.
+- Ogni batch conserva `individuals.parquet`, `persons.parquet`,
+  `households.parquet` e checkpoint. Il run nazionale ha 321 Parquet.
+  Disclosure invariata: 2.698.397 celle sotto 5, 4.028.154 individui coinvolti;
+  l'incrocio età–singola cittadinanza rimane sintetico.
+- Prova 10M interrotta dopo il primo batch e ripresa; generazione in root
+  separata con batch invertiti: **tutti gli 11 file identici byte per byte**.
+- Audit separato dei riferimenti storici M4 e cittadinanza passato con il
+  codice corrente. Confronto nazionale: **tutti i 214 Parquet finali di
+  persone e famiglie identici byte per byte** allo snapshot arricchito
+  precedente. Il riordino cambia la sequenza operativa e aggiunge l'evidenza
+  prima delle famiglie, conservando i risultati a parità di input e regole.
+- Retry nazionale passato in 45,8 s inclusa nuova ammissione degli input;
+  stesso run e stessi file riutilizzati. Gli hash del codice archiviato
+  coincidono con l'implementazione corrente; nessuno snapshot storico riscritto.
+
+Snapshot nazionale:
+`data/curated/population/24a56e3bdb58fb1af523ea1b6019e8de04292ecdf11105fc6885cacc4903b76c`.
+
+| Prova | Runner monitorato | Picco RSS | Disco campionato | Audit successivo |
+|---|---:|---:|---:|---:|
+| 1M inventato | 2,77 s | 280,59 MiB | 4,75 MiB | 0,55 s |
+| 10M inventato, due tentativi con recupero | 11,46 + 13,92 s | 1.529,52 MiB | 49,55 MiB | 4,81 s |
+| 58.943.464 nazionale | 267,99 s | 1.675,50 MiB | 327,74 MiB | 35,47 s |
+
+CLI nazionale: 278,2 s, inclusa ammissione. Snapshot finale: 343.714.554 byte,
+compreso l'artefatto prima delle famiglie. Stessi budget precedenti: DuckDB
+2 GiB, due thread, RSS 8 GiB, disco 40 GiB, tempo 7.200 s; tutti rispettati.
+Il runner misura generazione, scritture e audit inline; esclude ammissione
+e parte della finalizzazione. Disco campionato ogni secondo nella directory
+di lavoro, esclusi raw, altri snapshot e log. Audit indipendente successivo
+in un processo separato. Macchina Windows AMD64, Ryzen 9 9900X, 24 CPU logiche,
+Python 3.13.15 e DuckDB 1.5.5. Misure locali, non SLA.
+
+Il riordino conserva la regola casuale familiare. Non sono state calibrate
+le relazioni per età/cittadinanza, né introdotti legami di parentela osservati.
+Revisione scientifica esterna e distribuzione pubblica restano fuori dal
+perimetro; gli snapshot sono locali con `public_release=false`.

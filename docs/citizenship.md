@@ -1,9 +1,17 @@
 # Cittadinanza nella popolazione virtuale
 
-Il riferimento `citizenship-reference/1` aggiunge `citizenship_code` a ogni
+Il riferimento storico `citizenship-reference/1` aggiunge `citizenship_code` a ogni
 individuo del riferimento M4 al **1° gennaio 2025**, mantenendo identici
 ID, coorti, sesso, geografia, famiglia e adulto di riferimento. Lo snapshot
 M4 di partenza rimane immutabile. [Decisione e metodo](adr/0013-citizenship-enrichment.md).
+
+Nella [graduatoria corrente, versione 5](model-fidelity.md), la cittadinanza
+è il **terzo passaggio**, dopo sesso/età e geografia e prima delle famiglie.
+Il [riepilogo della popolazione](population.md) distingue i conteggi osservati
+esatti dalla composizione familiare ancora grezza. Il percorso corrente
+`population-reference/1` assegna la cittadinanza prima di comporre le famiglie.
+Il metodo STR/RCS descritto qui è condiviso dai due percorsi;
+la pipeline storica ha aggiunto la cittadinanza alle famiglie M4 esistenti.
 
 Assegnazione nazionale verificata: **53.572.213 individui nella categoria
 italiana**, **5.371.251 nella popolazione straniera**, inclusi **525 apolidi**.
@@ -42,11 +50,17 @@ una sola categoria statistica, non una lista di passaporti.
 Sesso/età degli stranieri e totali per cittadinanza sono calibrati esattamente.
 L'associazione fra **età e specifica cittadinanza è sintetica**, ottenuta
 mescolando in modo deterministico le cittadinanze entro comune e sesso.
-Non è calibrata la cittadinanza dei componenti della stessa famiglia.
+La composizione delle famiglie resta casuale sia per età, entro i vincoli
+M4, sia per cittadinanza, assegnata senza considerare la famiglia. Non sono
+calibrate le relazioni fra componenti né le frequenze di famiglie italiane,
+straniere e miste; sono esatti soltanto i conteggi familiari per classe dimensionale.
 Non si rappresentano acquisizioni, trasmissione ai figli, migrazioni o
 cambiamenti di cittadinanza negli anni successivi.
 
-## Comandi e riproduzione
+## Comandi storici e riproduzione
+
+Per il riferimento corrente usare [synthesize-population e verify-population](population.md#pipeline-corrente).
+I comandi seguenti riproducono l'arricchimento storico dipendente dalla base M4.
 
 ```sh
 uv run python scripts/run_logged.py --label "Fonti cittadinanza" --log .tools/citizenship-progress.log -- uv run itadb fetch-citizenship

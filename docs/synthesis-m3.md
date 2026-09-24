@@ -8,8 +8,8 @@ non un prodotto statistico certificato, una previsione o un modello causale.
 La [revisione umana di progetto](reviews/m3-human-review.md) accetta questa
 prima versione e consente l'avvio di M4. Il riferimento unico è
 **classe 6+ = 6, seed 1701**; le altre repliche sono
-sensibilità. Vale la [graduatoria di fedeltà](model-fidelity.md): età/sesso,
-geografia, poi composizione familiare.
+sensibilità. La [graduatoria di fedeltà](model-fidelity.md) adottata per questo
+pilota storico era età/sesso, geografia, poi composizione familiare.
 La revisione v3 conserva queste scelte e introduce coorti di nascita stabili
 ([ADR 0011](adr/0011-stable-birth-cohorts.md)). Il riferimento v2
 `m3-reference/1` rimane storico; il riferimento v3 è registrato

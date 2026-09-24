@@ -18,6 +18,7 @@ Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
 | [0011](0011-stable-birth-cohorts.md) | Anno di nascita stabile, età derivata | Convenzione annuale esplicita, classe 100+ censurata, calibrazione e artefatti storici conservati |
 | [0012](0012-national-territorial-snapshots.md) | Snapshot nazionali territoriali riprendibili | Congiunte comunali esatte, budget misurati, checkpoint verificati, microdati locali e soli aggregati preparati per distribuzione |
 | [0013](0013-citizenship-enrichment.md) | Cittadinanza come arricchimento immutabile | Vincoli STR/RCS esatti, attributi M4 conservati, incrocio età–singola cittadinanza sintetico e microdati locali |
+| [0014](0014-ordered-population.md) | Cittadinanza prima delle famiglie | Ordine v5 eseguibile, individui fissati prima della composizione familiare e audit di invarianza; riferimenti storici conservati |
 
 Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
 un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,
