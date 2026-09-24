@@ -155,6 +155,24 @@ e push protection dove disponibili. Le impostazioni effettivamente applicate son
 in docs/validation.md: un file YAML non prova che una protezione GitHub sia abilitata.
 ## Popolazione corrente: cittadinanza prima delle famiglie
 
+### Confini della mappa
+
+Dopo `scripts/migrate.py`, gli snapshot già pubblicati possono aggiungere i
+confini provinciali dalla fonte geografica già archiviata, senza ricaricare
+individui e famiglie. Usare l'ID effettivo dello snapshot:
+
+```sh
+uv run python scripts/run_logged.py --label "Confini provinciali" --log .tools/population-boundaries.log -- uv run itadb publish-population-boundaries --snapshot-id 1
+```
+
+Il comando verifica il checksum e la corrispondenza territoriale, importa
+atomicamente e conserva l'hash di origine. Ripeterlo non duplica le geometrie;
+fonti incomplete o incompatibili lasciano il database invariato. Le nuove
+pubblicazioni della popolazione includono già questo passaggio. Il backend
+legge solo PostgreSQL, senza accedere agli archivi della generazione.
+
+### Generazione
+
 Seguire [la pipeline corrente](population.md#pipeline-corrente) con
 `synthesize-population --inputs INVENTARIO_M4 --citizenship-inputs INVENTARIO_STR_RCS`.
 Il riferimento è `contracts/population-reference-v1.json`; il budget resta

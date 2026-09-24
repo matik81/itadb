@@ -56,9 +56,16 @@ class PopulationRegion(BaseModel):
     geometry: dict[str, Any] | None
 
 
+class PopulationBoundary(BaseModel):
+    code: str
+    geometry: dict[str, Any]
+
+
 class PopulationMap(BaseModel):
     regions: list[PopulationRegion]
     municipalities: list[PopulationMunicipality]
+    provinces: list[PopulationBoundary]
+    municipality_boundaries: list[PopulationBoundary]
     representation: Literal["municipality_aggregates"] = "municipality_aggregates"
     individual_coordinates_available: Literal[False] = False
 

@@ -108,6 +108,13 @@ export function App() {
   const activeSnapshot = snapshots.data?.find((s) => s.id === snapshotId);
   const activeRegion = map.data?.regions.find((r) => r.code === region);
   const scope = municipality?.name ?? activeRegion?.name ?? 'Italia';
+  const householdTotal = municipalityCode
+    ? municipality?.households
+    : region
+      ? activeRegion?.households
+      : evidence.data?.households;
+  const individualFiltersActive =
+    filters.sex !== '' || filters.citizenship !== '' || filters.ageMin > 0 || filters.ageMax < 100;
   const anyError = snapshots.error || evidence.error || map.error;
   return (
     <div className={`population-app ${mode === 'method' ? 'method-mode' : ''}`}>
@@ -184,18 +191,6 @@ export function App() {
         )}
         {evidence.data && mode === 'explore' && (
           <>
-            <div className="map-caption">
-              <span className="eyebrow">ITALIA / {evidence.data.reference_date.slice(0, 4)}</span>
-              <h1>
-                L’Italia virtuale,
-                <br />
-                individuo per individuo.
-              </h1>
-              <p>
-                Esplora individui e famiglie virtuali,
-                <br />a partire dal territorio.
-              </p>
-            </div>
             <button
               className="mobile-panel-toggle"
               onClick={() => setFiltersOpen(!filtersOpen)}
@@ -405,7 +400,18 @@ export function App() {
               ) : (
                 <>
                   <strong className="population-total">{number.format(males + females)}</strong>
-                  <span className="muted">individui virtuali</span>
+                  <span className="muted">individui</span>
+                  <div className="household-total">
+                    <Icon kind="households" />
+                    <div>
+                      <strong>
+                        {householdTotal === undefined ? '—' : number.format(householdTotal)}
+                      </strong>
+                      <span>
+                        {individualFiltersActive ? 'famiglie nel territorio' : 'famiglie'}
+                      </span>
+                    </div>
+                  </div>
                   <div className="sex-totals">
                     <span>
                       <i className="male-key" />M <strong>{number.format(males)}</strong>
@@ -461,7 +467,7 @@ export function App() {
             <div className="snapshot-strip">
               <span>
                 <i />
-                POPOLAZIONE SINTETICA
+                POPOLAZIONE
               </span>
               <span>Riferimento {evidence.data.reference_date}</span>
               <span>Fonti ISTAT · CC BY 4.0</span>

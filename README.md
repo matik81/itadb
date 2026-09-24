@@ -12,7 +12,8 @@ corrispondono a persone reali; le relazioni generate sono proprietà del modello
 La popolazione verificata viene caricata **integralmente in PostgreSQL** e
 interrogata tramite API. La web app ha due parti:
 
-- **Esplora:** mappa scura a schermo intero, selezione di regioni e comuni,
+- **Esplora:** mappa scura a schermo intero con confini regionali, provinciali
+  e comunali a spessore decrescente, selezione di regioni e comuni,
   filtri individuali, istogrammi, elenco paginato degli individui e navigazione
   delle famiglie e dei loro componenti.
 - **Metodo e verifiche:** fonti con collegamenti agli originali, sequenza delle

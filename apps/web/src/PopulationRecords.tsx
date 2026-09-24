@@ -67,10 +67,10 @@ export function PopulationRecords({
   }
   const persons = (data.data as PersonPage | null)?.items;
   return (
-    <section className="records-panel panel" aria-label={`Record sintetici di ${name}`}>
+    <section className="records-panel panel" aria-label={`Record di ${name}`}>
       <div className="panel-heading">
         <div>
-          <span className="eyebrow">POPOLAZIONE VIRTUALE</span>
+          <span className="eyebrow">INDIVIDUI E FAMIGLIE</span>
           <h2>{name}</h2>
         </div>
         <button className="icon-button" aria-label="Chiudi elenco" onClick={onClose}>
@@ -92,7 +92,7 @@ export function PopulationRecords({
           <Icon kind="households" />
           Famiglie
         </button>
-        <span>Snapshot {snapshot} · record sintetici</span>
+        <span>Snapshot {snapshot}</span>
       </div>
       {tab === 'households' && (
         <label className="inline-control">
@@ -232,7 +232,7 @@ export function PopulationRecords({
         </>
       )}
       {family && (
-        <aside className="family-detail" aria-label={`Famiglia virtuale ${family}`}>
+        <aside className="family-detail" aria-label={`Famiglia ${family}`}>
           <div className="panel-heading">
             <h3>
               <Icon kind="households" />
@@ -250,7 +250,7 @@ export function PopulationRecords({
           )}
           {detail.data && (
             <>
-              <p>{detail.data.size} componenti virtuali nello stesso comune</p>
+              <p>{detail.data.size} componenti nello stesso comune</p>
               <ul className="family-members">
                 {detail.data.members.map((p) => (
                   <li key={p.person_id}>

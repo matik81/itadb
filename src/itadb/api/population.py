@@ -89,6 +89,8 @@ def population_map(snapshot_id: Published, db: Repo, region_code: Region = None)
     return {
         "regions": db.regions(snapshot_id),
         "municipalities": db.municipalities(snapshot_id, region_code, None, 0, 10000),
+        "provinces": db.province_boundaries(snapshot_id, region_code),
+        "municipality_boundaries": db.municipality_boundaries(snapshot_id, region_code),
     }
 
 

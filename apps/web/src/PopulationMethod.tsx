@@ -22,7 +22,7 @@ const stages = [
     step: '01',
     title: 'Sesso ed età',
     source: 'ISTAT · POSAS',
-    body: 'I conteggi per comune, sesso e singola età determinano gli individui virtuali. La coorte di nascita rimane stabile; 100+ conserva una classe aperta.',
+    body: 'I conteggi per comune, sesso e singola età determinano gli individui. La coorte di nascita rimane stabile; 100+ conserva una classe aperta.',
     assumption: 'Il modello non inventa date di compleanno né età esatte nella classe 100+.',
   },
   {
@@ -100,7 +100,7 @@ export function PopulationMethod({
         <h1>
           Come è costruita
           <br />
-          questa Italia virtuale.
+          questa popolazione.
         </h1>
         <p>
           Ogni individuo appartiene a una versione riproducibile del modello. Qui trovi gli input,
@@ -200,7 +200,7 @@ export function PopulationMethod({
                       ['category', 'Categoria'],
                       ['sex', 'Sesso'],
                       ['expected', 'Fonte'],
-                      ['actual', 'Popolazione virtuale'],
+                      ['actual', 'Popolazione'],
                     ].map(([field, label]) => (
                       <SortHeader
                         key={field}
@@ -317,7 +317,7 @@ export function PopulationMethod({
         </dl>
       </section>
       <footer className="method-footer">
-        Popolazione interamente sintetica · Fonti ISTAT,{' '}
+        Fonti ISTAT,{' '}
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
           CC BY 4.0
         </a>{' '}

@@ -509,6 +509,25 @@
         "title": "ObservationV2",
         "type": "object"
       },
+      "PopulationBoundary": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "geometry": {
+            "additionalProperties": true,
+            "title": "Geometry",
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "geometry"
+        ],
+        "title": "PopulationBoundary",
+        "type": "object"
+      },
       "PopulationComparison": {
         "properties": {
           "actual": {
@@ -674,6 +693,20 @@
             "title": "Municipalities",
             "type": "array"
           },
+          "municipality_boundaries": {
+            "items": {
+              "$ref": "#/components/schemas/PopulationBoundary"
+            },
+            "title": "Municipality Boundaries",
+            "type": "array"
+          },
+          "provinces": {
+            "items": {
+              "$ref": "#/components/schemas/PopulationBoundary"
+            },
+            "title": "Provinces",
+            "type": "array"
+          },
           "regions": {
             "items": {
               "$ref": "#/components/schemas/PopulationRegion"
@@ -690,7 +723,9 @@
         },
         "required": [
           "regions",
-          "municipalities"
+          "municipalities",
+          "provinces",
+          "municipality_boundaries"
         ],
         "title": "PopulationMap",
         "type": "object"

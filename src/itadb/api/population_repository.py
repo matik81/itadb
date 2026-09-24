@@ -30,7 +30,8 @@ class PopulationRepository(PostgresRepository):
             "(SELECT code FROM api.population_municipalities LIMIT 0),"
             "(SELECT persons FROM api.population_cells LIMIT 0),"
             "(SELECT expected FROM api.population_validation LIMIT 0),"
-            "(SELECT code FROM api.population_regions LIMIT 0)"
+            "(SELECT code FROM api.population_regions LIMIT 0),"
+            "(SELECT code FROM api.population_provinces LIMIT 0)"
         )
 
     def snapshots(self, limit: int) -> list[dict[str, Any]]:
@@ -78,6 +79,22 @@ class PopulationRepository(PostgresRepository):
             WHERE snapshot_id=%s GROUP BY region_code) t ON t.region_code=r.code
             WHERE r.snapshot_id=%s ORDER BY r.code""",
             (sid, sid),
+        )
+
+    def province_boundaries(self, sid: int, region: str | None) -> list[dict[str, Any]]:
+        return self._query(
+            """SELECT lpad(code::text,3,'0') code,ST_AsGeoJSON(boundary,5)::json geometry
+            FROM api.population_provinces WHERE snapshot_id=%s
+            AND (%s::smallint IS NULL OR region_code=%s) ORDER BY code LIMIT 1000""",
+            (sid, int(region) if region else None, int(region) if region else None),
+        )
+
+    def municipality_boundaries(self, sid: int, region: str | None) -> list[dict[str, Any]]:
+        return self._query(
+            """SELECT lpad(code::text,6,'0') code,ST_AsGeoJSON(boundary,5)::json geometry
+            FROM api.population_municipalities WHERE snapshot_id=%s AND boundary IS NOT NULL
+            AND (%s::smallint IS NULL OR region_code=%s) ORDER BY code LIMIT 10000""",
+            (sid, int(region) if region else None, int(region) if region else None),
         )
 
     def _page(

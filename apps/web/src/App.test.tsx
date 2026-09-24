@@ -82,6 +82,8 @@ beforeEach(() => {
             { code: '90', name: 'Regione inventata', geometry: null, persons: 15, households: 5 },
           ],
           municipalities: [municipality],
+          provinces: [],
+          municipality_boundaries: [],
           representation: 'municipality_aggregates',
           individual_coordinates_available: false,
         };
@@ -145,11 +147,9 @@ describe('Prodotto popolazione', () => {
   it('naviga individui e famiglia, applica filtri e azzera la paginazione', async () => {
     render(<App />);
     await selectTown();
-    const panel = screen.getByRole('region', { name: 'Record sintetici di Comune inventato' });
+    const panel = screen.getByRole('region', { name: 'Record di Comune inventato' });
     fireEvent.click(within(panel).getByRole('button', { name: '1 ↗' }));
-    expect(
-      await screen.findByRole('complementary', { name: 'Famiglia virtuale 1' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('complementary', { name: 'Famiglia 1' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Successivi →' }));
     await waitFor(() =>
       expect(requests.some((p) => p.includes('/persons?') && p.includes('after=1'))).toBe(true),

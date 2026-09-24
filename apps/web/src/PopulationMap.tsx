@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { mercator, geometryPath } from './population-map';
+import { mercator, geometryPath, municipalityRadius } from './population-map';
 import { number, type PopulationMapData, type Municipality } from './population-api';
+import { Icon } from './Icons';
 
 type View = { x: number; y: number; scale: number };
 const center = mercator(12.5, 42);
@@ -27,12 +28,21 @@ export function PopulationMap({
     () =>
       (data?.municipalities ?? [])
         .filter((m) => m.latitude !== null && m.longitude !== null)
-        .map((item) => ({ item, point: mercator(item.longitude!, item.latitude!) })),
+        .map((item) => ({ item, point: mercator(item.longitude!, item.latitude!) }))
+        .sort((a, b) => b.item.persons - a.item.persons),
     [data],
   );
   const regions = useMemo(
     () =>
       (data?.regions ?? []).map((region) => ({ ...region, path: geometryPath(region.geometry) })),
+    [data],
+  );
+  const municipalityBorders = useMemo(
+    () => (data?.municipality_boundaries ?? []).map((m) => geometryPath(m.geometry)).join(' '),
+    [data],
+  );
+  const provinceBorders = useMemo(
+    () => (data?.provinces ?? []).map((p) => geometryPath(p.geometry)).join(' '),
     [data],
   );
   useEffect(() => {
@@ -46,11 +56,13 @@ export function PopulationMap({
   useEffect(() => {
     const item = points.find((p) => p.item.code === selected);
     if (!item) return;
-    const nextScale = 4;
-    setView({
-      scale: nextScale,
-      x: (center[0] - item.point[0]) * base * nextScale,
-      y: (center[1] - item.point[1]) * base * nextScale,
+    setView((current) => {
+      const nextScale = Math.max(current.scale, 4);
+      return {
+        scale: nextScale,
+        x: (center[0] - item.point[0]) * base * nextScale,
+        y: (center[1] - item.point[1]) * base * nextScale,
+      };
     });
   }, [selected, points, base]);
   useEffect(() => {
@@ -66,19 +78,18 @@ export function PopulationMap({
     for (const { item, point } of points) {
       const x = ox + point[0] * scale,
         y = oy + point[1] * scale;
-      if (x < -20 || x > size.width + 20 || y < -20 || y > size.height + 20) continue;
       const active = item.code === selected;
-      const radius = active
-        ? 6
-        : Math.min(4.5, 0.7 + Math.log10(Math.max(1, item.persons)) * 0.42) *
-          Math.min(1.6, Math.sqrt(view.scale));
+      const radius = municipalityRadius(item.persons, view.scale);
+      const margin = radius + (active ? 6 : 0);
+      if (x < -margin || x > size.width + margin || y < -margin || y > size.height + margin)
+        continue;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fillStyle = active ? '#ffcf78' : 'rgba(88,225,194,0.6)';
       ctx.fill();
       if (active) {
         ctx.beginPath();
-        ctx.arc(x, y, 13, 0, Math.PI * 2);
+        ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
         ctx.strokeStyle = '#ffcf78';
         ctx.lineWidth = 1;
         ctx.stroke();
@@ -87,10 +98,10 @@ export function PopulationMap({
   }, [points, selected, ox, oy, scale, size, view.scale]);
   function nearest(x: number, y: number) {
     let found: Municipality | null = null,
-      distance = 12;
+      distance = Infinity;
     for (const { item, point } of points) {
       const d = Math.hypot(ox + point[0] * scale - x, oy + point[1] * scale - y);
-      if (d < distance) {
+      if (d <= Math.max(12, municipalityRadius(item.persons, view.scale)) && d < distance) {
         found = item;
         distance = d;
       }
@@ -119,15 +130,32 @@ export function PopulationMap({
         <rect width="100%" height="100%" fill="url(#radar-grid)" />
         <g transform={`translate(${ox},${oy}) scale(${scale})`}>
           {regions.map((r) => (
-            <path
-              key={r.code}
-              d={r.path}
-              fill="#102321"
-              fillRule="evenodd"
-              stroke="#427169"
-              strokeWidth={0.7 / scale}
-            />
+            <path key={r.code} d={r.path} fill="#102321" fillRule="evenodd" />
           ))}
+          <path
+            className="municipality-borders"
+            d={municipalityBorders}
+            fill="none"
+            stroke="#43655d"
+            strokeWidth={0.35 / scale}
+            strokeLinejoin="round"
+          />
+          <path
+            className="province-borders"
+            d={provinceBorders}
+            fill="none"
+            stroke="#71978b"
+            strokeWidth={0.8 / scale}
+            strokeLinejoin="round"
+          />
+          <path
+            className="region-borders"
+            d={regions.map((r) => r.path).join(' ')}
+            fill="none"
+            stroke="#a1c6b5"
+            strokeWidth={1.5 / scale}
+            strokeLinejoin="round"
+          />
         </g>
       </svg>
       <canvas
@@ -136,7 +164,7 @@ export function PopulationMap({
         style={{ width: size.width, height: size.height }}
         tabIndex={0}
         role="img"
-        aria-label="Mappa della popolazione per comune. I punti rappresentano comuni, non residenze individuali. Usa frecce per spostarti, più e meno per lo zoom. I comuni sono selezionabili anche dalla ricerca."
+        aria-label="Mappa della popolazione per comune. Confini di regioni, province e comuni con tratto progressivamente più sottile. L'area dei cerchi è proporzionale al numero di abitanti. I punti rappresentano comuni, non residenze individuali. Usa frecce per spostarti, più e meno per lo zoom. I comuni sono selezionabili anche dalla ricerca."
         onKeyDown={(e) => {
           if (e.key === '+' || e.key === '=') zoom(1.3);
           else if (e.key === '-') zoom(1 / 1.3);
@@ -195,7 +223,14 @@ export function PopulationMap({
           style={{ left: Math.min(hover.x + 14, size.width - 210), top: hover.y + 14 }}
         >
           <strong>{hover.item.name}</strong>
-          <span>{number.format(hover.item.persons)} individui virtuali</span>
+          <span>
+            <Icon kind="persons" />
+            {number.format(hover.item.persons)} individui
+          </span>
+          <span>
+            <Icon kind="households" />
+            {number.format(hover.item.households)} famiglie
+          </span>
         </div>
       )}
       <div className="map-controls" aria-label="Controlli della mappa">
@@ -213,7 +248,7 @@ export function PopulationMap({
         </button>
       </div>
       <div className="map-legend">
-        <span className="signal-dot" /> Distribuzione per comune{' '}
+        <span className="signal-dot" /> Area proporzionale agli abitanti del comune{' '}
         <span className="legend-separator">/</span> Coordinate individuali: non ancora integrate
       </div>
     </div>

@@ -269,6 +269,9 @@ code {
   font-size: 12px;
 }
 .map-tooltip span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: #a3c9b7;
   font-size: 11px;
 }
@@ -318,29 +321,10 @@ code {
   padding: 0 6px;
   opacity: 0.5;
 }
-.map-caption {
-  position: absolute;
-  top: 34px;
-  left: 32px;
-  pointer-events: none;
-}
-.map-caption h1 {
-  font-size: 29px;
-  line-height: 1.17;
-  letter-spacing: -1px;
-  font-weight: 500;
-  color: #e1ede6;
-  margin: 8px 0 11px;
-}
-.map-caption p {
-  font-size: 11px;
-  line-height: 1.7;
-  color: #82a092;
-}
 .explore-sidebar {
   position: absolute;
   left: 28px;
-  top: 202px;
+  top: 34px;
   bottom: 66px;
   width: 280px;
   padding: 18px;
@@ -503,6 +487,25 @@ code {
   color: #ddf3df;
 }
 .distribution-panel > .muted {
+  font-size: 10px;
+}
+.household-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+  color: #a3c9b7;
+}
+.household-total strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 450;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+  color: #ddf3df;
+}
+.household-total span {
+  display: block;
   font-size: 10px;
 }
 .sex-totals {
@@ -1109,16 +1112,9 @@ code {
     right: 36px;
     top: 40px;
   }
-  .map-caption {
-    left: 38px;
-    top: 40px;
-  }
   .explore-sidebar {
     left: 36px;
-    top: 220px;
-  }
-  .map-caption h1 {
-    font-size: 34px;
+    top: 40px;
   }
   .records-panel {
     left: 360px;
@@ -1145,12 +1141,6 @@ code {
     width: 245px;
     left: 16px;
     padding: 14px;
-  }
-  .map-caption {
-    left: 20px;
-  }
-  .map-caption h1 {
-    font-size: 25px;
   }
   .records-panel {
     left: 277px;
@@ -1193,16 +1183,6 @@ code {
     min-height: 660px;
     overflow: auto;
   }
-  .map-caption {
-    left: 18px;
-    top: 20px;
-  }
-  .map-caption h1 {
-    font-size: 23px;
-  }
-  .map-caption p {
-    display: none;
-  }
   .population-map {
     position: fixed;
     top: 58px;
@@ -1211,17 +1191,17 @@ code {
     display: block;
     position: absolute;
     left: 16px;
-    top: 113px;
+    top: 20px;
     z-index: 10;
     font-size: 10px;
     padding: 6px 9px;
   }
   .explore-sidebar {
-    top: 154px;
+    top: 61px;
     left: 14px;
     width: 220px;
     bottom: 80px;
-    max-height: calc(100dvh - 285px);
+    max-height: calc(100dvh - 199px);
     z-index: 5;
   }
   .explore-sidebar.mobile-hidden {
@@ -1248,6 +1228,16 @@ code {
     font-size: 24px;
   }
   .distribution-panel > .muted {
+    font-size: 8px;
+  }
+  .household-total {
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .household-total strong {
+    font-size: 18px;
+  }
+  .household-total span {
     font-size: 8px;
   }
   .sex-totals {
@@ -1426,12 +1416,6 @@ code {
   display: none;
 }
 @media (max-width: 700px) {
-  .map-caption {
-    width: 200px;
-  }
-  .map-caption h1 {
-    font-size: 20px;
-  }
   .stats-toggle {
     display: block;
     font-size: 8px;
@@ -1443,11 +1427,5 @@ code {
   .stats-collapsed .age-histogram,
   .stats-collapsed .verification-link {
     display: none;
-  }
-}
-
-@media (max-width: 700px) {
-  .map-caption h1 {
-    font-size: 18px;
   }
 }

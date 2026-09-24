@@ -373,3 +373,14 @@ def publish_population_command(
 
     snapshot_id = publish_population(Settings(), run)
     typer.echo(json.dumps({"snapshot_id": snapshot_id, "data_kind": "synthetic"}))
+
+
+@app.command("publish-population-boundaries")
+def publish_population_boundaries_command(
+    snapshot_id: Annotated[int, typer.Option(min=1)],
+) -> None:
+    """Aggiunge i confini provinciali dalla fonte geografica già archiviata dello snapshot."""
+    from itadb.population.cartography import publish_boundaries
+
+    count = publish_boundaries(Settings(), snapshot_id)
+    typer.echo(json.dumps({"snapshot_id": snapshot_id, "provinces": count}))

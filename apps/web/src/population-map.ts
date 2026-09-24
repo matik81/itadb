@@ -1,4 +1,8 @@
 export type Point = [number, number];
+export function municipalityRadius(persons: number, zoom: number): number {
+  // A common scale preserves area ratios at every zoom: 100,000 people = radius 6 px.
+  return 6 * Math.sqrt(Math.max(0, persons) / 100000) * Math.min(1.6, Math.sqrt(zoom));
+}
 export function mercator(lon: number, lat: number): Point {
   return [
     (lon * Math.PI) / 180,

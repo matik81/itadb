@@ -8,7 +8,7 @@ Tutti i percorsi seguenti sono GET. Dietro il proxy locale hanno prefisso `/api`
 |---|---|
 | `/v3/populations` | Snapshot pubblicati, conteggi e natura sintetica |
 | `/v3/populations/{id}` | Riferimento, fonti, modello, rapporto e controlli DB |
-| `/v3/populations/{id}/map` | Confini regionali e marcatori comunali, non residenze |
+| `/v3/populations/{id}/map` | Confini di regioni, province/UTS e comuni, con marcatori comunali |
 | `/v3/populations/{id}/municipalities` | Ricerca nome/codice, regione e cursore |
 | `/v3/populations/{id}/persons` | Individui filtrati per comune, sesso, età e cittadinanza |
 | `/v3/populations/{id}/persons/{person_id}` | Individuo della versione selezionata |
@@ -25,6 +25,14 @@ selezione azzera il cursore. Gli ID individuali sono locali allo snapshot.
 Età 100 con `age_is_lower_bound=true` significa 100+. L'API corrente non
 contiene latitudine/longitudine individuali: `/map` dichiara espressamente
 `representation=municipality_aggregates`.
+
+La mappa restituisce `regions`, `provinces`, `municipality_boundaries` e
+`municipalities`. I confini sono GeoJSON semplificati per visualizzazione;
+non sono geometrie catastali. `region_code` filtra province, confini e marker
+comunali, mantenendo le regioni come contesto nazionale. Le liste geografiche
+sono limitate a 1.000 province e 10.000 comuni per snapshot. Le province
+degli snapshot precedenti alla migrazione cartografica vanno caricate con
+`publish-population-boundaries`; fino ad allora la relativa lista è vuota.
 
 Le distribuzioni derivano dai record importati. `/comparison` richiede un
 comune e il tipo `sex_age`, `foreign_age`, `citizenship` o `household_size`.

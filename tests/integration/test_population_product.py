@@ -2,14 +2,19 @@
 
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.types.json import Jsonb
 
 from itadb.api.app import create_app
 from itadb.config import Settings
+from itadb.pipeline.storage import archive_file
+from itadb.population import cartography, publish
+from itadb.population.cartography import publish_boundaries
 from itadb.population.publish import publish_population
 from itadb.synthesis.citizenship_models import CitizenshipInput, CitizenshipMunicipality
 from itadb.synthesis.national_models import Municipality, NationalInput
@@ -138,6 +143,116 @@ def test_population_publication_queries_and_immutability(serving: tuple[Settings
         pytest.raises(psycopg.Error),
     ):
         db.execute("SELECT * FROM population.person LIMIT 1")
+
+
+def test_snapshot_boundaries_are_traceable_immutable_and_filtered(
+    serving: tuple[Settings, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings, directory = serving
+    source = settings.data_dir / "invented-geography.txt"
+    source.write_text("Invented province geometry, confined to this test")
+    _, digest = archive_file(source, settings.data_dir / "raw")
+    shape = SimpleNamespace(
+        __geo_interface__={
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [500000, 4500000],
+                    [501000, 4500000],
+                    [501000, 4501000],
+                    [500000, 4501000],
+                    [500000, 4500000],
+                ]
+            ],
+        }
+    )
+    monkeypatch.setattr(
+        cartography,
+        "shape_records",
+        lambda _: iter(
+            [
+                (
+                    "province",
+                    {"COD_REG": 90, "COD_UTS": 900, "DEN_UTS": "Provincia inventata"},
+                    shape,
+                ),
+            ]
+        ),
+    )
+    original = publish._geography
+
+    def geography(db: psycopg.Connection, sid: int, root: Path, inputs: PopulationInput) -> None:
+        original(db, sid, root, inputs)
+        db.execute(
+            "UPDATE population.snapshot SET provenance=jsonb_set(provenance,'{sources}',%s) "
+            "WHERE id=%s",
+            (Jsonb([{"group": "national", "name": "geography", "sha256": digest}]), sid),
+        )
+        db.execute(
+            "UPDATE population.municipality SET boundary="
+            "ST_Multi(ST_MakeEnvelope(9,40,10,41,4326)) "
+            "WHERE snapshot_id=%s",
+            (sid,),
+        )
+
+    monkeypatch.setattr(publish, "_geography", geography)
+    sid = publish_population(settings, directory, allow_fixture=True)
+    assert publish_boundaries(settings, sid) == 1
+    assert publish_boundaries(settings, sid) == 1
+    with TestClient(create_app(settings)) as client:
+        path = f"/v3/populations/{sid}/map"
+        response = client.get(path)
+        assert response.status_code == 200
+        data = response.json()
+        assert [row["code"] for row in data["provinces"]] == ["900"]
+        assert [row["code"] for row in data["municipality_boundaries"]] == ["900001"]
+        assert data["provinces"][0]["geometry"]["type"] == "MultiPolygon"
+        assert client.get(path, params={"region_code": "90"}).json() == data
+        other = client.get(path, params={"region_code": "01"}).json()
+        assert other["provinces"] == other["municipality_boundaries"] == []
+    with psycopg.connect(settings.admin_database_url, autocommit=True) as db:
+        assert db.execute(
+            "SELECT source_sha256 FROM population.province WHERE snapshot_id=%s",
+            (sid,),
+        ).fetchone() == (digest,)
+        for statement in (
+            "UPDATE population.province SET name='Changed' WHERE snapshot_id=%s",
+            "DELETE FROM population.province WHERE snapshot_id=%s",
+        ):
+            with pytest.raises(psycopg.errors.RaiseException):
+                db.execute(statement, (sid,))
+        with pytest.raises(psycopg.errors.RaiseException):
+            db.execute("TRUNCATE population.province")
+
+
+def test_failed_province_import_keeps_the_map_empty(
+    serving: tuple[Settings, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings, directory = serving
+    original = publish._geography
+
+    def geography(db: psycopg.Connection, sid: int, root: Path, inputs: PopulationInput) -> None:
+        original(db, sid, root, inputs)
+        source = settings.data_dir / "missing-province.txt"
+        source.write_text("Invented incomplete province archive")
+        _, digest = archive_file(source, settings.data_dir / "raw")
+        db.execute(
+            "UPDATE population.snapshot SET provenance=jsonb_set(provenance,'{sources}',%s) "
+            "WHERE id=%s",
+            (Jsonb([{"group": "national", "name": "geography", "sha256": digest}]), sid),
+        )
+
+    monkeypatch.setattr(publish, "_geography", geography)
+    monkeypatch.setattr(cartography, "shape_records", lambda _: iter([]))
+    with pytest.raises(ValueError, match="Incomplete"):
+        publish_population(settings, directory, allow_fixture=True)
+    with psycopg.connect(settings.admin_database_url) as db:
+        assert db.execute(
+            "SELECT count(*) FROM population.snapshot WHERE run_id=%s",
+            (directory.name,),
+        ).fetchone() == (0,)
 
 
 def test_failed_import_rolls_back_and_leaves_evidence(

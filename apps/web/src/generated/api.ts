@@ -710,6 +710,15 @@ export interface components {
             /** Value */
             value: string | null;
         };
+        /** PopulationBoundary */
+        PopulationBoundary: {
+            /** Code */
+            code: string;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            };
+        };
         /** PopulationComparison */
         PopulationComparison: {
             /** Actual */
@@ -796,6 +805,10 @@ export interface components {
             individual_coordinates_available: false;
             /** Municipalities */
             municipalities: components["schemas"]["PopulationMunicipality"][];
+            /** Municipality Boundaries */
+            municipality_boundaries: components["schemas"]["PopulationBoundary"][];
+            /** Provinces */
+            provinces: components["schemas"]["PopulationBoundary"][];
             /** Regions */
             regions: components["schemas"]["PopulationRegion"][];
             /**

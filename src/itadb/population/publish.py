@@ -16,6 +16,7 @@ from psycopg.types.json import Jsonb
 from itadb.config import Settings
 from itadb.pipeline.geography import admin_code, shape_records
 from itadb.pipeline.storage import atomic_json, sha256_file
+from itadb.population.cartography import import_provinces
 from itadb.synthesis.national_runner import check_files
 from itadb.synthesis.population_models import PopulationInput
 from itadb.synthesis.population_runner import verify_population
@@ -356,6 +357,7 @@ def publish_population(settings: Settings, directory: Path, *, allow_fixture: bo
                 )
             emit("Geografia e provenienza dello stesso riferimento della popolazione")
             _geography(db, sid, settings.data_dir, inputs)
+            import_provinces(db, sid, settings.data_dir)
             folders = sorted(directory.glob("batch-*"))
             for index, folder in enumerate(folders, 1):
                 emit(f"COPY batch {index}/{len(folders)}: famiglie e individui")

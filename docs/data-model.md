@@ -10,6 +10,11 @@ resta nel commit `9cd934a`; [passaggio dei database esistenti](operations.md#bas
   fonti, rapporto originale e controlli di pubblicazione; stato loading/published.
 - `municipality` e `region`: geografia dello stesso riferimento, nomi, gerarchie,
   confini semplificati per visualizzazione e punti rappresentativi comunali.
+- `province` (migrazione `0002_province_boundaries`): confini provinciali/UTS
+  per la mappa, dalla stessa fonte geografica dello snapshot. Codici, regione
+  e nome devono corrispondere ai comuni; il checksum è vincolato alla provenienza
+  del run. Inserimento append-only, senza modifiche o cancellazioni. La relativa
+  vista API espone soltanto cartografia di snapshot pubblicati.
 - `person`: tutti gli individui, coorti di nascita, sesso, cittadinanza, comune,
   famiglia nullable e adulto di riferimento. Nessuna coordinata individuale.
 - `household`: tutte le famiglie, comune e numero di componenti.
