@@ -7,3 +7,5 @@ Un piano non sostituisce l'implementazione o i test. Consultare gli ADR per deci
 durature; registrare le misure in documenti riproducibili, mai come promesse prestazionali.
 
 Piani attivi: nessuno.
+
+Completato: [modalità territoriali della mappa](docs/plans/map-territory-modes.md).

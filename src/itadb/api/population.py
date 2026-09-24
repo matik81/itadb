@@ -25,6 +25,7 @@ RecordID = Annotated[int, Path(ge=1, le=70_000_000)]
 Municipality = Annotated[str, Query(pattern=r"^[0-9]{6}$")]
 OptionalMunicipality = Annotated[str | None, Query(pattern=r"^[0-9]{6}$")]
 Region = Annotated[str | None, Query(pattern=r"^[0-9]{2}$")]
+Province = Annotated[str | None, Query(pattern=r"^[0-9]{3}$")]
 Citizenship = Annotated[str | None, Query(pattern=r"^[0-9]{3}$")]
 Age = Annotated[int, Query(ge=0, le=100)]
 Cursor = Annotated[int, Query(ge=0, le=70_000_000)]
@@ -172,11 +173,19 @@ def distributions(
     citizenship_code: Citizenship = None,
     age_min: Age = 0,
     age_max: Age = 100,
+    province_code: Province = None,
 ) -> object:
     if age_min > age_max:
         raise HTTPException(422, "Minimum age must not exceed maximum age")
     return db.distributions(
-        snapshot_id, municipality_code, region_code, sex, citizenship_code, age_min, age_max
+        snapshot_id,
+        municipality_code,
+        region_code,
+        sex,
+        citizenship_code,
+        age_min,
+        age_max,
+        province=province_code,
     )
 
 

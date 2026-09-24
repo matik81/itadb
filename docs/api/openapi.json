@@ -3326,6 +3326,23 @@
               "title": "Age Max",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "province_code",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[0-9]{3}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Province Code"
+            }
           }
         ],
         "responses": {

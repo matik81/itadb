@@ -8,9 +8,10 @@ contengono individui e famiglie completi, sono caricati in PostgreSQL e serviti
 dalle API v3 e dalla web app. Generazione, audit e pubblicazione sono passaggi
 espliciti, con checkpoint, quarantena e retry verificati.
 
-La web app offre mappa amministrativa, filtri, istogrammi, record paginati,
-famiglie e confronto tra conteggi di origine e sintetici. I punti sulla mappa
-rappresentano comuni, senza coordinate residenziali individuali.
+La web app offre una mappa con modalità Regioni, Province e Comuni, filtri,
+istogrammi, record paginati, famiglie e confronto tra conteggi di origine e
+sintetici. Confini, aggregati e selezione seguono il livello scelto; i punti
+rappresentano territori, senza coordinate residenziali individuali.
 [Metodo](population.md), [architettura](architecture.md), [verifiche](validation.md).
 
 ## Prossimi incrementi

@@ -104,6 +104,19 @@ def test_population_publication_queries_and_immutability(serving: tuple[Settings
             base + "/distributions", params={"citizenship_code": "201"}
         ).json()
         assert sum(r["persons"] for r in distribution) == 2
+        provincial = client.get(
+            base + "/distributions",
+            params={"province_code": "900", "region_code": "90", "citizenship_code": "201"},
+        )
+        assert provincial.status_code == 200
+        assert provincial.json() == distribution
+        assert client.get(base + "/distributions", params={"province_code": "901"}).json() == []
+        assert (
+            client.get(
+                base + "/distributions", params={"province_code": "900", "region_code": "91"}
+            ).json()
+            == []
+        )
         validation = client.get(base + "/validation").json()
         assert len(validation) == 4 and all(r["mismatched_cells"] == 0 for r in validation)
         assert client.get(base + "/map").json()["representation"] == "municipality_aggregates"

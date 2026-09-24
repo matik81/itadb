@@ -34,7 +34,20 @@ sono limitate a 1.000 province e 10.000 comuni per snapshot. Le province
 degli snapshot precedenti alla migrazione cartografica vanno caricate con
 `publish-population-boundaries`; fino ad allora la relativa lista è vuota.
 
-Le distribuzioni derivano dai record importati. `/comparison` richiede un
+La web app aggrega i conteggi comunali per le modalità Regioni e Province e
+mostra i confini del livello scelto e dei livelli superiori. Cambiando modalità
+conserva i genitori selezionati e azzera selezioni figlie, ricerca ed elenco.
+Dalle schede regionali si passa alle province, dalle province ai comuni;
+i record individuali restano consultabili per comune. I totali cartografici
+includono anche i comuni senza coordinate.
+
+Le distribuzioni derivano dai record importati. `/distributions` accetta
+`region_code` a due cifre, `province_code` a tre e `municipality_code` a sei,
+oltre a sesso, cittadinanza ed età. I filtri si intersecano e restituiscono
+al massimo 202 celle sesso/età; territori incompatibili producono una lista
+vuota. I filtri individuali aggiornano l'istogramma e l'elenco, mentre cerchi
+e schede territoriali riportano i totali senza filtri individuali.
+`/comparison` richiede un
 comune e il tipo `sex_age`, `foreign_age`, `citizenship` o `household_size`.
 Il rapporto originale della generazione mantiene il proprio storico
 `public_release=false`; la pubblicazione applicativa ha una propria identità

@@ -358,13 +358,60 @@ code {
   padding-top: 18px;
   margin-bottom: 12px;
 }
-.municipality-results {
+.map-level-control {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+  min-width: 0;
+}
+.map-level-control legend {
+  font-size: 10px;
+  color: #8bada0;
+  margin-bottom: 8px;
+}
+.map-level-control > div {
+  display: flex;
+  border: 1px solid #345749;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+}
+.map-level-control label {
+  flex: 1;
+  margin: 0;
+  position: relative;
+  cursor: pointer;
+}
+.map-level-control input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+}
+.map-level-control span {
+  display: block;
+  padding: 7px 2px;
+  text-align: center;
+  border-radius: 3px;
+  font-size: 10px;
+}
+.map-level-control input:checked + span {
+  background: #285343;
+  color: #e0fff0;
+}
+.map-level-control input:focus-visible + span {
+  outline: 2px solid #ffcf78;
+  outline-offset: 1px;
+}
+.territory-results {
   margin: 8px -3px 0;
   max-height: 210px;
   overflow: auto;
   scrollbar-width: thin;
 }
-.municipality-results button {
+.territory-results button {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -376,17 +423,17 @@ code {
   padding: 8px 3px;
   font-size: 12px;
 }
-.municipality-results button:hover {
+.territory-results button:hover {
   background: #19342a;
 }
-.municipality-results button > span:first-of-type {
+.territory-results button > span:first-of-type {
   flex: 1;
 }
-.municipality-results small {
+.territory-results small {
   display: block;
   font-size: 9px;
 }
-.municipality-results > small {
+.territory-results > small {
   padding: 8px 4px;
   font-size: 9px;
 }

@@ -227,12 +227,14 @@ class PopulationRepository(PostgresRepository):
         citizenship: str | None,
         age_min: int,
         age_max: int,
+        province: str | None = None,
     ) -> list[dict[str, Any]]:
         conditions = ["snapshot_id=%s", "age BETWEEN %s AND %s"]
         params: list[Any] = [sid, age_min, age_max]
         for field, value in [
             ("municipality_code", municipality),
             ("region_code", region),
+            ("province_code", province),
             ("sex", sex),
             ("citizenship_code", citizenship),
         ]:

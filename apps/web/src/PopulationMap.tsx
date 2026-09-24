@@ -1,16 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { mercator, geometryPath, municipalityRadius } from './population-map';
-import { number, type PopulationMapData, type Municipality } from './population-api';
-import { Icon } from './Icons';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  mercator,
+  geometryPath,
+  populationRadius,
+  territoryLabels,
+  type MapTerritory,
+  type TerritoryLevel,
+} from './population-map';
+import { number, type PopulationMapData } from './population-api';
+import { Icon, levelLabels } from './Icons';
 
 type View = { x: number; y: number; scale: number };
 const center = mercator(12.5, 42);
 export function PopulationMap({
   data,
+  level,
+  territories,
   selected,
   onSelect,
 }: {
   data: PopulationMapData | null;
+  level: TerritoryLevel;
+  territories: MapTerritory[];
   selected: string;
   onSelect: (code: string) => void;
 }) {
@@ -18,7 +29,8 @@ export function PopulationMap({
   const canvas = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ width: 1200, height: 800 });
   const [view, setView] = useState<View>({ x: 0, y: 0, scale: 1 });
-  const [hover, setHover] = useState<{ item: Municipality; x: number; y: number } | null>(null);
+  const previousLevel = useRef(level);
+  const [hover, setHover] = useState<{ item: MapTerritory; x: number; y: number } | null>(null);
   const drag = useRef<{ x: number; y: number; origin: View; moved: boolean } | null>(null);
   const base = Math.min(size.width / 0.35, size.height / 0.32) * 0.87;
   const scale = base * view.scale;
@@ -26,11 +38,11 @@ export function PopulationMap({
   const oy = size.height / 2 + view.y - center[1] * scale;
   const points = useMemo(
     () =>
-      (data?.municipalities ?? [])
+      territories
         .filter((m) => m.latitude !== null && m.longitude !== null)
         .map((item) => ({ item, point: mercator(item.longitude!, item.latitude!) }))
         .sort((a, b) => b.item.persons - a.item.persons),
-    [data],
+    [territories],
   );
   const regions = useMemo(
     () =>
@@ -38,13 +50,43 @@ export function PopulationMap({
     [data],
   );
   const municipalityBorders = useMemo(
-    () => (data?.municipality_boundaries ?? []).map((m) => geometryPath(m.geometry)).join(' '),
-    [data],
+    () =>
+      level === 'municipality'
+        ? (data?.municipality_boundaries ?? []).map((m) => geometryPath(m.geometry)).join(' ')
+        : '',
+    [data, level],
   );
   const provinceBorders = useMemo(
-    () => (data?.provinces ?? []).map((p) => geometryPath(p.geometry)).join(' '),
-    [data],
+    () =>
+      level !== 'region'
+        ? (data?.provinces ?? []).map((p) => geometryPath(p.geometry)).join(' ')
+        : '',
+    [data, level],
   );
+  const boundaries = useMemo(() => {
+    const geometries =
+      level === 'region'
+        ? data?.regions
+        : level === 'province'
+          ? data?.provinces
+          : data?.municipality_boundaries;
+    const byCode = new Map((geometries ?? []).map((b) => [b.code, b.geometry]));
+    const interactiveTerritories =
+      level === 'municipality' ? territories.filter((item) => item.code === selected) : territories;
+    return interactiveTerritories.map((item) => {
+      const path = geometryPath(byCode.get(item.code) ?? null);
+      return {
+        item,
+        path,
+        hitArea:
+          level !== 'municipality' && path && typeof Path2D !== 'undefined'
+            ? new Path2D(path)
+            : null,
+      };
+    });
+  }, [data, level, territories, selected]);
+  const selectedBoundary = boundaries.find((b) => b.item.code === selected);
+  const label = territoryLabels[level];
   useEffect(() => {
     if (!wrapper.current || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) =>
@@ -53,19 +95,27 @@ export function PopulationMap({
     observer.observe(wrapper.current);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const levelChanged = previousLevel.current !== level;
+    previousLevel.current = level;
+    // Changing aggregation keeps the camera; selecting a territory still centers it.
+    if (levelChanged) return;
     const item = points.find((p) => p.item.code === selected);
     if (!item) return;
     setView((current) => {
-      const nextScale = Math.max(current.scale, 4);
+      const nextScale = Math.max(
+        current.scale,
+        level === 'region' ? 1.5 : level === 'province' ? 2.5 : 4,
+      );
       return {
         scale: nextScale,
         x: (center[0] - item.point[0]) * base * nextScale,
         y: (center[1] - item.point[1]) * base * nextScale,
       };
     });
-  }, [selected, points, base]);
-  useEffect(() => {
+  }, [selected, points, base, level]);
+  useEffect(() => setHover(null), [territories, selected]);
+  useLayoutEffect(() => {
     const element = canvas.current;
     if (!element) return;
     const ctx = element.getContext('2d');
@@ -79,7 +129,7 @@ export function PopulationMap({
       const x = ox + point[0] * scale,
         y = oy + point[1] * scale;
       const active = item.code === selected;
-      const radius = municipalityRadius(item.persons, view.scale);
+      const radius = populationRadius(item.persons, view.scale);
       const margin = radius + (active ? 6 : 0);
       if (x < -margin || x > size.width + margin || y < -margin || y > size.height + margin)
         continue;
@@ -97,16 +147,27 @@ export function PopulationMap({
     }
   }, [points, selected, ox, oy, scale, size, view.scale]);
   function nearest(x: number, y: number) {
-    let found: Municipality | null = null,
+    let found: MapTerritory | null = null,
       distance = Infinity;
     for (const { item, point } of points) {
       const d = Math.hypot(ox + point[0] * scale - x, oy + point[1] * scale - y);
-      if (d <= Math.max(12, municipalityRadius(item.persons, view.scale)) && d < distance) {
+      if (d <= Math.max(12, populationRadius(item.persons, view.scale)) && d < distance) {
         found = item;
         distance = d;
       }
     }
-    return found;
+    if (found) return found;
+    const ctx = canvas.current?.getContext('2d');
+    // Hit testing uses projected coordinates without the display's device-pixel transform.
+    if (!ctx || level === 'municipality') return null;
+    ctx.save();
+    ctx.resetTransform();
+    const boundary = boundaries.find(
+      (b) =>
+        b.hitArea && ctx.isPointInPath(b.hitArea, (x - ox) / scale, (y - oy) / scale, 'evenodd'),
+    );
+    ctx.restore();
+    return boundary?.item ?? null;
   }
   function zoom(factor: number, x = size.width / 2, y = size.height / 2) {
     setView((v) => {
@@ -132,22 +193,26 @@ export function PopulationMap({
           {regions.map((r) => (
             <path key={r.code} d={r.path} fill="#102321" fillRule="evenodd" />
           ))}
-          <path
-            className="municipality-borders"
-            d={municipalityBorders}
-            fill="none"
-            stroke="#43655d"
-            strokeWidth={0.35 / scale}
-            strokeLinejoin="round"
-          />
-          <path
-            className="province-borders"
-            d={provinceBorders}
-            fill="none"
-            stroke="#71978b"
-            strokeWidth={0.8 / scale}
-            strokeLinejoin="round"
-          />
+          {level === 'municipality' && (
+            <path
+              className="municipality-borders"
+              d={municipalityBorders}
+              fill="none"
+              stroke="#43655d"
+              strokeWidth={0.35 / scale}
+              strokeLinejoin="round"
+            />
+          )}
+          {level !== 'region' && (
+            <path
+              className="province-borders"
+              d={provinceBorders}
+              fill="none"
+              stroke="#71978b"
+              strokeWidth={0.8 / scale}
+              strokeLinejoin="round"
+            />
+          )}
           <path
             className="region-borders"
             d={regions.map((r) => r.path).join(' ')}
@@ -156,6 +221,17 @@ export function PopulationMap({
             strokeWidth={1.5 / scale}
             strokeLinejoin="round"
           />
+          {selectedBoundary?.path && (
+            <path
+              className="selected-boundary"
+              d={selectedBoundary.path}
+              fill="#ffcf7814"
+              fillRule="evenodd"
+              stroke="#ffcf78"
+              strokeWidth={2 / scale}
+              strokeLinejoin="round"
+            />
+          )}
         </g>
       </svg>
       <canvas
@@ -164,7 +240,7 @@ export function PopulationMap({
         style={{ width: size.width, height: size.height }}
         tabIndex={0}
         role="img"
-        aria-label="Mappa della popolazione per comune. Confini di regioni, province e comuni con tratto progressivamente più sottile. L'area dei cerchi è proporzionale al numero di abitanti. I punti rappresentano comuni, non residenze individuali. Usa frecce per spostarti, più e meno per lo zoom. I comuni sono selezionabili anche dalla ricerca."
+        aria-label={`Mappa della popolazione per ${label.singular}. Confini ${level === 'region' ? 'regionali' : level === 'province' ? 'regionali e provinciali' : 'regionali, provinciali e comunali'}. L'area dei cerchi è proporzionale al totale degli individui nel territorio, senza filtri individuali. I punti rappresentano aggregati territoriali, non residenze individuali. Usa frecce per spostarti, più e meno per lo zoom. Seleziona i territori anche dalla ricerca.`}
         onKeyDown={(e) => {
           if (e.key === '+' || e.key === '=') zoom(1.3);
           else if (e.key === '-') zoom(1 / 1.3);
@@ -222,7 +298,10 @@ export function PopulationMap({
           className="map-tooltip"
           style={{ left: Math.min(hover.x + 14, size.width - 210), top: hover.y + 14 }}
         >
-          <strong>{hover.item.name}</strong>
+          <strong>
+            <Icon kind={level} label={levelLabels[level]} />
+            {hover.item.name}
+          </strong>
           <span>
             <Icon kind="persons" />
             {number.format(hover.item.persons)} individui
@@ -248,8 +327,9 @@ export function PopulationMap({
         </button>
       </div>
       <div className="map-legend">
-        <span className="signal-dot" /> Area proporzionale agli abitanti del comune{' '}
-        <span className="legend-separator">/</span> Coordinate individuali: non ancora integrate
+        <span className="signal-dot" /> {label.plural} · Area proporzionale al totale degli
+        individui <span className="legend-separator">/</span> Punti territoriali, non residenze
+        individuali
       </div>
     </div>
   );

@@ -2101,6 +2101,7 @@ export interface operations {
                 citizenship_code?: string | null;
                 age_min?: number;
                 age_max?: number;
+                province_code?: string | null;
             };
             header?: never;
             path: {

@@ -1,9 +1,27 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { mapFixture } from './test-fixtures/population';
+import type { MapTerritory } from './population-map';
 
 vi.mock('./PopulationMap', () => ({
-  PopulationMap: () => <div aria-label="Mappa territoriale" />,
+  PopulationMap: ({
+    level,
+    territories,
+    selected,
+  }: {
+    level: string;
+    territories: MapTerritory[];
+    selected: string;
+  }) => (
+    <div
+      aria-label="Mappa territoriale"
+      data-testid="map"
+      data-level={level}
+      data-selected={selected}
+      data-codes={territories.map((t) => t.code).join(',')}
+    />
+  ),
 }));
 const snapshot = {
   id: 1,
@@ -65,10 +83,14 @@ const person = {
 };
 let requests: string[];
 let failPersons = false;
+let expandedMap = false;
+let failDistribution = false;
 beforeEach(() => {
   window.location.hash = '';
   requests = [];
   failPersons = false;
+  expandedMap = false;
+  failDistribution = false;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string) => {
@@ -77,22 +99,31 @@ beforeEach(() => {
       let data: unknown;
       if (url.pathname === '/v3/populations') data = [snapshot];
       else if (url.pathname.endsWith('/map'))
-        data = {
-          regions: [
-            { code: '90', name: 'Regione inventata', geometry: null, persons: 15, households: 5 },
-          ],
-          municipalities: [municipality],
-          provinces: [],
-          municipality_boundaries: [],
-          representation: 'municipality_aggregates',
-          individual_coordinates_available: false,
-        };
-      else if (url.pathname.endsWith('/distributions'))
+        data = expandedMap
+          ? mapFixture
+          : {
+              regions: [
+                {
+                  code: '90',
+                  name: 'Regione inventata',
+                  geometry: null,
+                  persons: 15,
+                  households: 5,
+                },
+              ],
+              municipalities: [municipality],
+              provinces: [],
+              municipality_boundaries: [],
+              representation: 'municipality_aggregates',
+              individual_coordinates_available: false,
+            };
+      else if (url.pathname.endsWith('/distributions')) {
+        if (failDistribution) return { ok: false, status: 503 };
         data = [
           { age: 40, sex: 'M', persons: 8 },
           { age: 40, sex: 'F', persons: 7 },
         ];
-      else if (url.pathname.endsWith('/validation'))
+      } else if (url.pathname.endsWith('/validation'))
         data = [
           {
             kind: 'sex_age',
@@ -209,5 +240,122 @@ describe('Prodotto popolazione', () => {
       await screen.findByRole('heading', { name: 'Nessuna popolazione disponibile' }),
     ).toBeInTheDocument();
     expect(screen.queryByText('VERIFICATO')).not.toBeInTheDocument();
+  });
+});
+
+describe('Modalità territoriali di Esplora', () => {
+  beforeEach(() => {
+    expandedMap = true;
+  });
+  const distributionPanel = () =>
+    screen.getByRole('complementary', { name: 'Distribuzione della popolazione' });
+  const latestDistribution = () =>
+    new URL(requests.filter((r) => r.includes('/distributions?')).at(-1)!, 'http://localhost')
+      .searchParams;
+
+  it('aggrega province e regioni, conserva i filtri individuali e rimuove i filtri figli', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: /Comune 900001/ }));
+    const mapElement = screen.getByTestId('map');
+    fireEvent.change(screen.getByLabelText('Sesso'), { target: { value: 'F' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Province' }));
+    expect(screen.getByTestId('map')).toBe(mapElement);
+    const selection = screen.getByRole('region', { name: 'Territorio selezionato' });
+    expect(within(selection).getByRole('heading', { name: 'Provincia 900' })).toBeInTheDocument();
+    expect(within(selection).getByText('300')).toBeInTheDocument();
+    expect(within(selection).getByText('30')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cerca una provincia')).toHaveValue('');
+    expect(screen.queryByLabelText('Provincia', { selector: 'select' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('map')).toHaveAttribute('data-codes', '900,901');
+    await waitFor(() => expect(latestDistribution().get('province_code')).toBe('900'));
+    expect(latestDistribution().has('municipality_code')).toBe(false);
+    expect(latestDistribution().get('sex')).toBe('F');
+    fireEvent.click(screen.getByRole('radio', { name: 'Regioni' }));
+    expect(screen.getByTestId('map')).toBe(mapElement);
+    expect(within(selection).getByRole('heading', { name: 'Regione 90' })).toBeInTheDocument();
+    expect(within(selection).getByText('600')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Regione', { selector: 'select' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('map')).toHaveAttribute('data-codes', '90,91');
+    await waitFor(() => expect(latestDistribution().has('province_code')).toBe(false));
+    expect(latestDistribution().get('region_code')).toBe('90');
+    expect(latestDistribution().get('sex')).toBe('F');
+    expect(
+      within(distributionPanel()).getByRole('heading', { name: /Regione 90/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('percorre regione, provincia e comune e restringe ricerca e mappa ai figli', async () => {
+    render(<App />);
+    await screen.findByRole('button', { name: /Comune 900001/ });
+    fireEvent.click(screen.getByRole('radio', { name: 'Regioni' }));
+    fireEvent.change(screen.getByLabelText('Cerca una regione'), { target: { value: ' 90 ' } });
+    fireEvent.click(screen.getByRole('button', { name: /Regione 90/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Esplora le province/ }));
+    expect(screen.getByRole('radio', { name: 'Province' })).toBeChecked();
+    expect(screen.getByLabelText('Regione', { selector: 'select' })).toHaveValue('90');
+    expect(screen.queryByRole('button', { name: /Provincia 910/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Provincia 900/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Esplora i comuni/ }));
+    expect(screen.getByLabelText('Provincia', { selector: 'select' })).toHaveValue('900');
+    expect(screen.getByTestId('map')).toHaveAttribute('data-codes', '900001,900002');
+    expect(screen.queryByRole('button', { name: /Comune 901001/ })).not.toBeInTheDocument();
+    // A municipality without coordinates remains searchable and selectable.
+    fireEvent.click(screen.getByRole('button', { name: /Comune 900002/ }));
+    expect(screen.getByTestId('map')).toHaveAttribute('data-selected', '900002');
+    fireEvent.change(screen.getByLabelText('Regione', { selector: 'select' }), {
+      target: { value: '91' },
+    });
+    expect(screen.getByLabelText('Provincia', { selector: 'select' })).toHaveValue('');
+    expect(screen.getByTestId('map')).toHaveAttribute('data-selected', '');
+    expect(screen.getByTestId('map')).toHaveAttribute('data-codes', '910001');
+    fireEvent.click(screen.getByRole('button', { name: /Tutta Italia/ }));
+    expect(screen.getByTestId('map')).toHaveAttribute('data-codes', '900001,900002,901001,910001');
+    expect(
+      within(distributionPanel()).getByRole('heading', { name: /Italia/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('gestisce ricerca vuota, errore e riprova anche nella selezione provinciale', async () => {
+    render(<App />);
+    await screen.findByRole('button', { name: /Comune 900001/ });
+    fireEvent.click(screen.getByRole('radio', { name: 'Province' }));
+    fireEvent.change(screen.getByLabelText('Cerca una provincia'), {
+      target: { value: 'inesistente' },
+    });
+    expect(screen.getByText('Nessuna provincia trovata.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Cerca una provincia'), { target: { value: '910' } });
+    failDistribution = true;
+    fireEvent.click(screen.getByRole('button', { name: /Provincia 910/ }));
+    expect(await within(distributionPanel()).findByRole('alert')).toHaveTextContent('503');
+    expect(
+      within(distributionPanel()).queryByRole('img', { name: /Distribuzione per età/ }),
+    ).not.toBeInTheDocument();
+    failDistribution = false;
+    fireEvent.click(within(distributionPanel()).getByRole('button', { name: 'Riprova' }));
+    expect(
+      await within(distributionPanel()).findByRole('img', {
+        name: /Distribuzione per età di Provincia 910/,
+      }),
+    ).toBeInTheDocument();
+    expect(latestDistribution().get('province_code')).toBe('910');
+  });
+
+  it('chiude i record passando a un aggregato e non ripristina selezioni comunali nascoste', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: /Comune 900001/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Esplora i record/ }));
+    expect(
+      await screen.findByRole('region', { name: 'Record di Comune 900001' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Regioni' }));
+    expect(
+      screen.queryByRole('region', { name: 'Record di Comune 900001' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Comuni' }));
+    expect(
+      screen.queryByRole('region', { name: 'Territorio selezionato' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Provincia', { selector: 'select' })).toHaveValue('');
+    expect(screen.getByTestId('map')).toHaveAttribute('data-codes', '900001,900002,901001');
   });
 });

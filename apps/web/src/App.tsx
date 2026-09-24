@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Icon } from './Icons';
+import { Icon, levelLabels } from './Icons';
+import { aggregateTerritories, territoryLabels, type TerritoryLevel } from './population-map';
 import { PopulationMap } from './PopulationMap';
 import { PopulationMethod } from './PopulationMethod';
 import { PopulationRecords, type PersonFilters } from './PopulationRecords';
@@ -20,6 +21,8 @@ export function App() {
   const [snapshotId, setSnapshotId] = useState(0);
   const [municipalityCode, setMunicipalityCode] = useState('');
   const [region, setRegion] = useState('');
+  const [province, setProvince] = useState('');
+  const [mapLevel, setMapLevel] = useState<TerritoryLevel>('municipality');
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<PersonFilters>(initialFilters);
   const [records, setRecords] = useState(false);
@@ -32,10 +35,36 @@ export function App() {
   );
   const municipalities = map.data?.municipalities ?? [];
   const municipality = municipalities.find((m) => m.code === municipalityCode) ?? null;
+  const territoriesByLevel = useMemo(
+    () => ({
+      region: aggregateTerritories(map.data, 'region'),
+      province: aggregateTerritories(map.data, 'province'),
+      municipality: aggregateTerritories(map.data, 'municipality'),
+    }),
+    [map.data],
+  );
+  const territories = territoriesByLevel[mapLevel];
+  const selectedCode =
+    mapLevel === 'region' ? region : mapLevel === 'province' ? province : municipalityCode;
+  const selectedTerritory = territories.find((t) => t.code === selectedCode);
+  const territoryLabel = territoryLabels[mapLevel];
+  const availableProvinces = territoriesByLevel.province
+    .filter((p) => !region || p.region_code === region)
+    .sort((a, b) => a.name.localeCompare(b.name, 'it'));
+  const visibleTerritories = useMemo(
+    () =>
+      territories.filter(
+        (t) =>
+          (mapLevel === 'region' || !region || t.region_code === region) &&
+          (mapLevel !== 'municipality' || !province || t.province_code === province),
+      ),
+    [territories, mapLevel, region, province],
+  );
   const labels = (evidence.data?.provenance.country_labels ?? {}) as Record<string, string>;
   const distributionQuery = query({
     municipality_code: municipalityCode,
     region_code: region,
+    province_code: province,
     sex: filters.sex,
     citizenship_code: filters.citizenship,
     age_min: filters.ageMin,
@@ -53,19 +82,16 @@ export function App() {
     window.addEventListener('hashchange', handle);
     return () => window.removeEventListener('hashchange', handle);
   }, []);
-  const filteredMunicipalities = useMemo(
+  const filteredTerritories = useMemo(
     () =>
-      municipalities
-        .filter(
-          (m) =>
-            (!region || m.region_code === region) &&
-            (!search ||
-              `${m.name} ${m.code}`
-                .toLocaleLowerCase('it')
-                .includes(search.toLocaleLowerCase('it'))),
+      visibleTerritories
+        .filter((m) =>
+          `${m.name} ${m.code}`
+            .toLocaleLowerCase('it')
+            .includes(search.trim().toLocaleLowerCase('it')),
         )
         .sort((a, b) => a.name.localeCompare(b.name, 'it')),
-    [municipalities, region, search],
+    [visibleTerritories, search],
   );
   const histogram = useMemo(
     () =>
@@ -90,29 +116,37 @@ export function App() {
     }
   }
   const maxBin = Math.max(1, ...bins.map((b) => b.male + b.female));
-  function selectMunicipality(code: string) {
-    setMunicipalityCode(code);
+  function selectTerritory(code: string) {
+    const territory = territories.find((item) => item.code === code);
+    if (!territory) return;
+    setRegion(territory.region_code);
+    setProvince(mapLevel === 'region' ? '' : territory.province_code);
+    setMunicipalityCode(mapLevel === 'municipality' ? code : '');
     setRecords(false);
     setSearch('');
-    const m = municipalities.find((item) => item.code === code);
-    if (m) setRegion(m.region_code);
+  }
+  function changeMapLevel(level: TerritoryLevel) {
+    setMapLevel(level);
+    if (level !== 'municipality') setMunicipalityCode('');
+    if (level === 'region') setProvince('');
+    setRecords(false);
+    setSearch('');
   }
   function selectSnapshot(id: number) {
     setSnapshotId(id);
     setMunicipalityCode('');
     setRegion('');
+    setProvince('');
     setSearch('');
     setFilters(initialFilters);
     setRecords(false);
   }
   const activeSnapshot = snapshots.data?.find((s) => s.id === snapshotId);
-  const activeRegion = map.data?.regions.find((r) => r.code === region);
-  const scope = municipality?.name ?? activeRegion?.name ?? 'Italia';
-  const householdTotal = municipalityCode
-    ? municipality?.households
-    : region
-      ? activeRegion?.households
-      : evidence.data?.households;
+  const activeRegion = territoriesByLevel.region.find((r) => r.code === region);
+  const activeProvince = territoriesByLevel.province.find((p) => p.code === province);
+  const scopeTerritory = selectedTerritory ?? activeProvince ?? activeRegion;
+  const scope = scopeTerritory?.name ?? 'Italia';
+  const householdTotal = scopeTerritory?.households ?? evidence.data?.households;
   const individualFiltersActive =
     filters.sex !== '' || filters.citizenship !== '' || filters.ageMin > 0 || filters.ageMax < 100;
   const anyError = snapshots.error || evidence.error || map.error;
@@ -149,9 +183,12 @@ export function App() {
       <main id="population-content" className={mode === 'method' ? 'method-main' : 'explore-main'}>
         {mode === 'explore' && (
           <PopulationMap
+            key={snapshotId}
             data={map.data}
-            selected={municipalityCode}
-            onSelect={selectMunicipality}
+            level={mapLevel}
+            territories={visibleTerritories}
+            selected={selectedCode}
+            onSelect={selectTerritory}
           />
         )}
         {(snapshots.loading || (!!snapshotId && !evidence.data && evidence.loading)) && (
@@ -227,11 +264,12 @@ export function App() {
               )}
               <div className="territory-heading">
                 <span className="eyebrow">TERRITORIO</span>
-                {(region || municipalityCode) && (
+                {(region || province || municipalityCode) && (
                   <button
                     className="text-button"
                     onClick={() => {
                       setRegion('');
+                      setProvince('');
                       setMunicipalityCode('');
                       setSearch('');
                       setRecords(false);
@@ -241,26 +279,71 @@ export function App() {
                   </button>
                 )}
               </div>
-              <label>
-                Regione
-                <select
-                  value={region}
-                  onChange={(e) => {
-                    setRegion(e.target.value);
-                    setMunicipalityCode('');
-                    setRecords(false);
-                  }}
-                >
-                  <option value="">Tutte le regioni</option>
-                  {map.data?.regions.map((r) => (
-                    <option key={r.code} value={r.code}>
-                      {r.name}
-                    </option>
+              <fieldset className="map-level-control">
+                <legend>Modalità della mappa</legend>
+                <div>
+                  {(['region', 'province', 'municipality'] as const).map((level) => (
+                    <label key={level}>
+                      <input
+                        type="radio"
+                        name="map-level"
+                        value={level}
+                        checked={mapLevel === level}
+                        onChange={() => changeMapLevel(level)}
+                      />
+                      <span>{territoryLabels[level].plural}</span>
+                    </label>
                   ))}
-                </select>
-              </label>
+                </div>
+              </fieldset>
+              {mapLevel !== 'region' && (
+                <label>
+                  Regione
+                  <select
+                    value={region}
+                    onChange={(e) => {
+                      setRegion(e.target.value);
+                      setProvince('');
+                      setMunicipalityCode('');
+                      setSearch('');
+                      setRecords(false);
+                    }}
+                  >
+                    <option value="">Tutte le regioni</option>
+                    {territoriesByLevel.region.map((r) => (
+                      <option key={r.code} value={r.code}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {mapLevel === 'municipality' && (
+                <label>
+                  Provincia
+                  <select
+                    value={province}
+                    onChange={(e) => {
+                      const code = e.target.value;
+                      setProvince(code);
+                      const parent = territoriesByLevel.province.find((p) => p.code === code);
+                      if (parent) setRegion(parent.region_code);
+                      setMunicipalityCode('');
+                      setSearch('');
+                      setRecords(false);
+                    }}
+                  >
+                    <option value="">Tutte le province</option>
+                    {availableProvinces.map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label>
-                Cerca un comune
+                {territoryLabel.search}
                 <input
                   type="search"
                   value={search}
@@ -269,53 +352,87 @@ export function App() {
                 />
               </label>
               {map.loading && <p role="status">Caricamento dei territori…</p>}
-              {(search || !municipalityCode) && (
-                <div className="municipality-results" aria-label="Comuni disponibili">
-                  {filteredMunicipalities.slice(0, 6).map((m) => (
-                    <button key={m.code} onClick={() => selectMunicipality(m.code)}>
-                      <Icon kind="municipality" />
+              {(search || !selectedCode) && (
+                <div
+                  className="territory-results"
+                  aria-label={`${territoryLabel.plural} disponibili`}
+                >
+                  {filteredTerritories.slice(0, 6).map((t) => (
+                    <button key={t.code} onClick={() => selectTerritory(t.code)}>
+                      <Icon kind={mapLevel} label={levelLabels[mapLevel]} />
                       <span>
-                        {m.name}
-                        <small>{m.province_name}</small>
+                        {t.name}
+                        <small>
+                          {mapLevel === 'municipality'
+                            ? t.province_name
+                            : mapLevel === 'province'
+                              ? t.region_name
+                              : t.code}
+                        </small>
                       </span>
                       <span>↗</span>
                     </button>
                   ))}
-                  {map.data && !filteredMunicipalities.length && <p>Nessun comune trovato.</p>}
-                  {filteredMunicipalities.length > 6 && (
+                  {map.data && !filteredTerritories.length && <p>{territoryLabel.empty}</p>}
+                  {filteredTerritories.length > 6 && (
                     <small>
-                      Affina la ricerca tra {number.format(filteredMunicipalities.length)} comuni.
+                      Affina la ricerca tra {number.format(filteredTerritories.length)}{' '}
+                      {territoryLabel.plural.toLocaleLowerCase('it')}.
                     </small>
                   )}
                 </div>
               )}
-              {municipality && (
-                <div className="selected-territory">
+              {selectedTerritory && (
+                <div
+                  className="selected-territory"
+                  role="region"
+                  aria-label="Territorio selezionato"
+                >
                   <div>
-                    <Icon kind="municipality" />
-                    <h2>{municipality.name}</h2>
+                    <Icon kind={mapLevel} label={levelLabels[mapLevel]} />
+                    <h2>{selectedTerritory.name}</h2>
                   </div>
                   <p>
-                    {municipality.province_name} · {municipality.code}
+                    {mapLevel === 'municipality'
+                      ? `${selectedTerritory.province_name} · `
+                      : mapLevel === 'province'
+                        ? `${selectedTerritory.region_name} · `
+                        : ''}
+                    {selectedTerritory.code}
                   </p>
                   <div className="territory-counts">
                     <span>
                       <Icon kind="persons" />
-                      <strong>{number.format(municipality.persons)}</strong>individui
+                      <strong>{number.format(selectedTerritory.persons)}</strong>individui
                     </span>
                     <span>
                       <Icon kind="households" />
-                      <strong>{number.format(municipality.households)}</strong>famiglie
+                      <strong>{number.format(selectedTerritory.households)}</strong>famiglie
                     </span>
                   </div>
-                  <button className="primary-button" onClick={() => setRecords(true)}>
-                    Esplora i record <span>↗</span>
+                  <p>Totali del territorio, senza filtri individuali.</p>
+                  <button
+                    className="primary-button"
+                    onClick={() => {
+                      if (mapLevel === 'municipality') setRecords(true);
+                      else changeMapLevel(mapLevel === 'region' ? 'province' : 'municipality');
+                    }}
+                  >
+                    {mapLevel === 'municipality'
+                      ? 'Esplora i record'
+                      : mapLevel === 'region'
+                        ? 'Esplora le province'
+                        : 'Esplora i comuni'}{' '}
+                    <span>↗</span>
                   </button>
                 </div>
               )}
               <details className="individual-filters" open>
                 <summary>
-                  Filtri individui <small>Istogramma ed elenco</small>
+                  Filtri individui{' '}
+                  <small>
+                    {mapLevel === 'municipality' ? 'Istogramma ed elenco' : 'Istogramma'}
+                  </small>
                 </summary>
                 <div className="filter-grid">
                   <label>
@@ -390,7 +507,13 @@ export function App() {
                 <span className="eyebrow">NELLA SELEZIONE</span>
                 <Icon kind="persons" />
               </div>
-              <h2>{scope}</h2>
+              <h2>
+                <Icon
+                  kind={scopeTerritory?.level ?? 'country'}
+                  label={levelLabels[scopeTerritory?.level ?? 'country']}
+                />
+                {scope}
+              </h2>
               {distribution.loading ? (
                 <p role="status">Aggiornamento distribuzione…</p>
               ) : distribution.error ? (

@@ -12,9 +12,9 @@ corrispondono a persone reali; le relazioni generate sono proprietà del modello
 La popolazione verificata viene caricata **integralmente in PostgreSQL** e
 interrogata tramite API. La web app ha due parti:
 
-- **Esplora:** mappa scura a schermo intero con confini regionali, provinciali
-  e comunali a spessore decrescente, selezione di regioni e comuni,
-  filtri individuali, istogrammi, elenco paginato degli individui e navigazione
+- **Esplora:** mappa scura a schermo intero con modalità Regioni, Province e
+  Comuni. Ogni modalità adatta confini, aggregati, ricerca e selezione territoriale.
+  Offre filtri individuali, istogrammi, elenco paginato degli individui e navigazione
   delle famiglie e dei loro componenti.
 - **Metodo e verifiche:** fonti con collegamenti agli originali, sequenza delle
   integrazioni, assunzioni, verifiche sui record del database e confronto tra
@@ -28,7 +28,11 @@ restano sintetici. La classe familiare 6+ usa 6 componenti; 560.159 adulti
 restano senza assegnazione familiare. [Metodo e input](docs/population.md).
 
 La localizzazione corrente è comunale. La mappa mostra punti rappresentativi
-dei comuni, **non residenze individuali**. Coordinate di residenza e densità
+dei territori, **non residenze individuali**. Province e regioni sommano individui
+e famiglie dei comuni, anche senza coordinate; i loro marcatori sono ancorati
+al punto comunale più vicino al baricentro dei punti disponibili, pesato per
+individui. I cerchi e le schede riportano totali territoriali; i filtri individuali
+agiscono su istogramma ed elenco. Coordinate di residenza e densità
 locale saranno una successiva integrazione del modello e un nuovo snapshot.
 
 ## Architettura
