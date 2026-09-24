@@ -2,7 +2,9 @@
 
 ## Popolazione sintetica — prodotto corrente
 
-La revisione `0006_population_product.sql` aggiunge lo schema `population`.
+La baseline `migrations/sql/0001_baseline.sql` definisce lo schema `population`
+insieme all'archivio degli aggregati. La storia precedente al consolidamento
+resta nel commit `9cd934a`; [passaggio dei database esistenti](operations.md#baseline-consolidata).
 
 - `snapshot`: identità del run, hash del manifest, riferimento, conteggi, modello,
   fonti, rapporto originale e controlli di pubblicazione; stato loading/published.
@@ -30,8 +32,9 @@ applicativa non cambia il manifest storico del generatore né il suo campo
 
 ## Archivio storico degli aggregati (M0–M2)
 
-Il DDL autorevole è nelle revisioni `migrations/sql/0001_foundation.sql`–
-`0005_geographic_publication.sql`; l'upgrade è gestito da Alembic.
+Il DDL autorevole è nella stessa baseline; l'upgrade è gestito da Alembic.
+I riferimenti alle revisioni 0001–0006 nei documenti storici descrivono il
+percorso conservato in Git, precedente alla baseline.
 Non usare ORM autogenerate come sostituto della revisione delle migrazioni.
 
 ```mermaid

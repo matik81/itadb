@@ -40,6 +40,58 @@ e tempi, rollout e monitoraggio. La migrazione iniziale è intenzionalmente irre
 un downgrade distruggerebbe le evidenze. Recuperare con backup verificato o migrazione
 correttiva forward. Testare l'upgrade da vuoto e da ogni versione supportata.
 
+### Baseline consolidata
+
+Dal 24 settembre 2026 la catena attiva ha una sola radice: `0001_baseline`.
+Le revisioni 0001–0006 sono conservate nel commit
+[`9cd934a`](https://github.com/matik81/itadb/tree/9cd934a/migrations).
+La nuova baseline crea direttamente lo stesso schema finale, inclusi
+popolazione sintetica, viste, vincoli, trigger e cataloghi iniziali.
+Il consolidamento della storia è stato richiesto esplicitamente; le prossime
+modifiche richiedono nuove revisioni. I riferimenti numerici nelle sezioni
+M1/M2 sotto descrivono le operazioni precedenti a questo consolidamento.
+
+**Database nuovo:** `uv run python scripts/migrate.py` applica la baseline
+e configura il reader; richiede le variabili amministrative e `API_DB_PASSWORD`
+descritte nella guida locale. Una seconda esecuzione non modifica i dati.
+
+**Database esistente a 0006:** non eseguire il DDL iniziale sopra le tabelle
+esistenti. Verificare che lo schema non abbia modifiche manuali e conservare
+il valore corrente del registro Alembic. Il confronto tra la catena storica
+e la baseline è documentato nel [piano](plans/migration-baseline.md).
+Con i processi di migrazione fermi e `ITADB_ADMIN_DATABASE_URL` rivolto al
+database corretto, allineare solo il registro, in una transazione:
+
+```sh
+uv run python - <<'PY'
+import psycopg
+from itadb.config import Settings
+
+with psycopg.connect(Settings().admin_database_url) as db:
+    db.execute("LOCK TABLE public.alembic_version IN ACCESS EXCLUSIVE MODE")
+    versions = db.execute("SELECT version_num FROM public.alembic_version").fetchall()
+    if versions == [("0006",)]:
+        db.execute("UPDATE public.alembic_version SET version_num='0001_baseline' WHERE version_num='0006'")
+    elif versions != [("0001_baseline",)]:
+        raise RuntimeError("È richiesto lo schema storico completo a 0006")
+print("Registro Alembic allineato alla baseline; dati applicativi invariati")
+PY
+```
+
+Eseguire quindi `scripts/migrate.py` e verificare `/health/ready`, catalogo
+popolazioni e query individuali. L'allineamento non importa, cancella o
+riscrive record applicativi. Non è una verifica automatica di eventuali
+modifiche manuali al DDL.
+Con Compose ricostruire l'immagine del servizio `migrate` prima di eseguirlo,
+così che contenga la nuova storia: `docker compose build migrate`.
+
+**Database a 0001–0005:** completare prima l'upgrade a 0006 da un checkout
+del commit `9cd934a`, poi seguire il passaggio sopra. Non marcare come baseline
+uno schema incompleto. Per annullare il solo allineamento del registro,
+prima di applicare ulteriori migrazioni, ripristinare `0006` nella stessa
+transazione con controllo del valore atteso e usare il codice `9cd934a`.
+Non rimuovere volumi, tabelle o archivi di evidenze.
+
 Per file orfani confrontare `catalog.artifact` e archivio; proporre un report di garbage
 collection prima della rimozione, con retention dei fallimenti. Non eliminare originali
 automaticamente in caso di importazione fallita. In caso di corruzione fermare la pubblicazione,

@@ -28,7 +28,7 @@ pytestmark = pytest.mark.integration
 FIXTURES = Path("tests/fixtures")
 
 
-def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: str = "head") -> Settings:
+def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     admin = os.environ.get("ITADB_TEST_DATABASE_URL")
     reader = os.environ.get("ITADB_TEST_READER_URL")
     if not admin or not reader:
@@ -54,8 +54,8 @@ def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: str = "
     monkeypatch.setenv(
         "ITADB_ADMIN_DATABASE_URL", migration_url.render_as_string(hide_password=False)
     )
-    command.upgrade(Config("alembic.ini"), revision)
-    command.upgrade(Config("alembic.ini"), revision)
+    command.upgrade(Config("alembic.ini"), "head")
+    command.upgrade(Config("alembic.ini"), "head")
     with psycopg.connect(isolated_admin) as db:
         role = sql.Identifier(conninfo_to_dict(reader)["user"])
         db.execute(sql.SQL("GRANT USAGE ON SCHEMA api TO {}").format(role))
@@ -78,8 +78,11 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     return _database(tmp_path, monkeypatch)
 
 
-def test_upgrade_preserves_published_demo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    legacy = _database(tmp_path, monkeypatch, "0001")
+def test_repeated_upgrade_preserves_published_demo(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy = _database(tmp_path, monkeypatch)
     release = ingest_demo(
         legacy, FIXTURES / "population-demo.csv", Path("contracts/population-demo-v1.json")
     )

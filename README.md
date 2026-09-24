@@ -65,7 +65,12 @@ confini separati. [Decisione di prodotto](docs/adr/0015-population-product.md).
 ## Avvio locale
 
 Ambiente supportato: Linux, con Ubuntu/WSL2 come riferimento. Vedi la
-[guida locale](docs/local-environment.md). Con Docker Compose:
+[guida locale](docs/local-environment.md).
+
+Per database creati con le revisioni precedenti al consolidamento, seguire
+prima il [passaggio alla baseline](docs/operations.md#baseline-consolidata).
+
+Avvio con Docker Compose:
 
 ```sh
 cp -n .env.example .env
@@ -136,7 +141,7 @@ src/itadb/population/    pubblicazione degli snapshot nel database
 src/itadb/api/           API della popolazione e delle evidenze
 apps/web/               mappa, esplorazione, metodo e verifiche
 contracts/              contratti versionati di input e modello
-migrations/             revisioni PostgreSQL/PostGIS immutabili
+migrations/             baseline PostgreSQL/PostGIS e successive revisioni immutabili
 src/itadb/pipeline/      archivio e pipeline storiche degli aggregati
 ```
 

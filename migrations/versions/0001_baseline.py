@@ -1,18 +1,18 @@
-"""Serve verified synthetic population snapshots independently of the generator."""
+"""Consolidated PostgreSQL/PostGIS baseline, including the synthetic population."""
 
 from pathlib import Path
 
 from alembic import op
 from sqlalchemy import text
 
-revision = "0006"
-down_revision = "0005"
+revision = "0001_baseline"
+down_revision = None
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(text((Path(__file__).parents[1] / "sql/0006_population_product.sql").read_text()))
+    op.execute(text((Path(__file__).parents[1] / "sql/0001_baseline.sql").read_text()))
 
 
 def downgrade() -> None:

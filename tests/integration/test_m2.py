@@ -28,18 +28,6 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     return _database(tmp_path, monkeypatch)
 
 
-def test_readiness_rejects_pre_m2_schema(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    old = _database(tmp_path, monkeypatch, "0002")
-    with TestClient(create_app(old)) as client:
-        assert client.get("/health/live").status_code == 200
-        response = client.get("/health/ready")
-        assert response.status_code == 503
-        assert "coverage_v2" not in response.text
-    command.upgrade(Config("alembic.ini"), "head")
-    with TestClient(create_app(old)) as client:
-        assert client.get("/health/ready").status_code == 200
-
-
 def test_readiness_requires_each_m2_view(settings: Settings) -> None:
     with (
         psycopg.connect(settings.admin_database_url, autocommit=True) as db,
@@ -52,7 +40,9 @@ def test_readiness_requires_each_m2_view(settings: Settings) -> None:
             )
             try:
                 assert client.get("/health/live").status_code == 200
-                assert client.get("/health/ready").status_code == 503
+                response = client.get("/health/ready")
+                assert response.status_code == 503
+                assert view not in response.text
             finally:
                 db.execute(
                     sql.SQL("ALTER VIEW api.unavailable RENAME TO {}").format(sql.Identifier(view))
@@ -60,10 +50,10 @@ def test_readiness_requires_each_m2_view(settings: Settings) -> None:
             assert client.get("/health/ready").status_code == 200
 
 
-def test_upgrade_preserves_published_m2(
+def test_repeated_upgrade_preserves_published_m2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, m2_bundle: tuple[Bundle, Path]
 ) -> None:
-    old = _database(tmp_path, monkeypatch, "0004")
+    old = _database(tmp_path, monkeypatch)
     bundle, contract = m2_bundle
     rid = publish_coverage(old, bundle, contract)
     tables = [
