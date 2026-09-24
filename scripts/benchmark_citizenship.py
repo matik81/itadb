@@ -1,4 +1,4 @@
-"""Measured citizenship enrichment on an explicitly invented M4 load snapshot."""
+"""Historical enrichment benchmark; use benchmark_population.py for the current reference."""
 
 import argparse
 import hashlib

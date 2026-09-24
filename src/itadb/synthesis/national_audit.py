@@ -19,6 +19,8 @@ def audit_batch(
     person_offset: int,
     household_offset: int,
     budget: ResourceBudget,
+    *,
+    with_citizenship: bool = False,
 ) -> dict[str, Any]:
     checks: dict[str, bool] = {}
 
@@ -47,6 +49,7 @@ def audit_batch(
                     ("sex", "VARCHAR"),
                     ("reference_adult", "BOOLEAN"),
                     ("data_kind", "VARCHAR"),
+                    *([("citizenship_code", "VARCHAR")] if with_citizenship else []),
                 ],
             ),
             (

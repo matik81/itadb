@@ -58,9 +58,15 @@ Nessuna nuova dipendenza, API, tabella DB o migrazione.
 
 ## Priorità e distribuzione
 
-La quarta integrazione richiesta aggiunge la cittadinanza dopo sesso/età,
-geografia e famiglie, conservando tutti i vincoli precedenti. La
-[versione 4 delle priorità](../model-fidelity.md) documenta questo ordine.
+Nella versione 4 delle priorità, adottata per questo riferimento, la
+cittadinanza è stata aggiunta dopo sesso/età, geografia e famiglie,
+conservando tutti i vincoli precedenti. Il successivo aggiornamento
+concordato con l'utente, [versione 5 delle priorità](../model-fidelity.md),
+porta la cittadinanza al terzo posto e le famiglie al quarto per distinguere
+i margini osservati esatti dalla composizione familiare ancora grezza.
+L'[ADR 0014](0014-ordered-population.md) applica l'ordine al nuovo riferimento
+eseguibile corrente. Il metodo e i metadati storici di questo riferimento
+restano invariati.
 Il riferimento M4 originale resta una base immutabile, non una popolazione
 alternativa fra cui scegliere a posteriori.
 

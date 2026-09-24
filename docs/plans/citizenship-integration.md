@@ -30,8 +30,15 @@ inferenza di cittadinanza dai legami familiari o dal paese di nascita.
 
 ## Decisioni e limiti
 
-La cittadinanza segue i tre gruppi di attributi già integrati, come richiesto
-dall'utente; non può allentarne i vincoli. Microdati locali e nessuna
+Il riferimento eseguibile è stato realizzato con le priorità v4, aggiungendo
+la cittadinanza ai tre gruppi di attributi già integrati senza allentarne i
+vincoli. La successiva decisione dell'utente del 24 settembre 2026 adotta la
+[graduatoria v5](../model-fidelity.md): sesso/età, geografia, cittadinanza,
+famiglie. Il [riepilogo](../population.md) evidenzia i conteggi osservati esatti
+dei primi tre gruppi e la composizione familiare ancora casuale per età e
+cittadinanza. Il [successivo allineamento eseguibile](population-order.md)
+applica l'ordine v5 alla pipeline corrente, conservando gli artefatti e il
+metodo di questo riferimento storico. Microdati locali e nessuna
 pubblicazione automatica. `100` Italia, `999` apolidia, non valore mancante.
 Il run assegna 53.572.213 individui alla categoria italiana e 5.371.251 alla
 popolazione straniera, inclusi 525 apolidi. La congiunta età–singola

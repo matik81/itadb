@@ -102,7 +102,22 @@ Dependabot propone aggiornamenti; audit dipendenze settimanale. Richiedere i con
 una revisione sulle PR, vietare force push, abilitare segnalazioni private, secret scanning
 e push protection dove disponibili. Le impostazioni effettivamente applicate sono registrate
 in docs/validation.md: un file YAML non prova che una protezione GitHub sia abilitata.
-## Snapshot sintetici locali M4
+## Popolazione corrente: cittadinanza prima delle famiglie
+
+Seguire [la pipeline corrente](population.md#pipeline-corrente) con
+`synthesize-population --inputs INVENTARIO_M4 --citizenship-inputs INVENTARIO_STR_RCS`.
+Il riferimento è `contracts/population-reference-v1.json`; il budget resta
+`contracts/m4-budget-v1.json`. `verify-population --run SNAPSHOT` rilegge
+autonomamente le evidenze delle quattro fasi, senza `--base-run`.
+
+Conservare l'intera directory `data/curated/population/<run_id>`, compresi
+gli `individuals.parquet` prima delle famiglie, insieme a raw, inventari,
+contratti, sorgenti e lock archiviati. Report e misure sono in
+`data/reports/population`; log visibile `.tools/population-progress.log`.
+Gli stessi obblighi di conservazione, budget, checkpoint e quarantena
+si applicano ai riferimenti storici seguenti. Non cancellarli durante la migrazione.
+
+## Snapshot sintetici locali M4 — storico
 
 Il percorso [M4](synthesis-m4.md) usa l'archivio locale e non pubblica nel
 database di servizio. Eseguire da root `fetch-m4`, poi `synthesize-m4 --inputs
@@ -124,7 +139,7 @@ al picco RSS del processo. Gli ID rappresentano record sintetici; nessun
 microdato deve entrare in Git o nelle API. La sola tabella in `distribution/`
 rispetta il formato aggregato documentato, senza pubblicazione automatica.
 
-## Cittadinanza: conservazione dello snapshot derivato
+## Cittadinanza: conservazione dello snapshot derivato storico
 
 `fetch-citizenship`, `synthesize-citizenship` e `verify-citizenship` seguono il
 [percorso documentato](citizenship.md). I risultati sono in

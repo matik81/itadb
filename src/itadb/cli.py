@@ -23,6 +23,8 @@ from itadb.synthesis.models import Experiment
 from itadb.synthesis.national_inputs import prepare_national_inputs
 from itadb.synthesis.national_models import NationalInput, NationalReference, ResourceBudget
 from itadb.synthesis.national_runner import run_national, verify_national
+from itadb.synthesis.population_models import PopulationInput, PopulationReference
+from itadb.synthesis.population_runner import run_population, verify_population
 from itadb.synthesis.runner import run_pilot, verify_run
 
 app = typer.Typer(no_args_is_help=True, help="Itadb data operations. Run from the repository root.")
@@ -242,7 +244,7 @@ def synthesize_m4(
         "contracts/m4-budget-v1.json"
     ),
 ) -> None:
-    """Genera o riprende lo snapshot nazionale locale, verificando ogni checkpoint."""
+    """Riferimento storico M4 senza cittadinanza; per il corrente usare synthesize-population."""
     root = Settings().data_dir
     directory = run_national(
         root,
@@ -288,7 +290,7 @@ def synthesize_citizenship(
         "contracts/m4-budget-v1.json"
     ),
 ) -> None:
-    """Assegna cittadinanze in una nuova versione, conservando gli attributi M4."""
+    """Arricchimento storico dopo M4; per l'ordine corrente usare synthesize-population."""
     root = Settings().data_dir
     base = NationalInput.model_validate_json((base_run / "input.json").read_bytes())
     directory = run_citizenship(
@@ -310,4 +312,53 @@ def verify_citizenship_command(
 ) -> None:
     """Rilegge base e nuova versione, verificando cittadinanza e attributi immutati."""
     result = verify_citizenship(run, base_run)
+    typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
+
+
+@app.command("synthesize-population")
+def synthesize_population(
+    inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    citizenship_inputs: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-m4-national-v1.json"
+    ),
+    citizenship_contract: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/istat-citizenship-v1.json"
+    ),
+    reference: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/population-reference-v1.json"
+    ),
+    budget: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
+        "contracts/m4-budget-v1.json"
+    ),
+) -> None:
+    """Riferimento corrente: sesso/età, geografia, cittadinanza, poi famiglie."""
+    root = Settings().data_dir
+    national = prepare_national_inputs(root, inputs, contract)
+    citizenship = prepare_citizenship_inputs(
+        root, citizenship_inputs, citizenship_contract, national
+    )
+    directory = run_population(
+        root,
+        PopulationInput(national=national, citizenship=citizenship),
+        PopulationReference.model_validate_json(reference.read_bytes()),
+        ResourceBudget.model_validate_json(budget.read_bytes()),
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "snapshot": str(directory),
+                "data_kind": "synthetic",
+                "public_release": False,
+            }
+        )
+    )
+
+
+@app.command("verify-population")
+def verify_population_command(
+    run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+) -> None:
+    """Verifica lo snapshot corrente e gli attributi fissati prima delle famiglie."""
+    result = verify_population(run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))

@@ -58,7 +58,7 @@ Le versioni precedenti restano immutabili.
 La [revisione umana di progetto](docs/reviews/m3-human-review.md) accetta M3
 come prima versione e consente l'avvio di [M4](docs/plans/m4-national-synthesis.md).
 La [graduatoria di fedeltà](docs/model-fidelity.md) privilegia **età/sesso,
-geografia, composizione familiare**, in quest'ordine, ed evolve con il progetto.
+geografia, cittadinanza, composizione familiare**, in quest'ordine (versione 5).
 In M3 la composizione familiare casuale vincolata è accettata; l'assegnazione
 provinciale/comunale è assente dal pilota storico e viene implementata da M4.
 
@@ -76,13 +76,23 @@ esterna delle composizioni familiari. La [valutazione disclosure](docs/reviews/m
 mantiene i microdati locali e prepara solo 400 aggregati regionali decennali;
 nessuna pubblicazione automatica, API di microdati o certificazione statistica.
 
-Il [riepilogo delle integrazioni di dati esterni](docs/population-data-integrations.md)
-registra **quattro passaggi completati**: sesso/età, geografia, famiglie e
-[cittadinanza](docs/citizenship.md). La versione arricchita conserva tutti gli
+Il [riepilogo delle integrazioni di dati esterni](docs/population.md)
+ordina le quattro integrazioni per priorità: **sesso/età, geografia,
+[cittadinanza](docs/citizenship.md), famiglie**. I primi tre passaggi rispettano
+esattamente i conteggi osservati disponibili; per le famiglie sono calibrati
+numero e classi dimensionali, mentre la composizione per età e cittadinanza
+resta casuale e non calibrata. La versione arricchita conserva tutti gli
 attributi M4 e aggiunge `citizenship_code` a 58.943.464 individui: 53.572.213
 nella categoria italiana, 5.371.251 nella popolazione straniera, inclusi 525
 apolidi. Margini STR/RCS esatti; incrocio età–singola cittadinanza sintetico.
 Il riferimento M4 originale resta immutabile; i microdati rimangono locali.
+
+Il percorso corrente [population-reference/1](docs/population.md#pipeline-corrente)
+applica questo ordine anche agli script: `synthesize-population` genera
+individui e geografia, assegna la cittadinanza e infine compone le famiglie.
+`verify-population` controlla che il quarto passaggio conservi ogni attributo
+dei primi tre. Contratto, manifest e rapporto registrano l'ordine v5.
+M4 e l'arricchimento successivo restano riferimenti storici riproducibili.
 
 ## Stack e motivazione
 

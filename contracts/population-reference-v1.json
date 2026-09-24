@@ -1,0 +1,11 @@
+{
+  "schema_version": "population-reference/1",
+  "fidelity_version": 5,
+  "seed": 1701,
+  "large_household_size": 6,
+  "priorities": ["sex_age", "geography", "citizenship", "households"],
+  "household_allocation": "random_within_municipality_adult_constraints",
+  "country_age_assumption": "conditional_exchangeability",
+  "household_age_citizenship_relations": "not_calibrated",
+  "distribution": "local_only"
+}

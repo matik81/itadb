@@ -1,4 +1,4 @@
-"""Measured M4 generation/audit/recovery on explicitly invented load constraints."""
+"""Historical M4 benchmark; use benchmark_population.py for the current reference."""
 
 import argparse
 import hashlib
