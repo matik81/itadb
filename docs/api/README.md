@@ -1,4 +1,39 @@
-# API pubbliche v1 e v2
+# API della popolazione e delle evidenze
+
+## v3 — popolazione sintetica
+
+Tutti i percorsi seguenti sono GET. Dietro il proxy locale hanno prefisso `/api`.
+
+| Percorso | Contenuto |
+|---|---|
+| `/v3/populations` | Snapshot pubblicati, conteggi e natura sintetica |
+| `/v3/populations/{id}` | Riferimento, fonti, modello, rapporto e controlli DB |
+| `/v3/populations/{id}/map` | Confini regionali e marcatori comunali, non residenze |
+| `/v3/populations/{id}/municipalities` | Ricerca nome/codice, regione e cursore |
+| `/v3/populations/{id}/persons` | Individui filtrati per comune, sesso, età e cittadinanza |
+| `/v3/populations/{id}/persons/{person_id}` | Individuo della versione selezionata |
+| `/v3/populations/{id}/households` | Famiglie per comune e dimensione |
+| `/v3/populations/{id}/households/{household_id}` | Famiglia e tutti i componenti |
+| `/v3/populations/{id}/distributions` | Istogrammi sesso/età con filtri territoriali e individuali |
+| `/v3/populations/{id}/validation` | Conteggi confrontati, celle discordanti e scostamento massimo |
+| `/v3/populations/{id}/comparison` | Singoli vincoli di un comune e conteggi sintetici corrispondenti |
+
+Le liste di persone e famiglie richiedono `municipality_code` a sei cifre;
+`limit` è al massimo 500 e `next_cursor` va passato come `after`. Mantenere
+snapshot, filtri, `sort_by` e `direction` invariati tra pagine. Cambiare una
+selezione azzera il cursore. Gli ID individuali sono locali allo snapshot.
+Età 100 con `age_is_lower_bound=true` significa 100+. L'API corrente non
+contiene latitudine/longitudine individuali: `/map` dichiara espressamente
+`representation=municipality_aggregates`.
+
+Le distribuzioni derivano dai record importati. `/comparison` richiede un
+comune e il tipo `sex_age`, `foreign_age`, `citizenship` o `household_size`.
+Il rapporto originale della generazione mantiene il proprio storico
+`public_release=false`; la pubblicazione applicativa ha una propria identità
+e controlli distinti, descritti nell'[ADR 0015](../adr/0015-population-product.md).
+
+## API storiche v1 e v2
+
 
 FastAPI espone OpenAPI 3.1 a `/openapi.json`, Swagger a `/docs`, ReDoc a `/redoc`.
 Nel Compose il prefisso esterno è `/api`: <http://localhost:8080/api/docs>.
@@ -51,7 +86,8 @@ release: pagina vuota. DB indisponibile o timeout: 503. Gli errori gestiti seguo
 `application/problem+json` con request_id. Il gateway può emettere 429; il suo corpo è
 quello di Nginx. La risposta contiene sempre un nuovo X-Request-ID generato dall'app.
 
-Nessuna scrittura, SQL arbitrario, ricerca individuale o download massivo via API sincrona.
+Le API v1/v2 non espongono individui. Nessuna API accetta scritture, SQL arbitrario
+o download individuali nazionali illimitati tramite una singola richiesta.
 Le API pubbliche di lettura non richiedono login nella v0.1. Prima della produzione definire
 fair-use, caching, budget di risorse e monitoraggio. Export grandi saranno job asincroni
 con manifest e URL firmati, non una pagina JSON senza limite.

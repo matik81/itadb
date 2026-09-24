@@ -1,4 +1,34 @@
-# Modello dati della v0.1
+# Modello dati
+
+## Popolazione sintetica — prodotto corrente
+
+La revisione `0006_population_product.sql` aggiunge lo schema `population`.
+
+- `snapshot`: identità del run, hash del manifest, riferimento, conteggi, modello,
+  fonti, rapporto originale e controlli di pubblicazione; stato loading/published.
+- `municipality` e `region`: geografia dello stesso riferimento, nomi, gerarchie,
+  confini semplificati per visualizzazione e punti rappresentativi comunali.
+- `person`: tutti gli individui, coorti di nascita, sesso, cittadinanza, comune,
+  famiglia nullable e adulto di riferimento. Nessuna coordinata individuale.
+- `household`: tutte le famiglie, comune e numero di componenti.
+- `cell`: conteggi calcolati dai record importati per comune/sesso/età/cittadinanza.
+- `validation`: vincolo di origine e conteggio effettivo per sesso/età, STR, RCS e
+  dimensione familiare; lo scostamento impedisce la pubblicazione.
+
+Gli ID delle persone e famiglie sono univoci entro snapshot. Partizioni per
+versione e indici compatti evitano hash testuali ripetuti per ogni individuo.
+Il caricamento verifica per insiemi appartenenza territoriale, riferimenti
+familiari, dimensioni, adulto di riferimento e minori assegnati. I trigger
+per istruzione bloccano modifiche alle partizioni pubblicate. Le viste
+`api.population_*` mostrano solo versioni pubblicate. L'API legge queste
+viste con ruolo reader; non accede allo schema `population` direttamente.
+
+L'età è derivata alla data dello snapshot secondo `year-start-cohort/1`;
+100+ resta un limite inferiore, non un'età individuale esatta. La pubblicazione
+applicativa non cambia il manifest storico del generatore né il suo campo
+`public_release=false`. [ADR 0015](adr/0015-population-product.md).
+
+## Archivio storico degli aggregati (M0–M2)
 
 Il DDL autorevole è nelle revisioni `migrations/sql/0001_foundation.sql`–
 `0005_geographic_publication.sql`; l'upgrade è gestito da Alembic.

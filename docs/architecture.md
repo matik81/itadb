@@ -1,129 +1,96 @@
 # Architettura
 
-## Decisione
+## Prodotto e workflow
 
-Separare il database che risponde alle API dall'archivio che alimenta elaborazioni e
-riproducibilità. PostgreSQL 17/PostGIS 3.5 serve metadati e aggregati indicizzati;
-Parquet/Zstandard conserva risultati analitici; DuckDB esegue trasformazioni locali
-colonnari. Il codice di acquisizione e pubblicazione è Python 3.13 con dipendenze uv
-bloccate. React/TypeScript consuma il contratto FastAPI/OpenAPI, senza accesso diretto al DB.
+Il prodotto rende interrogabile la popolazione sintetica italiana. Un monolite
+Python contiene generazione, pubblicazione e API come moduli separati; sono
+eseguiti in processi diversi. La generazione è un workflow CLI consultabile su
+GitHub. Database, API e frontend costituiscono l'applicazione da distribuire.
+[ADR 0015](adr/0015-population-product.md).
 
 ```mermaid
-flowchart LR
-  S[ISTAT / Eurostat / future fonti] --> C[Connettori limitati]
-  C --> R[Originali + SHA-256 + manifest]
-  R --> T[Contratto e normalizzazione]
-  T --> Q{Quality gate}
-  Q -->|fallito| X[Quarantena + report]
-  Q -->|superato| P[Parquet versionato]
-  P --> L[COPY in staging + transazione]
-  L --> D[(PostgreSQL / PostGIS)]
-  D --> V[Viste delle release pubblicate]
-  V --> A[FastAPI / ruolo read-only]
-  A --> W[Web app e utenti API]
+flowchart TB
+  S[Fonti statistiche] --> C[Acquisizione: originali e checksum]
+  C --> I[Ammissione tramite contratti versionati]
+  I --> G[Generazione: sesso/età, geografia, cittadinanza, famiglie]
+  G --> Q[Audit indipendente dei Parquet]
+  Q --> P[Snapshot immutabile con manifest e rapporto]
+  P --> L[Importatore: audit, COPY e confronti PostgreSQL]
+  L --> D[(Database della popolazione)]
+  D --> A[API v3 di sola lettura]
+  A --> W[Web: mappa, individui, famiglie]
+  A --> E[Web: fonti, metodo, verifiche]
+  A -. futuro .-> M[App mobile]
 ```
 
-Nella v0.1 il percorso completo supporta la fixture demo e il campione regionale ISTAT
-2024 revisionato e il [perimetro M2](sources/istat-m2.md). Altri dataset SDMX
-necessitano onboarding e adapter specifici.
-Le viste e le API escludono dati non pubblicati. L'archivio locale implementato usa path
-relativi e contenuti indirizzati per checksum; S3 è una destinazione futura, non presente.
-La pubblicazione ISTAT conserva tutte le evidenze nel medesimo archivio condiviso dai
-worker. Le revisioni sono serializzate per dataset/periodo. Le API v2 preservano gli stati
-upstream e la v1 continua a servire le release compatibili: [ADR 0006](adr/0006-istat-publication.md).
+Le pipeline M0–M2 e le API v1/v2 conservano gli aggregati e le evidenze
+storiche. Non sono una dipendenza della popolazione: il suo importatore usa
+la geografia e i contratti dello stesso snapshot 2025, senza passare dalle
+osservazioni M2 di altri anni.
 
-## Confini e scalabilità
+## Archivio e database
 
-- Monolite modulare, processi distinti per API e batch. Nessun lavoro lungo nel ciclo HTTP.
-- La PK delle osservazioni `(release_id, series_id, period, territory_id)` corrisponde alle
-  query servite. Release, serie e periodo sono filtri fissi; paginazione keyset, massimo
-  500 righe. Nessun OFFSET crescente, SELECT nazionale illimitato o conteggio totale per pagina.
-- Otto partizioni hash per release limitano l'overhead di pianificazione e consentono pruning.
-  È una baseline da misurare, non un numero universalmente ottimale. Una release grande non
-  viene suddivisa tra queste partizioni; è un limite deliberato della fase aggregata.
-- Pool di 8 connessioni per processo, timeout SQL 5 s e connessioni 5 s. Aumentando i worker
-  il budget è `repliche × processi × pool_max_size`; riservare capacità a import e manutenzione.
-  PgBouncer e repliche di lettura si introducono dopo misure di concorrenza e consistenza.
-- COPY verso staging e insert set-based; lettura Parquet in batch da 10.000 righe. Niente
-  INSERT per ogni osservazione. I trigger di immutabilità costano: non copiare questa strategia
-  riga per riga nel futuro caricamento di decine di milioni di agenti.
-- Le geometrie sono separate dalle osservazioni; GiST per filtri spaziali. Servire confini
-  semplificati per singolo territorio in M2, con limite di vertici; vector tiles restano futuri.
-- DuckDB limita memoria e thread nella normalizzazione; Parquet abilita lettura selettiva
-  di colonne e gruppi di righe. Preferire file da circa 128–512 MiB come ipotesi di prova,
-  senza una partizione per persona/comune o una miriade di file piccoli.
+Parquet/Zstandard conserva i risultati riproducibili. PostgreSQL 17/PostGIS 3.5
+conserva **tutti** gli individui e le famiglie pubblicati. Gli identificativi
+int64 sono locali allo snapshot; ogni chiave include `snapshot_id`. Gli
+attributi individuali sono colonne tipizzate, non documenti JSON.
 
-## Sintesi pilota M3 e popolazione nazionale locale M4
+Persone, famiglie, celle statistiche e confronti sono partizionati per
+snapshot. Il catalogo usa un ID bigint compatto e conserva run ID SHA-256 e
+checksum del manifest per collegarlo all'archivio. Gli indici servono lettura
+per ID, selezione comunale e componenti di una famiglia. Eventuali indici
+aggiuntivi devono essere giustificati da piani e misure delle query reali.
 
-Il [pilota M3](synthesis-m3.md) implementa un batch locale per una sola regione,
-senza nuove dipendenze o schema DB. `src/itadb/synthesis/` separa input ammessi,
-generatore, verificatore SQL dei Parquet e archivio degli esperimenti.
-La CLI non pubblica record virtuali nelle viste delle osservazioni ufficiali.
-Limite rigido: 200.000 residenti e 100.000 famiglie; output immutabile, seed,
-provenienza e sensibilità registrati. [ADR 0008](adr/0008-synthesis-pilot.md).
-Il riferimento M3 adottato usa 6+ = 6 e seed 1701. Le
-[priorità di fedeltà](model-fidelity.md) guidano le evoluzioni: l'assegnazione
-comunale/provinciale non è presente nei record M3 e costituisce un primo
-requisito realizzato da [M4](synthesis-m4.md).
+L'importazione è una transazione: COPY a blocchi territoriali, verifica delle
+relazioni e delle coorti, distribuzioni calcolate dai record PostgreSQL e
+confronto con gli input ammessi. Non si carica la popolazione nazionale in
+liste Python. Gli errori lasciano rapporti di quarantena, nessuno snapshot
+parzialmente visibile. Un lock transazionale serializza i retry del run.
 
-M4 usa DuckDB per espandere le celle e assegnare famiglie nello stesso comune,
-con batch provinciali fino a 5M persone. Il riferimento 2024/2025 genera
-58.943.464 record in 107 batch, con checkpoint e audit separato. Il run misurato
-usa circa 1,09 GiB RSS e 240 MiB per lo snapshot, senza proiezione nazionale
-nel DB. Identità di input/codice/ambiente e rename locale rendono verificabili
-retry e completamento. [ADR 0012](adr/0012-national-territorial-snapshots.md).
+I record pubblicati sono protetti da trigger per istruzione sulle partizioni,
+per evitare un controllo per ciascuno dei milioni di individui importati.
+Il controllo delle relazioni è per insiemi durante la pubblicazione; non è
+un insieme di foreign key eseguite riga per riga durante COPY. Il ruolo reader
+vede esclusivamente le viste `api.*`; l'importatore usa il ruolo amministrativo
+locale. L'immutabilità applicativa non protegge da un amministratore che
+rimuova i trigger. [Schema e garanzie](data-model.md).
 
-Il riferimento corrente [population-reference/1](population.md#pipeline-corrente)
-riusa ammissioni e partizioni territoriali, eseguendo sesso/età, geografia,
-cittadinanza e infine famiglie. Un Parquet intermedio conserva gli individui
-dei primi tre passaggi; la fase familiare lo legge e l'audit verifica che ne
-conservi tutti gli attributi. I due riferimenti precedenti restano verificabili
-come evidenze storiche. [ADR 0014](adr/0014-ordered-population.md).
+## API e frontend
 
-L'individuo statistico non è un agente LLM e non richiede un processo per persona.
-La generazione nazionale è vettorizzata, per blocchi territoriali, riproducibile con seed
-e versioni di input/algoritmo. Vietata la ricostruzione o associazione a identità reali.
+FastAPI/Pydantic espone un contratto OpenAPI da cui sono generati i tipi
+TypeScript. Le API non leggono file della generazione e non eseguono calcoli
+di sintesi. Le query usano parametri, filtri e limiti; le liste di individui e
+famiglie richiedono snapshot e comune, usano cursori e al massimo 500 righe.
+I confronti e gli istogrammi nazionali leggono distribuzioni derivate dai
+record importati, senza riscansionare 59 milioni di righe a ogni richiesta.
 
-Entità previste:
+Il pool è configurabile tramite `ITADB_POOL_MIN_SIZE` e `ITADB_POOL_MAX_SIZE`,
+con default 1–8 connessioni per processo. Timeout connessione e SQL: 5 secondi.
+Il budget totale va dimensionato come repliche × processi × pool massimo.
+La readiness verifica anche le viste della popolazione. Errori e access log
+non riportano credenziali, query string o valori ricevuti.
 
-| Entità | Chiave e rappresentazione | Vincoli da dimostrare |
-|---|---|---|
-| Run di sintesi | UUID; release input, seed, algoritmo, parametri, commit | Nessun input implicito o mutable |
-| Snapshot | run + data simulata + versione schema | Immutabile; confronto tra scenari esplicito |
-| Famiglia | snapshot + bigint household_id; territorio bigint | Cardinalità, tipologia e disponibilità abitazione |
-| Persona | snapshot + bigint person_id; household_id; attributi tipizzati | Integrità familiare, domini, vincoli di età |
-| Abitazione | snapshot + bigint dwelling_id; territorio; tipologia | Nessun indirizzo reale identificante necessario |
-| Lavoro/servizi | tabelle collegate, cataloghi tipizzati | Coerenza territoriale e margini osservati |
-| Evento | scenario + intervallo + id; append-only | Nessun clone completo dello stato a ogni passo |
+La web app React/Vite è statica. La mappa usa SVG per i confini regionali e
+Canvas per i punti comunali, con zoom, trascinamento, controlli da tastiera e
+ricerca territoriale alternativa. Istogrammi ed elenchi sono moduli sovrapposti.
+La sezione Metodo collega fonti, modello e verifiche allo snapshot selezionato.
 
-Snapshot completi in Parquet, partizionati inizialmente per snapshot e macroarea/regione;
-ordinamento locale per territorio/famiglia. Identificativi int64 densi nel run; categorie
-in interi piccoli/dizionari. Separare attributi rari e relazioni; evitare JSON per individuo,
-UUID multipli per ogni relazione e wide table con centinaia di colonne vuote.
-PostgreSQL serve catalogo, risultati aggregati e sottoinsiemi interattivi; un'eventuale
-proiezione nazionale di agenti nel DB richiede un ADR e benchmark di query reali.
+Il riferimento corrente assegna comuni ma non coordinate individuali. I
+punti comunali sono rappresentativi dei territori e dichiarati aggregati.
+La futura residenza latitudine/longitudine richiederà una nuova integrazione,
+un nuovo snapshot, indici spaziali e query per area visibile. La mappa dovrà
+modulare punti e aggregazioni al variare dello zoom, senza trasferire tutta
+la popolazione nazionale al browser a ogni richiesta.
 
-Ordine di grandezza **illustrativo**, non misura: 60 milioni di righe × 64 byte di attributi
-utili = 3,84 GB decimali prima di intestazioni, indici, relazioni, geometrie, versioni e WAL.
-Dieci snapshot moltiplicano lo spazio del nucleo per dieci. Questo non è un preventivo RAM
-o disco: compressione, correlazioni e query cambiano il risultato. Misurare RSS, spazio,
-latenza e throughput a 1M, 10M e scala nazionale prima di scegliere capacità produttiva.
+## Destinazione gestita
 
-`scripts/benchmark.py` è solo una prova colonnare ripetibile a bassa entropia. Non misura
-la sintesi, PostgreSQL, la concorrenza web o la correttezza statistica. Non estrapolarne i
-tempi linearmente a una popolazione vera. Per prove complete registrare hardware, versioni,
-distribuzione dei dati, p50/p95/p99, picco RAM, WAL e piani EXPLAIN (ANALYZE, BUFFERS).
+La destinazione richiesta è nell'ecosistema Vercel, Neon, Railway e Cloudflare.
+Non è stato configurato un deployment. Il frontend usa `VITE_API_BASE_URL`;
+l'API usa `ITADB_DATABASE_URL`, CORS esplicito e un pool limitato. Il workflow
+locale non è necessario sui server dell'applicazione. I requisiti PostGIS,
+spazio reale, budget connessioni e query misurate guideranno la scelta dei
+servizi; nominarli non implica compatibilità o capacità già verificate.
 
-## Operazioni future e criteri di adozione
-
-S3 compatibile quando archivio e worker si distribuiscono; catalogo Iceberg solo se servono
-transazioni del lake, evoluzione schema e lettori multipli. Orchestratore (es. Dagster)
-quando dipendenze, backfill e pianificazioni superano il CLI. ClickHouse o motore equivalente
-solo se aggregazioni concorrenti eccedono PostgreSQL e vengono quantificate. Niente deploy
-Kubernetes prima di un requisito operativo reale.
-
-## Riferimenti verificati il 23 settembre 2026
-
-- [PostgreSQL: partizionamento](https://www.postgresql.org/docs/17/ddl-partitioning.html)
-- [PostGIS: indici spaziali](https://postgis.net/documentation/faq/spatial-indexes/)
-- [DuckDB: Parquet e pushdown](https://duckdb.org/docs/current/data/parquet/overview)
+Compose resta uno strumento di sviluppo locale. Nessun microservizio,
+scheduler, sistema email o dipendenza cartografica è stato aggiunto.
+Le misure nazionali e i limiti effettivi sono in [validation.md](validation.md).

@@ -362,3 +362,14 @@ def verify_population_command(
     """Verifica lo snapshot corrente e gli attributi fissati prima delle famiglie."""
     result = verify_population(run)
     typer.echo(json.dumps({"run_id": result["run_id"], "verified": True, "public_release": False}))
+
+
+@app.command("publish-population")
+def publish_population_command(
+    run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+) -> None:
+    """Pubblica nel database applicativo una popolazione già generata e verificata."""
+    from itadb.population.publish import publish_population
+
+    snapshot_id = publish_population(Settings(), run)
+    typer.echo(json.dumps({"snapshot_id": snapshot_id, "data_kind": "synthetic"}))

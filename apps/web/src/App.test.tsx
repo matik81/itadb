@@ -1,252 +1,213 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
-afterEach(() => vi.unstubAllGlobals());
-it('selects one M2 category, period and level and resets pagination', async () => {
-  const coverage = [
-    {
-      period: '2024-01-01',
-      series_code: 'pop',
-      title: 'Popolazione totale',
-      unit: 'persons',
-      row_count: 21,
-      territory_snapshot: '2024-01-01',
-    },
-    {
-      period: '2021-12-31',
-      series_code: 'hh',
-      title: 'Famiglie totali',
-      unit: 'households',
-      row_count: 8032,
-      territory_snapshot: '2021-12-31',
-    },
-  ];
-  const fetchMock = vi.fn(async (url: string) => ({
-    ok: true,
-    json: async () => {
-      if (url.endsWith('/v2/releases'))
-        return [
-          {
-            id: 'm2',
-            dataset_id: 'istat_m2',
-            title: 'M2',
-            series_code: 'pop',
-            reference_period: '2024-01-01',
-            published_at: '2026-09-23T00:00:00Z',
-            retrieved_at: '2026-09-23T00:00:00Z',
-            raw_sha256: 'a'.repeat(64),
-            is_demo: false,
-          },
-        ];
-      if (url.endsWith('/coverage')) return coverage;
-      if (url.includes('/crosswalks')) return { items: [], next_cursor: null };
-      if (url.includes('/territories')) return { items: [], next_cursor: null };
-      if (url.includes('/observations'))
-        return {
-          items: [
-            {
-              territory_id: 8,
-              territory_name: 'Regione di test',
-              territory_code: '01',
-              level: 'region',
-              value: '1200',
-              status: 'unflagged_upstream',
-            },
-          ],
-          next_cursor: 8,
-        };
-      return [];
-    },
-  }));
-  vi.stubGlobal('fetch', fetchMock);
-  render(<App />);
-  expect(await screen.findByText('Regione di test')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Successive →' }));
-  await waitFor(() =>
-    expect(fetchMock.mock.calls.some(([url]) => url.includes('after=8'))).toBe(true),
-  );
-  fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: '2021-12-31' } });
-  expect(await screen.findByText('Unità: famiglie')).toBeInTheDocument();
-  await waitFor(() =>
-    expect(
-      fetchMock.mock.calls.some(
-        ([url]) =>
-          url.includes('series=hh') && url.includes('period=2021-12-31') && url.includes('after=0'),
-      ),
-    ).toBe(true),
-  );
-  fireEvent.change(screen.getByLabelText('Livello territoriale'), {
-    target: { value: 'municipality' },
-  });
-  await waitFor(() =>
-    expect(fetchMock.mock.calls.some(([url]) => url.includes('level=municipality'))).toBe(true),
-  );
-  expect(screen.getByText(/non sommare totali e dettagli/)).toBeInTheDocument();
-  for (const endpoint of ['coverage', 'quality', 'artifacts']) {
-    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith(`/${endpoint}`))).toHaveLength(1);
-  }
-  fireEvent.click(screen.getByRole('button', { name: 'Successive →' }));
-  await waitFor(() =>
-    expect(fetchMock.mock.calls.some(([url]) => url.includes('after=8'))).toBe(true),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Ordina valore in ordine crescente' }));
-  await waitFor(() =>
-    expect(
-      fetchMock.mock.calls.some(
-        ([url]) =>
-          url.includes('sort_by=value') && url.includes('direction=asc') && url.includes('after=0'),
-      ),
-    ).toBe(true),
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Ordina valore in ordine decrescente' }));
-  await waitFor(() =>
-    expect(
-      fetchMock.mock.calls.some(
-        ([url]) => url.includes('sort_by=value') && url.includes('direction=desc'),
-      ),
-    ).toBe(true),
-  );
-  fireEvent.change(screen.getByLabelText('Stato del dato'), { target: { value: 'missing' } });
-  await waitFor(() =>
-    expect(
-      fetchMock.mock.calls.some(
-        ([url]) => url.includes('status=missing') && url.includes('after=0'),
-      ),
-    ).toBe(true),
-  );
-  fireEvent.change(screen.getByLabelText('Cerca territorio o codice'), {
-    target: { value: 'Alfa' },
-  });
-  fireEvent.submit(screen.getByRole('form', { name: 'Filtri osservazioni' }));
-  await waitFor(() =>
-    expect(
-      fetchMock.mock.calls.some(
-        ([url]) => url.includes('search=Alfa') && url.includes('status=missing'),
-      ),
-    ).toBe(true),
-  );
-});
-it('shows a genuine empty catalog without invented statistics', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
-  render(<App />);
-  expect(await screen.findByText('Nessuna versione pubblicata')).toBeInTheDocument();
-  expect(screen.queryByText('1.200')).not.toBeInTheDocument();
-});
-it('shows an actionable error when the API is unavailable', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503 }));
-  render(<App />);
-  expect(await screen.findByRole('alert')).toHaveTextContent('503');
-  expect(screen.getByRole('button', { name: 'Riprova' })).toBeInTheDocument();
-});
-it('labels demo evidence and renders missing values without turning them into zero', async () => {
-  const release = {
-    id: 'demo-id',
-    title: 'Fixture',
-    reference_period: '2025-01-01',
-    is_demo: true,
-    source_id: 'demo',
-    series_code: 'population_total',
-    upstream_url: 'https://example.org',
-    license_url: 'https://example.org/license',
-    retrieved_at: '2025-01-02T00:00:00Z',
-    published_at: '2025-01-02T00:00:00Z',
-    raw_sha256: 'a'.repeat(64),
-    limitations: 'Valori inventati.',
-  };
+vi.mock('./PopulationMap', () => ({
+  PopulationMap: () => <div aria-label="Mappa territoriale" />,
+}));
+const snapshot = {
+  id: 1,
+  run_id: 'a'.repeat(64),
+  manifest_sha256: 'b'.repeat(64),
+  reference_date: '2025-01-01',
+  household_reference: '2024-12-31',
+  persons: 15,
+  households: 5,
+  municipalities: 1,
+  located_persons: 0,
+  is_fixture: true,
+  data_kind: 'synthetic',
+  published_at: '2026-01-01T12:00:00Z',
+};
+const evidence = {
+  ...snapshot,
+  report: { unassigned_adults: 1 },
+  publication_checks: { database_constraints: true },
+  provenance: {
+    model: { seed: 1701 },
+    country_labels: { '100': 'Italia', '201': 'Albania' },
+    algorithm: 'ordered-population/1.0.0',
+    sources: [
+      {
+        group: 'national',
+        name: 'population_zip',
+        url: 'https://example.org/posas.zip',
+        sha256: 'c'.repeat(64),
+      },
+    ],
+  },
+};
+const municipality = {
+  code: '900001',
+  name: 'Comune inventato',
+  province_code: '900',
+  province_name: 'Provincia inventata',
+  region_code: '90',
+  region_name: 'Regione inventata',
+  persons: 15,
+  households: 5,
+  latitude: null,
+  longitude: null,
+  location_kind: 'municipality_representative_point',
+};
+const person = {
+  person_id: 1,
+  household_id: 1,
+  municipality_code: '900001',
+  sex: 'M',
+  birth_year: 1984,
+  birth_year_upper_bound: null,
+  age: 40,
+  age_is_lower_bound: false,
+  citizenship_code: '100',
+  reference_adult: true,
+  data_kind: 'synthetic',
+};
+let requests: string[];
+let failPersons = false;
+beforeEach(() => {
+  window.location.hash = '';
+  requests = [];
+  failPersons = false;
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => ({
-      ok: true,
-      json: async () => {
-        if (url.includes('/observations'))
-          return {
-            items: [
-              {
-                territory_id: 1,
-                territory_name: 'Alfa',
-                territory_code: 'DEMO001',
-                level: 'municipality',
-                value: null,
-                status: 'missing',
-              },
-            ],
-            next_cursor: null,
-          };
-        if (url.endsWith('/v2/releases')) return [release];
-        return [];
-      },
-    })),
-  );
-  render(<App />);
-  expect(await screen.findByText('Non disponibile')).toBeInTheDocument();
-  expect(screen.getByText('Dimostrazione con dati inventati')).toBeInTheDocument();
-});
-
-it('uses the release series and distinguishes national controls, upstream state and revisions', async () => {
-  const fetchMock = vi.fn(async (url: string) => ({
-    ok: true,
-    json: async () => {
-      if (url.endsWith('/v2/releases'))
-        return [
+    vi.fn(async (input: string) => {
+      const url = new URL(input);
+      requests.push(url.pathname + url.search);
+      let data: unknown;
+      if (url.pathname === '/v3/populations') data = [snapshot];
+      else if (url.pathname.endsWith('/map'))
+        data = {
+          regions: [
+            { code: '90', name: 'Regione inventata', geometry: null, persons: 15, households: 5 },
+          ],
+          municipalities: [municipality],
+          representation: 'municipality_aggregates',
+          individual_coordinates_available: false,
+        };
+      else if (url.pathname.endsWith('/distributions'))
+        data = [
+          { age: 40, sex: 'M', persons: 8 },
+          { age: 40, sex: 'F', persons: 7 },
+        ];
+      else if (url.pathname.endsWith('/validation'))
+        data = [
           {
-            id: 'revision-id',
-            title: 'Popolazione residente',
-            dataset_id: 'istat_population_regions',
-            reference_period: '2024-01-01',
-            territory_snapshot: '2024-01-01',
-            is_demo: false,
-            series_code: 'resident_population_jan1',
-            source_id: 'istat',
-            upstream_url: 'https://example.org/data',
-            license_url: 'https://example.org/license',
-            retrieved_at: '2026-09-23T00:00:00Z',
-            published_at: '2026-09-23T01:00:00Z',
-            upstream_last_update: '2026-03-31T08:03:43Z',
-            upstream_published_at: null,
-            supersedes_release_id: 'previous-id',
-            revision_reason: 'Correzione del campione di test.',
-            attribution: 'Fonte: ISTAT. Conteggi inventati per questo test.',
-            raw_sha256: 'a'.repeat(64),
-            contract_sha256: 'b'.repeat(64),
-            limitations: 'Fixture di test.',
+            kind: 'sex_age',
+            cells: 202,
+            expected: 15,
+            actual: 15,
+            mismatched_cells: 0,
+            max_absolute_error: 0,
           },
         ];
-      if (url.includes('/observations'))
-        return {
+      else if (url.pathname.endsWith('/comparison'))
+        data = [{ kind: 'sex_age', sex: 'M', category: 40, expected: 8, actual: 8 }];
+      else if (url.pathname.endsWith('/persons')) {
+        if (failPersons) return { ok: false, status: 503 };
+        data = { items: [person], next_cursor: url.searchParams.get('after') === '0' ? 1 : null };
+      } else if (url.pathname.endsWith('/households/1'))
+        data = {
+          household_id: 1,
+          municipality_code: '900001',
+          size: 1,
+          data_kind: 'synthetic',
+          members: [person],
+        };
+      else if (url.pathname.endsWith('/households'))
+        data = {
           items: [
-            {
-              territory_id: 1,
-              territory_name: 'Italia',
-              territory_code: 'IT',
-              level: 'country',
-              value: '1000.000000',
-              status: 'unflagged_upstream',
-            },
+            { household_id: 1, municipality_code: '900001', size: 1, data_kind: 'synthetic' },
           ],
           next_cursor: null,
         };
-      if (url.endsWith('/artifacts'))
-        return [{ kind: 'raw', sha256: 'a'.repeat(64), byte_size: 100 }];
-      return [];
-    },
-  }));
-  vi.stubGlobal('fetch', fetchMock);
-  render(<App />);
-  expect(await screen.findByRole('img', { name: 'Italia · totale' })).toBeInTheDocument();
-  const table = within(
-    screen.getByRole('table', { name: 'Osservazioni della versione selezionata' }),
+      else data = evidence;
+      return { ok: true, json: async () => data };
+    }),
   );
-  expect(table.getByText('—')).toBeInTheDocument();
-  expect(screen.getByText('Non accertata')).toBeInTheDocument();
-  expect(screen.getByText('Correzione del campione di test.')).toBeInTheDocument();
-  expect(table.queryByText('Osservato')).not.toBeInTheDocument();
-  expect(screen.queryByText('Dimostrazione con dati inventati')).not.toBeInTheDocument();
-  expect(
-    fetchMock.mock.calls.some(([url]) => url.includes('series=resident_population_jan1')),
-  ).toBe(true);
-  expect(screen.getByRole('link', { name: /provenienza precedente/ })).toHaveAttribute(
-    'href',
-    expect.stringContaining('/v2/releases/previous-id'),
-  );
+});
+afterEach(() => vi.unstubAllGlobals());
+
+async function selectTown() {
+  await screen.findByRole('button', { name: /Comune inventato/ });
+  fireEvent.click(screen.getByRole('button', { name: /Comune inventato/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Esplora i record/ }));
+  await screen.findByRole('button', { name: 'Successivi →' });
+}
+
+describe('Prodotto popolazione', () => {
+  it('usa le API della popolazione e distingue esplicitamente la fixture', async () => {
+    render(<App />);
+    expect(await screen.findByText(/Fixture inventata: dati esclusivamente/)).toBeInTheDocument();
+    expect(requests.every((path) => path.startsWith('/v3/populations'))).toBe(true);
+    expect(screen.getByRole('link', { name: 'Metodo e verifiche' })).toBeInTheDocument();
+  });
+  it('naviga individui e famiglia, applica filtri e azzera la paginazione', async () => {
+    render(<App />);
+    await selectTown();
+    const panel = screen.getByRole('region', { name: 'Record sintetici di Comune inventato' });
+    fireEvent.click(within(panel).getByRole('button', { name: '1 ↗' }));
+    expect(
+      await screen.findByRole('complementary', { name: 'Famiglia virtuale 1' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Successivi →' }));
+    await waitFor(() =>
+      expect(requests.some((p) => p.includes('/persons?') && p.includes('after=1'))).toBe(true),
+    );
+    fireEvent.change(screen.getByLabelText('Cittadinanza'), { target: { value: '201' } });
+    await waitFor(() =>
+      expect(
+        requests.some(
+          (p) =>
+            p.includes('/persons?') && p.includes('citizenship_code=201') && p.includes('after=0'),
+        ),
+      ).toBe(true),
+    );
+  });
+  it('ordina attraverso il backend, non soltanto la pagina corrente', async () => {
+    render(<App />);
+    await selectTown();
+    fireEvent.click(screen.getByRole('button', { name: 'Ordina età in ordine crescente' }));
+    await waitFor(() =>
+      expect(
+        requests.some(
+          (p) => p.includes('/persons?') && p.includes('sort_by=age') && p.includes('after=0'),
+        ),
+      ).toBe(true),
+    );
+  });
+  it('mostra fonti, ipotesi e conteggi di verifica per lo snapshot selezionato', async () => {
+    render(<App />);
+    await selectTown();
+    window.location.hash = '#metodo';
+    fireEvent(window, new HashChangeEvent('hashchange'));
+    expect(await screen.findByRole('heading', { name: 'I conteggi tornano?' })).toBeInTheDocument();
+    expect(await screen.findByText('202')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Popolazione per comune, sesso ed età/ }),
+    ).toHaveAttribute('href', 'https://example.org/posas.zip');
+    expect(
+      screen.getByText(/Composizione casuale rispetto a età e cittadinanza/),
+    ).toBeInTheDocument();
+  });
+  it('mostra errori e riprova senza sostituire record con dati inventati', async () => {
+    failPersons = true;
+    render(<App />);
+    await screen.findByRole('button', { name: /Comune inventato/ });
+    fireEvent.click(screen.getByRole('button', { name: /Comune inventato/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Esplora i record/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('503');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    failPersons = false;
+    fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Riprova' }));
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+  });
+  it('gestisce un catalogo vuoto senza mostrare una popolazione di esempio', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    render(<App />);
+    expect(
+      await screen.findByRole('heading', { name: 'Nessuna popolazione disponibile' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('VERIFICATO')).not.toBeInTheDocument();
+  });
 });

@@ -153,3 +153,27 @@ evidenze per forzare la ripresa: per una ricostruzione usare una nuova root.
 Misure e log dei tentativi sono in `data/reports/citizenship`; le quarantene
 sono in `data/quarantine`. Il log seguito nel terminale è
 `.tools/citizenship-progress.log`. Nessuna distribuzione pubblica automatica.
+
+
+## Popolazione nel database applicativo
+
+`itadb publish-population --run PERCORSO` importa uno snapshot corrente già
+completato. Richiede `ITADB_ADMIN_DATABASE_URL`, schema migrato e archivio
+originali/contratti nello stesso `ITADB_DATA_DIR`. Il comando verifica prima
+lo snapshot e conserva avanzamento ed esito in `reports/population-publication`.
+Famiglie, individui e distribuzioni diventano visibili in una sola transazione.
+Un retry identico non duplica dati. Le partizioni pubblicate sono immutabili.
+
+API e frontend non montano l'archivio della generazione. Il ruolo reader accede
+solo alle viste. La sezione Metodo legge prove e provenienza dallo stesso DB,
+quindi non dipende dalla macchina dove sono stati generati i Parquet.
+
+La precedente esclusione dei microdati dalle API riguarda il percorso storico
+M4; per il prodotto corrente è superata dall'ADR 0015. Nessun record sintetico
+entra in Git. La destinazione prevista è su servizi gestiti: nessun deployment
+Internet o provider è stato configurato in questa fase.
+
+Un errore di scrittura del rapporto locale dopo il commit viene distinto da
+un rollback: il diagnostico riporta `published=true` e lo snapshot ID. Il
+retry riconosce la pubblicazione già completata. File e database non
+partecipano a una transazione distribuita.

@@ -23,3 +23,5 @@ Stato iniziale: adottate per lo scaffold, da validare sulle fonti reali.
 Scartati ora: MongoDB come archivio primario delle osservazioni (schema/relazioni/indici),
 un unico database per batch e tutte le query interattive, Kafka/Kubernetes come prerequisiti,
 una tabella JSONB per 60 milioni di persone. La scelta non esclude rivalutazioni documentate.
+
+- [0015 — popolazione interrogabile come prodotto](0015-population-product.md)

@@ -36,11 +36,13 @@ cp -n .env.example .env
 uv sync --locked
 npm --prefix apps/web ci
 docker compose up -d --build --wait
-docker compose run --rm pipeline itadb ingest-demo
 ```
 
-Il catalogo iniziale è vuoto: l’ultimo comando importa tre territori inventati,
-marcati come demo. Non occorrono dati locali preesistenti o download statistici.
+Il catalogo iniziale della popolazione è vuoto. Per popolarlo seguire il
+[workflow della popolazione](population.md), quindi pubblicare lo snapshot
+verificato con `uv run itadb publish-population --run PERCORSO`. Il comando
+usa gli originali e i contratti in `ITADB_DATA_DIR`. Le fixture degli
+aggregati M0 restano testabili via CLI/API v1 e non popolano la nuova web app.
 Web: <http://localhost:8080>. API: <http://localhost:8080/api/docs>.
 Le credenziali di esempio servono esclusivamente allo sviluppo locale.
 
@@ -49,7 +51,6 @@ Per lavorare sui processi applicativi nell’host, avviare solo il database:
 ```sh
 docker compose up -d --wait db
 docker compose run --rm migrate
-uv run itadb ingest-demo
 uv run itadb serve
 ```
 
@@ -66,7 +67,7 @@ La build Compose usa `/api`, servito dal proxy sullo stesso host.
 ## Verifiche
 
 I comandi completi per lint, tipi, test, OpenAPI e build sono nel
-[README](../README.md#verifiche). Per una prima verifica:
+[README](../README.md#verifiche-di-sviluppo). Per una prima verifica:
 
 ```sh
 uv run pytest -m 'not integration'

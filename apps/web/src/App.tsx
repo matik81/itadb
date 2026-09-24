@@ -1,623 +1,486 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Icon } from './Icons';
+import { PopulationMap } from './PopulationMap';
+import { PopulationMethod } from './PopulationMethod';
+import { PopulationRecords, type PersonFilters } from './PopulationRecords';
 import {
-  API_BASE,
-  get,
-  type Artifact,
-  type Page,
-  type Quality,
-  type Release,
-  type Source,
-  type Coverage,
-  type Observation,
-  type TerritoryPage,
-} from './api';
-import { TerritorialHistory } from './TerritorialHistory';
-import { TerritoryDetail } from './TerritoryDetail';
-import { Icon, levelLabels } from './Icons';
-import { SortHeader, type TableSort } from './SortHeader';
+  number,
+  query,
+  repositoryUrl,
+  useResource,
+  type Snapshot,
+  type Evidence,
+  type PopulationMapData,
+  type Distribution,
+} from './population-api';
 
-const number = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 6 });
-const dateTime = (value: string) => new Date(value).toLocaleString('it-IT');
-
+const initialFilters: PersonFilters = { sex: '', citizenship: '', ageMin: 0, ageMax: 100 };
 export function App() {
-  const [releases, setReleases] = useState<Release[]>([]);
-  const [sources, setSources] = useState<Source[]>([]);
-  const [selected, setSelected] = useState('');
-  const [page, setPage] = useState<Page | null>(null);
-  const [quality, setQuality] = useState<Quality[]>([]);
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-  const [after, setAfter] = useState(0);
-  const [error, setError] = useState('');
-  const [evidenceError, setEvidenceError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [retry, setRetry] = useState(0);
-  const [coverage, setCoverage] = useState<Coverage[]>([]);
-  const [selection, setSelection] = useState('');
-  const [level, setLevel] = useState('region');
-  const [territory, setTerritory] = useState<Observation | null>(null);
-  const [sort, setSort] = useState<TableSort>({ field: 'name', direction: 'asc' });
-  const [searchDraft, setSearchDraft] = useState('');
-  const [filters, setFilters] = useState({ search: '', parent: '', status: '' });
-  const [parents, setParents] = useState<TerritoryPage['items']>([]);
-  const [parentError, setParentError] = useState('');
-  const [parentRetry, setParentRetry] = useState(0);
-  const release = releases.find((item) => item.id === selected);
-  const isM2 = release?.dataset_id === 'istat_m2';
-  const chosen = coverage.find((item) => `${item.period}|${item.series_code}` === selection);
-  const parentLevel = isM2
-    ? level === 'municipality'
-      ? 'province'
-      : level === 'province'
-        ? 'region'
-        : null
-    : null;
-  function resetFilters() {
-    setAfter(0);
-    setFilters({ search: '', parent: '', status: '' });
-    setSearchDraft('');
+  const [mode, setMode] = useState(window.location.hash === '#metodo' ? 'method' : 'explore');
+  const [snapshotId, setSnapshotId] = useState(0);
+  const [municipalityCode, setMunicipalityCode] = useState('');
+  const [region, setRegion] = useState('');
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<PersonFilters>(initialFilters);
+  const [records, setRecords] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(window.innerWidth > 700);
+  const [statisticsOpen, setStatisticsOpen] = useState(window.innerWidth > 700);
+  const snapshots = useResource<Snapshot[]>('/v3/populations');
+  const evidence = useResource<Evidence>(snapshotId ? `/v3/populations/${snapshotId}` : null);
+  const map = useResource<PopulationMapData>(
+    snapshotId ? `/v3/populations/${snapshotId}/map` : null,
+  );
+  const municipalities = map.data?.municipalities ?? [];
+  const municipality = municipalities.find((m) => m.code === municipalityCode) ?? null;
+  const labels = (evidence.data?.provenance.country_labels ?? {}) as Record<string, string>;
+  const distributionQuery = query({
+    municipality_code: municipalityCode,
+    region_code: region,
+    sex: filters.sex,
+    citizenship_code: filters.citizenship,
+    age_min: filters.ageMin,
+    age_max: filters.ageMax,
+  });
+  const distribution = useResource<Distribution[]>(
+    snapshotId ? `/v3/populations/${snapshotId}/distributions?${distributionQuery}` : null,
+  );
+  useEffect(() => {
+    if (snapshots.data?.length && !snapshotId)
+      setSnapshotId((snapshots.data.find((s) => !s.is_fixture) ?? snapshots.data[0]).id);
+  }, [snapshots.data, snapshotId]);
+  useEffect(() => {
+    const handle = () => setMode(window.location.hash === '#metodo' ? 'method' : 'explore');
+    window.addEventListener('hashchange', handle);
+    return () => window.removeEventListener('hashchange', handle);
+  }, []);
+  const filteredMunicipalities = useMemo(
+    () =>
+      municipalities
+        .filter(
+          (m) =>
+            (!region || m.region_code === region) &&
+            (!search ||
+              `${m.name} ${m.code}`
+                .toLocaleLowerCase('it')
+                .includes(search.toLocaleLowerCase('it'))),
+        )
+        .sort((a, b) => a.name.localeCompare(b.name, 'it')),
+    [municipalities, region, search],
+  );
+  const histogram = useMemo(
+    () =>
+      Array.from({ length: 11 }, (_, i) => ({
+        label: i === 10 ? '100+' : `${i * 10}–${i * 10 + 9}`,
+        male: 0,
+        female: 0,
+      })),
+    [],
+  );
+  const bins = histogram.map((b) => ({ ...b }));
+  let males = 0,
+    females = 0;
+  for (const row of distribution.data ?? []) {
+    const bin = bins[Math.min(10, Math.floor(row.age / 10))];
+    if (row.sex === 'M') {
+      bin.male += row.persons;
+      males += row.persons;
+    } else {
+      bin.female += row.persons;
+      females += row.persons;
+    }
   }
-  function changeSort(next: TableSort) {
-    setSort(next);
-    setAfter(0);
+  const maxBin = Math.max(1, ...bins.map((b) => b.male + b.female));
+  function selectMunicipality(code: string) {
+    setMunicipalityCode(code);
+    setRecords(false);
+    setSearch('');
+    const m = municipalities.find((item) => item.code === code);
+    if (m) setRegion(m.region_code);
   }
-  const unit =
-    { persons: 'persone', households: 'famiglie', dwellings: 'abitazioni' }[
-      chosen?.unit ?? 'persons'
-    ] ?? chosen?.unit;
-
-  useEffect(() => {
-    setCoverage([]);
-    setSelection('');
-    setQuality([]);
-    setArtifacts([]);
-    setEvidenceError('');
-    if (!release) return;
-    const controller = new AbortController();
-    Promise.all([
-      isM2
-        ? get<Coverage[]>(`/v2/releases/${release.id}/coverage`, controller.signal)
-        : Promise.resolve([]),
-      get<Quality[]>(`/v2/releases/${release.id}/quality`, controller.signal),
-      get<Artifact[]>(`/v2/releases/${release.id}/artifacts`, controller.signal),
-    ])
-      .then(([items, checks, evidenceFiles]) => {
-        if (controller.signal.aborted) return;
-        setCoverage(items);
-        setQuality(checks);
-        setArtifacts(evidenceFiles);
-        const initial =
-          items.find(
-            (item) =>
-              item.series_code === release.series_code && item.period === release.reference_period,
-          ) ?? items[0];
-        setSelection(initial ? `${initial.period}|${initial.series_code}` : '');
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setEvidenceError(String(reason.message));
-      });
-    return () => controller.abort();
-  }, [release, isM2, retry]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError('');
-    Promise.all([
-      get<Release[]>('/v2/releases', controller.signal),
-      get<Source[]>('/v2/sources', controller.signal),
-    ])
-      .then(([items, registered]) => {
-        setReleases(items);
-        setSources(registered);
-        setSelected(items[0]?.id ?? '');
-        setAfter(0);
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setError(String(reason.message));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [retry]);
-
-  useEffect(() => {
-    setParents([]);
-    setParentError('');
-    if (!release || !parentLevel || !chosen?.territory_snapshot) return;
-    const controller = new AbortController();
-    const query = new URLSearchParams({
-      release_id: release.id,
-      snapshot: chosen.territory_snapshot,
-      level: parentLevel,
-      limit: '500',
-    });
-    get<TerritoryPage>(`/v2/territories?${query}`, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (result.next_cursor !== null)
-          throw new Error('Elenco dei territori incompleto. Riprova.');
-        setParents(result.items.sort((a, b) => a.name.localeCompare(b.name, 'it')));
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setParentError(String(reason.message));
-      });
-    return () => controller.abort();
-  }, [release, parentLevel, chosen?.territory_snapshot, parentRetry]);
-
-  useEffect(() => {
-    if (!release || (isM2 && !chosen)) return;
-    const controller = new AbortController();
-    setPage(null);
-    setLoading(true);
-    setError('');
-    const query = new URLSearchParams({
-      release_id: release.id,
-      period: chosen?.period ?? release.reference_period,
-      series: chosen?.series_code ?? release.series_code,
-      after: String(after),
-      limit: '100',
-      sort_by: sort.field,
-      direction: sort.direction,
-    });
-    if (isM2) query.set('level', level);
-    if (filters.search) query.set('search', filters.search);
-    if (filters.parent) query.set('parent_code', filters.parent);
-    if (filters.status) query.set('status', filters.status);
-    get<Page>(`/v2/observations?${query}`, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        setPage(result);
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setError(String(reason.message));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [release, after, retry, chosen, isM2, level, sort, filters]);
-
+  function selectSnapshot(id: number) {
+    setSnapshotId(id);
+    setMunicipalityCode('');
+    setRegion('');
+    setSearch('');
+    setFilters(initialFilters);
+    setRecords(false);
+  }
+  const activeSnapshot = snapshots.data?.find((s) => s.id === snapshotId);
+  const activeRegion = map.data?.regions.find((r) => r.code === region);
+  const scope = municipality?.name ?? activeRegion?.name ?? 'Italia';
+  const anyError = snapshots.error || evidence.error || map.error;
   return (
-    <>
-      <a className="skip" href="#content">
-        Vai ai dati
+    <div className={`population-app ${mode === 'method' ? 'method-mode' : ''}`}>
+      <a className="skip-link" href="#population-content">
+        Vai al contenuto
       </a>
-      <header className="topbar">
-        <a className="brand" href="/">
-          ita<span>db</span>
-          <small>DATI · TERRITORI · SOCIETÀ</small>
+      <header className="app-header">
+        <a className="brand" href="#esplora" aria-label="Itadb — esplora">
+          <span className="brand-glyph">◉</span>ita<span>db</span>
+          <small>POPOLAZIONE VIRTUALE</small>
         </a>
         <nav aria-label="Navigazione principale">
-          <a className="active" href="#content">
+          <a
+            href="#esplora"
+            className={mode === 'explore' ? 'active' : ''}
+            aria-current={mode === 'explore' ? 'page' : undefined}
+          >
             Esplora
           </a>
-          <a href={`${API_BASE}/docs`}>API</a>
+          <a
+            href="#metodo"
+            className={mode === 'method' ? 'active' : ''}
+            aria-current={mode === 'method' ? 'page' : undefined}
+          >
+            Metodo e verifiche
+          </a>
         </nav>
+        <a className="repository-link" href={repositoryUrl} target="_blank" rel="noreferrer">
+          GitHub ↗
+        </a>
       </header>
-      <main id="content">
-        <div className="heading">
-          <div>
-            <p className="eyebrow">OSSERVATORIO TERRITORIALE / V0.1</p>
-            <h1>Ogni dato, la sua fonte.</h1>
-            <p className="intro">Consulta le evidenze pubblicate e verifica da dove provengono.</p>
-          </div>
-          <span className="phase">
-            01 <span>Dati aggregati</span>
-          </span>
-        </div>
-        {(error || evidenceError) && (
-          <div role="alert" className="notice error">
-            <strong>Dati non disponibili</strong>
-            <p>{error || evidenceError}</p>
-            <button onClick={() => setRetry((value) => value + 1)}>Riprova</button>
-          </div>
-        )}
-        <section className="controls" aria-label="Selezione dati">
-          <label htmlFor="release">Versione pubblicata</label>
-          <select
-            id="release"
-            value={selected}
-            disabled={!releases.length}
-            onChange={(event) => {
-              setSelected(event.target.value);
-              setAfter(0);
-              setCoverage([]);
-              setSelection('');
-              setPage(null);
-              setLevel('region');
-              resetFilters();
-            }}
-          >
-            <option value="" disabled>
-              Seleziona una versione
-            </option>
-            {releases.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title} · {dateTime(item.published_at)} · {item.id.slice(0, 8)}
-              </option>
-            ))}
-          </select>
-          {release && (
-            <span className="period">
-              Riferimento <strong>{chosen?.period ?? release.reference_period}</strong>
-            </span>
-          )}
-        </section>
-        {isM2 && (
-          <section className="controls m2-controls" aria-label="Copertura demografica">
-            <div>
-              <label htmlFor="period">Periodo</label>
-              <select
-                id="period"
-                value={chosen?.period ?? ''}
-                onChange={(event) => {
-                  const next = coverage.find((item) => item.period === event.target.value);
-                  setSelection(next ? `${next.period}|${next.series_code}` : '');
-                  setAfter(0);
-                  resetFilters();
-                }}
-              >
-                {[...new Set(coverage.map((item) => item.period))].sort().map((period) => (
-                  <option key={period}>{period}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="series">Indicatore e categoria</label>
-              <select
-                id="series"
-                aria-describedby="selection-description"
-                value={selection}
-                onChange={(event) => {
-                  setSelection(event.target.value);
-                  setAfter(0);
-                  resetFilters();
-                }}
-              >
-                {coverage
-                  .filter((item) => item.period === chosen?.period)
-                  .sort((left, right) =>
-                    left.title.localeCompare(right.title, 'it', { numeric: true }),
-                  )
-                  .map((item) => (
-                    <option key={item.series_code} value={`${item.period}|${item.series_code}`}>
-                      {item.title}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="level">Livello territoriale</label>
-              <select
-                id="level"
-                value={level}
-                onChange={(event) => {
-                  setLevel(event.target.value);
-                  resetFilters();
-                }}
-              >
-                <option value="country">Italia · totale di controllo</option>
-                <option value="region">Regioni</option>
-                <option value="province">Province</option>
-                <option value="municipality">Comuni</option>
-              </select>
-            </div>
-            <p className="muted" id="selection-description">
-              <strong className="selection-title">{chosen?.title}</strong>
-              {chosen?.row_count} osservazioni su tutti i livelli coperti · Confini del{' '}
-              {chosen?.territory_snapshot}. Ogni selezione mostra una sola categoria e un solo
-              livello; non sommare totali e dettagli. Età e abitazioni sono disponibili per regione,
-              famiglie anche per comune nel 2021.
-            </p>
-          </section>
-        )}
-        {release?.is_demo && (
-          <div className="notice demo">
-            <strong>Dimostrazione con dati inventati</strong>
-            <span>
-              {' '}
-              Questi territori e valori servono a verificare il sistema. Non descrivono la
-              popolazione italiana.
-            </span>
-          </div>
-        )}
-        {!loading && !error && !releases.length && (
-          <div className="empty">
-            <h2>Nessuna versione pubblicata</h2>
-            <p>
-              Le osservazioni saranno disponibili dopo l’importazione e il superamento dei controlli
-              di qualità.
-            </p>
-          </div>
-        )}
-        {release?.dataset_id === 'istat_population_regions' && (
-          <div className="notice official">
-            <strong>Dati ISTAT · 20 regioni e totale Italia</strong>
-            <span> Il totale Italia serve al controllo: non va sommato alle regioni.</span>
-          </div>
-        )}
-        <div className="workspace">
-          <section
-            className="panel observations"
-            aria-labelledby="observations-title"
-            aria-busy={loading}
-          >
-            <div className="panel-heading">
-              <h2 id="observations-title">
-                {isM2 ? 'Evidenze per territorio' : 'Popolazione per territorio'}
-              </h2>
-              <span className="muted">Unità: {unit}</span>
-            </div>
-            <form
-              className="table-filters"
-              aria-label="Filtri osservazioni"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setFilters({ ...filters, search: searchDraft.trim() });
-                setAfter(0);
-              }}
-            >
-              <label>
-                Cerca territorio o codice
-                <input
-                  type="search"
-                  value={searchDraft}
-                  maxLength={100}
-                  onChange={(event) => setSearchDraft(event.target.value)}
-                  placeholder="Nome o codice ISTAT"
-                />
-              </label>
-              {parentLevel && (
-                <label>
-                  {parentLevel === 'region' ? 'Regione' : 'Provincia'}
-                  <select
-                    value={filters.parent}
-                    disabled={!parents.length}
-                    onChange={(event) => {
-                      setFilters({ ...filters, parent: event.target.value });
-                      setAfter(0);
-                    }}
-                  >
-                    <option value="">
-                      {parentLevel === 'region' ? 'Tutte le regioni' : 'Tutte le province'}
-                    </option>
-                    {parents.map((parent) => (
-                      <option key={parent.territory_id} value={parent.code}>
-                        {parent.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label>
-                Stato del dato
-                <select
-                  value={filters.status}
-                  onChange={(event) => {
-                    setFilters({ ...filters, status: event.target.value });
-                    setAfter(0);
-                  }}
-                >
-                  <option value="">Tutti gli stati</option>
-                  <option value="observed">Osservato</option>
-                  <option value="estimated">Stimato</option>
-                  <option value="unflagged_upstream">—</option>
-                  <option value="missing">Mancante</option>
-                  <option value="suppressed">Riservato</option>
-                  <option value="demo">Dimostrativo</option>
-                </select>
-              </label>
-              <button type="submit">Cerca</button>
-              <button type="button" onClick={resetFilters}>
-                Azzera filtri
-              </button>
-              {parentError && (
-                <p role="alert">
-                  {parentError}{' '}
-                  <button type="button" onClick={() => setParentRetry((value) => value + 1)}>
-                    Riprova filtri
-                  </button>
-                </p>
-              )}
-            </form>
-            {loading && (
-              <p role="status" className="empty">
-                Caricamento delle evidenze…
-              </p>
-            )}
-            {!loading && page && (
-              <>
-                <div className="table-scroll">
-                  <table>
-                    <caption className="sr-only">Osservazioni della versione selezionata</caption>
-                    <thead>
-                      <tr>
-                        <SortHeader
-                          label="Territorio"
-                          field="name"
-                          sort={sort}
-                          onSort={changeSort}
-                        />
-                        <SortHeader label="Codice" field="code" sort={sort} onSort={changeSort} />
-                        <SortHeader
-                          label="Valore"
-                          field="value"
-                          sort={sort}
-                          onSort={changeSort}
-                          numeric
-                        />
-                        <SortHeader label="Stato" field="status" sort={sort} onSort={changeSort} />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {page.items.map((item) => (
-                        <tr key={item.territory_id}>
-                          <td>
-                            <span className="territory-name-cell">
-                              <Icon kind={item.level} label={levelLabels[item.level]} />
-                              {isM2 && item.level !== 'country' ? (
-                                <button
-                                  type="button"
-                                  className="territory-link"
-                                  aria-haspopup="dialog"
-                                  onClick={() => setTerritory(item)}
-                                >
-                                  {item.territory_name}{' '}
-                                  <span className="sr-only">· apri scheda e mappa</span>
-                                </button>
-                              ) : (
-                                item.territory_name
-                              )}
-                            </span>
-                          </td>
-                          <td className="code">{item.territory_code}</td>
-                          <td className="numeric">
-                            {item.value === null
-                              ? 'Non disponibile'
-                              : number.format(Number(item.value))}
-                          </td>
-                          <td>
-                            <span
-                              className={item.status === 'unflagged_upstream' ? 'muted' : 'tag'}
-                            >
-                              {
-                                {
-                                  demo: 'Dimostrativo',
-                                  observed: 'Osservato',
-                                  estimated: 'Stimato',
-                                  missing: 'Mancante',
-                                  suppressed: 'Riservato',
-                                  unflagged_upstream: '—',
-                                }[item.status]
-                              }
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {!page.items.length && (
-                  <p className="empty">Nessuna osservazione per questa selezione.</p>
-                )}
-                <div className="pagination">
-                  <span>{page.items.length} osservazioni in questa pagina</span>
-                  <div>
-                    {after > 0 && <button onClick={() => setAfter(0)}>Prima pagina</button>}
-                    {page.next_cursor !== null && (
-                      <button onClick={() => setAfter(page.next_cursor!)}>Successive →</button>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </section>
-          <aside className="panel evidence" aria-labelledby="evidence-title">
-            <h2 id="evidence-title">Traccia dell’evidenza</h2>
-            {release ? (
-              <>
-                <dl>
-                  <dt>Fonte</dt>
-                  <dd>
-                    {release.is_demo ? (
-                      'Fixture dimostrativa inclusa nel progetto'
-                    ) : (
-                      <a href={release.upstream_url}>
-                        {sources.find((item) => item.id === release.source_id)?.name ??
-                          release.source_id}{' '}
-                        ↗
-                      </a>
-                    )}
-                  </dd>
-                  <dt>Acquisita</dt>
-                  <dd>{dateTime(release.retrieved_at)}</dd>
-                  <dt>Pubblicata in Itadb</dt>
-                  <dd>{dateTime(release.published_at)}</dd>
-                  {!release.is_demo && (
-                    <>
-                      <dt>Aggiornamento del dataflow ISTAT</dt>
-                      <dd>
-                        {release.upstream_last_update
-                          ? dateTime(release.upstream_last_update)
-                          : 'Non disponibile'}
-                      </dd>
-                      <dt>Pubblicazione alla fonte</dt>
-                      <dd>
-                        {release.upstream_published_at
-                          ? dateTime(release.upstream_published_at)
-                          : 'Non accertata'}
-                      </dd>
-                      <dt>Snapshot territoriale</dt>
-                      <dd>{chosen?.territory_snapshot ?? release.territory_snapshot}</dd>
-                    </>
-                  )}
-                  <dt>Licenza di questa versione</dt>
-                  <dd>
-                    <a href={release.license_url}>Consulta la licenza ↗</a>
-                  </dd>
-                  <dt>Verifiche</dt>
-                  <dd>
-                    {quality.length
-                      ? `${quality.filter((check) => check.passed).length} / ${quality.length} superate`
-                      : 'Verifiche non disponibili'}
-                  </dd>
-                </dl>
-                {release.supersedes_release_id && (
-                  <div className="revision">
-                    <h3>Revisione della versione precedente</h3>
-                    <p>{release.revision_reason}</p>
-                    <a href={`${API_BASE}/v2/releases/${release.supersedes_release_id}`}>
-                      Consulta la provenienza precedente ↗
-                    </a>
-                  </div>
-                )}
-                {release.attribution && <p className="muted">{release.attribution}</p>}
-                <details>
-                  <summary>Identificativi e checksum</summary>
-                  <p>Versione</p>
-                  <code>{release.id}</code>
-                  <p>SHA-256 originale</p>
-                  <code>{release.raw_sha256}</code>
-                  <p>SHA-256 contratto</p>
-                  <code>{release.contract_sha256}</code>
-                  {artifacts.length > 0 && (
-                    <>
-                      <p>{artifacts.length} artefatti tracciati</p>
-                      <a href={`${API_BASE}/v2/releases/${release.id}/artifacts`}>
-                        Consulta manifest e checksum via API ↗
-                      </a>
-                    </>
-                  )}
-                </details>
-                <div className="limitations">
-                  <h3>Limiti di utilizzo</h3>
-                  <p>{release.limitations}</p>
-                </div>
-              </>
-            ) : (
-              <p className="muted">Seleziona una versione per consultarne la provenienza.</p>
-            )}
-          </aside>
-        </div>
-        {isM2 && release && <TerritorialHistory key={release.id} releaseId={release.id} />}
-        {territory && release && chosen && (
-          <TerritoryDetail
-            key={`${release.id}-${territory.territory_id}-${chosen.period}-${chosen.series_code}`}
-            observation={territory}
-            coverage={chosen}
-            release={release}
-            sourceName={
-              sources.find((item) => item.id === release.source_id)?.name ?? release.source_id
-            }
-            onClose={() => setTerritory(null)}
+      <main id="population-content" className={mode === 'method' ? 'method-main' : 'explore-main'}>
+        {mode === 'explore' && (
+          <PopulationMap
+            data={map.data}
+            selected={municipalityCode}
+            onSelect={selectMunicipality}
           />
         )}
-        <footer>
-          Itadb è un’infrastruttura aperta in costruzione. La popolazione sintetica 1:1 è una fase
-          futura; gli agenti non rappresenteranno persone reali.
-        </footer>
+        {(snapshots.loading || (!!snapshotId && !evidence.data && evidence.loading)) && (
+          <div className="central-state panel" role="status">
+            <span className="loading-signal" />
+            <h1>Caricamento della popolazione</h1>
+            <p>Connessione allo snapshot verificato…</p>
+          </div>
+        )}
+        {anyError && (
+          <div className="central-state panel" role="alert">
+            <h1>La popolazione non è disponibile</h1>
+            <p>{anyError}</p>
+            <button
+              onClick={() => {
+                snapshots.retry();
+                evidence.retry();
+                map.retry();
+              }}
+            >
+              Riprova
+            </button>
+          </div>
+        )}
+        {snapshots.data?.length === 0 && (
+          <div className="central-state panel">
+            <h1>Nessuna popolazione disponibile</h1>
+            <p>
+              Qui potrai esplorare gli individui e le famiglie di uno snapshot verificato, appena
+              disponibile nel database.
+            </p>
+            <a href={`${repositoryUrl}/blob/main/docs/population.md`}>Consulta il progetto ↗</a>
+          </div>
+        )}
+        {evidence.data && mode === 'method' && (
+          <PopulationMethod evidence={evidence.data} municipality={municipality} />
+        )}
+        {evidence.data && mode === 'explore' && (
+          <>
+            <div className="map-caption">
+              <span className="eyebrow">ITALIA / {evidence.data.reference_date.slice(0, 4)}</span>
+              <h1>
+                L’Italia virtuale,
+                <br />
+                individuo per individuo.
+              </h1>
+              <p>
+                Esplora individui e famiglie virtuali,
+                <br />a partire dal territorio.
+              </p>
+            </div>
+            <button
+              className="mobile-panel-toggle"
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              aria-expanded={filtersOpen}
+            >
+              {filtersOpen ? 'Nascondi strumenti' : 'Mostra strumenti'}
+            </button>
+            <aside
+              className={`explore-sidebar panel ${filtersOpen ? '' : 'mobile-hidden'}`}
+              aria-label="Filtri di esplorazione"
+            >
+              <div className="panel-heading">
+                <span className="eyebrow">ESPLORA IL MODELLO</span>
+                <span className="status-label">
+                  <i />
+                  VERIFICATO
+                </span>
+              </div>
+              <label>
+                Versione della popolazione
+                <select value={snapshotId} onChange={(e) => selectSnapshot(Number(e.target.value))}>
+                  {snapshots.data?.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.reference_date} · {s.run_id.slice(0, 8)}
+                      {s.is_fixture ? ' · fixture inventata' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {activeSnapshot?.is_fixture && (
+                <p className="fixture-label">
+                  Fixture inventata: dati esclusivamente dimostrativi.
+                </p>
+              )}
+              <div className="territory-heading">
+                <span className="eyebrow">TERRITORIO</span>
+                {(region || municipalityCode) && (
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setRegion('');
+                      setMunicipalityCode('');
+                      setSearch('');
+                      setRecords(false);
+                    }}
+                  >
+                    Tutta Italia ↗
+                  </button>
+                )}
+              </div>
+              <label>
+                Regione
+                <select
+                  value={region}
+                  onChange={(e) => {
+                    setRegion(e.target.value);
+                    setMunicipalityCode('');
+                    setRecords(false);
+                  }}
+                >
+                  <option value="">Tutte le regioni</option>
+                  {map.data?.regions.map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Cerca un comune
+                <input
+                  type="search"
+                  value={search}
+                  placeholder="Nome o codice ISTAT"
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </label>
+              {map.loading && <p role="status">Caricamento dei territori…</p>}
+              {(search || !municipalityCode) && (
+                <div className="municipality-results" aria-label="Comuni disponibili">
+                  {filteredMunicipalities.slice(0, 6).map((m) => (
+                    <button key={m.code} onClick={() => selectMunicipality(m.code)}>
+                      <Icon kind="municipality" />
+                      <span>
+                        {m.name}
+                        <small>{m.province_name}</small>
+                      </span>
+                      <span>↗</span>
+                    </button>
+                  ))}
+                  {map.data && !filteredMunicipalities.length && <p>Nessun comune trovato.</p>}
+                  {filteredMunicipalities.length > 6 && (
+                    <small>
+                      Affina la ricerca tra {number.format(filteredMunicipalities.length)} comuni.
+                    </small>
+                  )}
+                </div>
+              )}
+              {municipality && (
+                <div className="selected-territory">
+                  <div>
+                    <Icon kind="municipality" />
+                    <h2>{municipality.name}</h2>
+                  </div>
+                  <p>
+                    {municipality.province_name} · {municipality.code}
+                  </p>
+                  <div className="territory-counts">
+                    <span>
+                      <Icon kind="persons" />
+                      <strong>{number.format(municipality.persons)}</strong>individui
+                    </span>
+                    <span>
+                      <Icon kind="households" />
+                      <strong>{number.format(municipality.households)}</strong>famiglie
+                    </span>
+                  </div>
+                  <button className="primary-button" onClick={() => setRecords(true)}>
+                    Esplora i record <span>↗</span>
+                  </button>
+                </div>
+              )}
+              <details className="individual-filters" open>
+                <summary>
+                  Filtri individui <small>Istogramma ed elenco</small>
+                </summary>
+                <div className="filter-grid">
+                  <label>
+                    Sesso
+                    <select
+                      value={filters.sex}
+                      onChange={(e) => setFilters({ ...filters, sex: e.target.value })}
+                    >
+                      <option value="">Tutti</option>
+                      <option value="M">Maschile</option>
+                      <option value="F">Femminile</option>
+                    </select>
+                  </label>
+                  <label>
+                    Cittadinanza
+                    <select
+                      value={filters.citizenship}
+                      onChange={(e) => setFilters({ ...filters, citizenship: e.target.value })}
+                    >
+                      <option value="">Tutte</option>
+                      {Object.entries(labels)
+                        .sort((a, b) => a[1].localeCompare(b[1], 'it'))
+                        .map(([code, label]) => (
+                          <option value={code} key={code}>
+                            {label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    Età minima
+                    <input
+                      type="number"
+                      min={0}
+                      max={filters.ageMax}
+                      value={filters.ageMin}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          ageMin: Math.min(filters.ageMax, Math.max(0, Number(e.target.value))),
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Età massima
+                    <input
+                      type="number"
+                      min={filters.ageMin}
+                      max={100}
+                      value={filters.ageMax}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          ageMax: Math.max(filters.ageMin, Math.min(100, Number(e.target.value))),
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+                <small>100 include la classe aperta 100+.</small>
+                <button className="text-button" onClick={() => setFilters(initialFilters)}>
+                  Reimposta filtri
+                </button>
+              </details>
+            </aside>
+            <aside
+              className={`distribution-panel panel ${statisticsOpen ? '' : 'stats-collapsed'}`}
+              aria-label="Distribuzione della popolazione"
+            >
+              <div className="panel-heading">
+                <span className="eyebrow">NELLA SELEZIONE</span>
+                <Icon kind="persons" />
+              </div>
+              <h2>{scope}</h2>
+              {distribution.loading ? (
+                <p role="status">Aggiornamento distribuzione…</p>
+              ) : distribution.error ? (
+                <p role="alert">
+                  {distribution.error} <button onClick={distribution.retry}>Riprova</button>
+                </p>
+              ) : (
+                <>
+                  <strong className="population-total">{number.format(males + females)}</strong>
+                  <span className="muted">individui virtuali</span>
+                  <div className="sex-totals">
+                    <span>
+                      <i className="male-key" />M <strong>{number.format(males)}</strong>
+                    </span>
+                    <span>
+                      <i className="female-key" />F <strong>{number.format(females)}</strong>
+                    </span>
+                  </div>
+                  <div className="chart-heading">
+                    <span>Distribuzione per età</span>
+                    <small>anni</small>
+                  </div>
+                  <div
+                    className="age-histogram"
+                    role="img"
+                    aria-label={`Distribuzione per età di ${scope}: ${number.format(males + females)} individui`}
+                  >
+                    {bins.map((b) => (
+                      <div
+                        className="histogram-row"
+                        key={b.label}
+                        title={`${b.label}: ${number.format(b.male)} M, ${number.format(b.female)} F`}
+                      >
+                        <span>{b.label}</span>
+                        <div className="histogram-track">
+                          <i
+                            className="male-bar"
+                            style={{ width: `${(b.male / maxBin) * 100}%` }}
+                          />
+                          <i
+                            className="female-bar"
+                            style={{ width: `${(b.female / maxBin) * 100}%` }}
+                          />
+                        </div>
+                        <small>{number.format(b.male + b.female)}</small>
+                      </div>
+                    ))}
+                  </div>
+                  {males + females === 0 && <p>Nessun individuo corrisponde ai filtri.</p>}
+                </>
+              )}
+              <button
+                className="stats-toggle"
+                aria-expanded={statisticsOpen}
+                onClick={() => setStatisticsOpen(!statisticsOpen)}
+              >
+                {statisticsOpen ? 'Nascondi istogramma' : 'Mostra istogramma'}
+              </button>
+              <a href="#metodo" className="verification-link">
+                Come verifichiamo questi dati <span>↗</span>
+              </a>
+            </aside>
+            <div className="snapshot-strip">
+              <span>
+                <i />
+                POPOLAZIONE SINTETICA
+              </span>
+              <span>Riferimento {evidence.data.reference_date}</span>
+              <span>Fonti ISTAT · CC BY 4.0</span>
+              <span className="mono">{evidence.data.run_id.slice(0, 12)}</span>
+            </div>
+            {records && municipality && (
+              <PopulationRecords
+                key={`${snapshotId}-${municipalityCode}-${JSON.stringify(filters)}`}
+                snapshot={snapshotId}
+                municipality={municipality.code}
+                name={municipality.name}
+                filters={filters}
+                labels={labels}
+                onClose={() => setRecords(false)}
+              />
+            )}
+          </>
+        )}
       </main>
-    </>
+    </div>
   );
 }

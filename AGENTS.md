@@ -1,8 +1,9 @@
 # Itadb — istruzioni per Codex e altri agenti
 
 ## Contesto e obiettivo
-Leggi README.md e docs/roadmap.md prima di cambiare l'architettura. La v0.1 serve
-evidenze territoriali aggregate. La popolazione sintetica 1:1 è futura: non presentare
+Leggi README.md e docs/roadmap.md prima di cambiare l'architettura. Il prodotto serve
+la popolazione sintetica verificata in PostgreSQL, API e frontend; la generazione
+è un workflow separato. Le API v1/v2 conservano gli aggregati storici. Non presentare
 fixture, stime, scenari o record virtuali come dati osservati o persone reali.
 Per sintesi e attributi degli agenti applica `docs/model-fidelity.md`: priorità
 versionate e un solo modello di riferimento, con assunzioni e razionali espliciti.

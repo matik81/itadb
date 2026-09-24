@@ -759,3 +759,87 @@ Il riordino conserva la regola casuale familiare. Non sono state calibrate
 le relazioni per età/cittadinanza, né introdotti legami di parentela osservati.
 Revisione scientifica esterna e distribuzione pubblica restano fuori dal
 perimetro; gli snapshot sono locali con `public_release=false`.
+
+## Prodotto popolazione — PostgreSQL, API v3 e web (24 settembre 2026)
+
+Implementazione dell'[ADR 0015](adr/0015-population-product.md). Il riferimento
+`24a56e3bdb58fb1af523ea1b6019e8de04292ecdf11105fc6885cacc4903b76c`
+è stato verificato e importato integralmente nel PostgreSQL locale: **58.943.464
+individui, 26.670.169 famiglie, 7.896 comuni**, snapshot applicativo 1.
+Nessun microdato o dump è stato aggiunto al repository.
+
+### Pubblicazione effettiva
+
+Audit indipendente dei 107 batch, ammissione della provenienza e della
+geografia 2025, COPY, controllo delle relazioni e delle coorti, distribuzioni
+ricalcolate dal DB e confronto di **3.733.338 vincoli**. Scostamento massimo
+zero. Durata complessiva misurata: **361,09 secondi**. Il retry nazionale ha
+ripetuto l'audit e riutilizzato lo stesso ID, senza duplicazioni. Log locali:
+`.tools/population-serving-national.log`, `.tools/population-serving-retry.log`;
+rapporti in `data/reports/population-publication/`.
+
+Il test PostgreSQL con fixture esplicitamente inventata verifica pubblicazione,
+idempotenza, ordinamento/paginazione, 100+, filtri, famiglie e componenti,
+permessi reader, immutabilità e rollback dopo un riferimento familiare
+alterato. La fixture è ammessa solo nell'interfaccia Python interna dei test;
+il comando applicativo la rifiuta. Tutti i test di integrazione sono stati
+eseguiti su server dedicato alla porta 55433, distinto dal DB applicativo.
+
+### Query sul volume nazionale
+
+[Misure e piani EXPLAIN (ANALYZE, BUFFERS)](benchmarks/population-serving-2026-09-24.json),
+cinque esecuzioni per query, con un solo client locale. Non è una misura di
+concorrenza né una verifica su un provider gestito. Il primo campione può
+risentire della cache; i campioni individuali sono conservati nel JSON.
+
+| Query | Mediana |
+|---|---:|
+| Roma, primi 100 individui ordinati per ID | 1,7 ms |
+| Roma, 100 individui ordinati per età decrescente | 1.748,3 ms |
+| Roma, filtro sesso/cittadinanza/età | 24,8 ms |
+| Famiglia e componenti | 2,9 ms |
+| Istogramma nazionale | 234,1 ms |
+| Istogramma comunale (Roma) | 18,5 ms |
+| Riepilogo verifiche nazionale | 377,7 ms |
+| Marcatori di tutti i comuni | 21,4 ms |
+| Confini regionali | 4,0 ms |
+
+Schema `population`, tabelle e indici: **15,94 GiB**, misurati con
+`pg_total_relation_size`; non include WAL, backup, Parquet o database storico.
+L'ordinamento per età su grandi comuni è il caso più oneroso misurato e va
+considerato nel dimensionamento della concorrenza. Nessuna estrapolazione di
+capacità cloud o promessa di latenza sotto carico.
+
+Riproduzione delle misure:
+
+```sh
+uv run python scripts/run_logged.py --label "Query popolazione" --log .tools/population-query-benchmark.log -- uv run python scripts/benchmark_population_api.py --snapshot 1 --output .tools/population-query-benchmark.json
+```
+
+### Applicazione e controlli
+
+- Ruff check e format, mypy: passati.
+- Backend: **284 test non integration passati**.
+- PostgreSQL: **42 test integration passati**: suite completa di 40 test,
+  più due nuovi casi finali; incluse migrazioni da database vuoto, compatibilità
+  storica, rifiuto delle fixture nel comando applicativo e corretta segnalazione
+  di un errore nel rapporto locale successivo al commit.
+- Frontend: **25 test passati**; typecheck, generazione tipi OpenAPI e build passati.
+- Browser Chromium sullo stack Compose: mappa nazionale, selezione di Roma,
+  elenco individui, famiglia e componenti, fonti e confronto delle celle
+  comunali; caricamento mobile a 390×844 e verifica overflow orizzontale.
+  Nessun errore JavaScript o risposta API fallita durante il percorso.
+
+Il browser di verifica e le sue librerie sono strumenti locali esterni alle
+dipendenze del progetto. Log e screenshot sono in `.tools/` esclusa da Git.
+Sono presenti avvisi di deprecazione già emessi da Starlette e Alembic;
+non sono errori dei controlli.
+
+### Perimetro
+
+La mappa corrente rappresenta comuni, non residenze individuali. La sezione
+Metodo verifica calibrazione e integrità, senza dichiarare osservate le
+relazioni sintetiche. Il workflow CLI non è esposto tramite API. È stato
+aggiornato solo lo stack locale; nessun deployment Internet o provider è
+stato configurato. Coordinate individuali, query spaziali e misure di
+concorrenza su infrastruttura gestita restano passi successivi.

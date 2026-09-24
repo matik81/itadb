@@ -5,9 +5,11 @@ Le proposte pubbliche vengono discusse in issue/PR; una modifica delle finalità
 progetto richiede discussione esplicita, non una modifica silenziosa del codice.
 
 Per la fase iniziale non sono dichiarati un comitato scientifico, partnership, SLA o
-certificazioni inesistenti. La validazione statistica di una popolazione sintetica richiederà
-revisori di dominio, protocolli pubblici e risultati riproducibili prima di un rilascio
-pubblico di microdati.
+certificazioni inesistenti. La validazione scientifica resta distinta dalla verifica software e dalla
+calibrazione. Su richiesta dell'utente, l'ADR 0015 porta la popolazione
+sintetica verificata nel database, nelle API e nel frontend, con ipotesi e
+limiti espliciti. Questo sviluppo non dichiara una certificazione scientifica.
+La scelta dei servizi gestiti e il deployment pubblico saranno passi successivi.
 
 La revisione umana di progetto può accettare un modello di lavoro con limiti
 espliciti e consentire lo sviluppo successivo. È distinta dalla revisione

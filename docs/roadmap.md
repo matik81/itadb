@@ -1,5 +1,19 @@
 # Roadmap verificabile
 
+## Prodotto corrente: popolazione esplorabile
+
+La popolazione sintetica è il contenuto principale del database, delle API v3
+e della web app. Il workflow di generazione resta separato e documentato su
+GitHub. La nuova pubblicazione importa individui e famiglie completi in
+PostgreSQL; la web app presenta una mappa scura, query sui record e una sezione
+Metodo e verifiche. [Piano](plans/population-product.md),
+[decisione](adr/0015-population-product.md).
+
+Passi successivi: integrare densità e coordinate di residenza nel modello,
+servire i punti individuali per area visibile e scegliere il deployment su
+servizi gestiti. Questi passi non sono dichiarati implementati. Le tappe
+M0–M4 sotto riportano la storia del modello e delle evidenze.
+
 Per il modello sintetico vale la [graduatoria di fedeltà](model-fidelity.md):
 età/sesso al primo posto, regioni/province/UTS/comuni al secondo, cittadinanza
 al terzo e composizione familiare al quarto (versione 5).

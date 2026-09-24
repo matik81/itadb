@@ -107,3 +107,28 @@ quelli prima delle famiglie. La generazione e l'audit inline hanno richiesto
 267,99 s monitorati, con picco RSS 1,64 GiB; l'audit successivo 35,47 s.
 I margini osservati hanno errore zero e la fase familiare conserva tutti
 gli attributi precedenti. [Verifiche eseguite](validation.md#ordine-eseguibile-della-popolazione).
+
+
+## Pubblicazione applicativa dello snapshot verificato
+
+Il prodotto corrente aggiunge un passaggio esplicito dopo la generazione:
+
+```sh
+uv run python scripts/run_logged.py --label "Pubblicazione popolazione" --log .tools/population-publication.log -- uv run itadb publish-population --run data/curated/population/RUN_ID
+```
+
+Il comando verifica lo snapshot e i contratti delle fonti archiviati, carica
+individui e famiglie completi in PostgreSQL e ne ricalcola le distribuzioni.
+Solo la versione verificata diventa visibile nelle API v3 e nel frontend.
+La pubblicazione è atomica e idempotente; il log e i rapporti sono conservati
+in `data/reports/population-publication/`. Un errore produce rollback e
+quarantena. L'importatore applicativo rifiuta le fixture inventate.
+
+Gli snapshot Parquet e il loro campo storico `public_release=false` restano
+immutabili. Il catalogo applicativo è una nuova evidenza di pubblicazione,
+collegata a run ID e checksum. La richiesta dell'utente supera il precedente
+perimetro «solo file locali»: [ADR 0015](adr/0015-population-product.md).
+
+La mappa corrente usa la geografia 2025 degli stessi input, non le geometrie
+M2 2020/2021/2024. I marcatori rappresentano comuni; nessuna coordinata di
+residenza viene assegnata implicitamente ai singoli individui.
