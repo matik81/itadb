@@ -112,7 +112,7 @@ def main():
     evidence["prices"] = prices
     hours = 730
     seconds = hours * 3600
-    requests = 1_000_000
+    requests = 50_000
     # Capacity assumptions, deliberately separate from measured local memory or Neon sizing.
     # API-only baseline: 0.25 GB average; embedded alternatives include API headroom.
     ram = {"postgres": 0.25, "postgres_compact": 0.25, "duckdb": 0.50, "rust": 0.75}
@@ -165,7 +165,7 @@ def main():
             engine: {
                 mix: evidence["engines"][engine]["concurrency"][mix]["cpu_ms_per_request"]
                 / 1000
-                * requests
+                * 1_000_000
                 / seconds
                 * 20
                 for mix in ["8", "8_broad"]

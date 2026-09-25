@@ -239,34 +239,37 @@ Neon si paga in CU-ore attive, non in millisecondi CPU delle query.
 Risparmiare circa sette centesimi di CPU rispetto a DuckDB non ripaga da solo
 più RAM o lo sviluppo del motore Rust, a quel volume di richieste.
 
-Il modello seguente usa 730 ore/mese, un milione di richieste, 10 GB di egress,
+Il modello seguente usa 730 ore/mese, **50.000 richieste**, 10 GB di egress,
 Railway Hobby, RAM media **ipotizzata** di 0,25 GB per l'API con PostgreSQL,
 0,50 GB per API + DuckDB e 0,75 GB per API + Rust. Prevede due copie dell'archivio
 incorporato per il cambio di release. Il residuo PostgreSQL rimane su Neon.
 Le taglie CU sono ipotesi di costo, non dimensionamenti Neon validati dal test.
+Il traffico del preventivo è separato dall'indicatore CPU per un milione di
+richieste: concentrare quest'ultimo carico nelle sole 60 ore di un piccolo
+compute non sarebbe un'ipotesi di capacità giustificata dalle misure.
 
 | Attività Neon ipotizzata, identica nella riga | PG attuale + API | PG compatto + API | DuckDB + PG residuo | Rust + PG residuo |
 |---|---:|---:|---:|---:|
-| 0,25 CU per 60 ore/mese | **$12,62** | $10,81 | **$7,43** | $10,25 |
-| 0,25 CU sempre acceso | **$30,37** | $28,57 | **$25,18** | $28,01 |
-| 0,50 CU sempre acceso | **$49,72** | $47,91 | **$44,53** | $47,35 |
+| 0,25 CU per 60 ore/mese | **$12,62** | $10,81 | **$7,36** | $10,25 |
+| 0,25 CU sempre acceso | **$30,37** | $28,57 | **$25,11** | $28,00 |
+| 0,50 CU sempre acceso | **$49,72** | $47,91 | **$44,46** | $47,35 |
 
 Ridurre soltanto lo storage PostgreSQL da 17,226 a 12,066 GB risparmia circa
 **$1,81/mese**. Passare a DuckDB nel modello conservativo risparmia circa
-**$5,19/mese** mantenendo invariata l'attività del PostgreSQL residuo.
+**$5,26/mese** mantenendo invariata l'attività del PostgreSQL residuo.
 La grande leva economica è lasciare dormire o, dopo una migrazione completa,
 eliminare il servizio PostgreSQL della consultazione nazionale.
 
 Esempio condizionato: se oggi la popolazione mantiene Neon attivo tutto il mese
 a 0,50 CU, ma dopo il passaggio a DuckDB soltanto le API storiche lo attivano
-per 60 ore a 0,25 CU, il modello passa da **$49,72 a $7,43/mese**. La riduzione
+per 60 ore a 0,25 CU, il modello passa da **$49,72 a $7,36/mese**. La riduzione
 dipende da quel diverso profilo di attività, non dal solo cambio del motore.
 Non è una promessa di bolletta. In particolare `/health/ready` interroga
 PostgreSQL: un monitor periodico che ne impedisse la sospensione annullerebbe
 questa parte del risparmio.
 
 Se anche il residuo fosse migrato, il modello del solo servizio Railway sarebbe
-circa **$5,64 DuckDB / $8,47 Rust**. Quella migrazione non è implementata e queste
+circa **$5,57 DuckDB / $8,46 Rust**. Quella migrazione non è implementata e queste
 cifre non descrivono ancora un deployment completo equivalente al prodotto.
 Per Rust, portare la RAM media ipotizzata da 0,75 a 1,8 GB per includere più cache
 aggiunge **$10,50/mese**. La metrica effettivamente fatturata va osservata sul
@@ -409,10 +412,14 @@ più specifici. L'esperimento ha dimostrato che questi interventi possono
 eliminare rallentamenti gravi; non ha applicato quei cambiamenti al database
 di prodotto.
 
-Le [evidenze aggregate e il modello economico](storage-comparison-2026-09-25.json)
+Le [evidenze aggregate e il modello economico v2](storage-comparison-2026-09-25-v2.json)
 contengono campioni delle query, statistiche concorrenti, risorse, hash,
 dimensioni e piani. Il [supplemento a 1 CPU/512 MiB](storage-comparison-2026-09-25-budget.json)
 conserva la prova aggiuntiva. Per ripetere l'esperimento usare i comandi nel
 [README del prototipo](../../experiments/population-store/README.md), scegliendo
 directory e database nuovi. Gli archivi completi e i log locali restano sotto
 `.tools/storage-comparison/run-01/` e `.tools/storage-*.log`, esclusi da Git.
+
+La [prima evidenza aggregata](storage-comparison-2026-09-25.json) è conservata.
+La v2 mantiene le stesse misure e corregge l'ipotesi di traffico del preventivo
+a 50.000 richieste mensili; l'indicatore CPU resta espresso per un milione.
