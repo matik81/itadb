@@ -25,7 +25,7 @@ dependencies = [
 itadb = "itadb.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8.4,<10", "pytest-cov>=6,<8", "ruff>=0.12,<1", "mypy>=1.17,<2", "pip-audit>=2.9,<3"]
+dev = ["pytest>=8.4,<10", "pytest-cov>=6,<8", "ruff>=0.12,<1", "mypy>=1.17,<3", "pip-audit>=2.9,<3"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/itadb"]
