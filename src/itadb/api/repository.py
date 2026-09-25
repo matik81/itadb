@@ -2,9 +2,6 @@ from datetime import date
 from typing import Any, Protocol
 from uuid import UUID
 
-from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
-
 
 class Repository(Protocol):
     def ping(self) -> None: ...
@@ -54,48 +51,46 @@ class RepositoryV2(Repository, Protocol):
     ) -> list[dict[str, Any]]: ...
 
 
-class PostgresRepository:
-    def __init__(self, pool: ConnectionPool[Any]):
-        self.pool = pool
+class SQLRepository:
+    def text_order(self, expression: str) -> str:
+        return expression
 
     def _query(self, sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
-        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cursor:
-            cursor.execute("SET TRANSACTION READ ONLY")
-            cursor.execute("SET LOCAL statement_timeout = '5s'")
-            cursor.execute(sql, params)
-            return list(cursor.fetchall())
+        raise NotImplementedError
 
     def ping(self) -> None:
         self._query("SELECT 1 FROM api.sources LIMIT 1")
 
     def sources(self) -> list[dict[str, Any]]:
-        return self._query("SELECT * FROM api.sources ORDER BY id")
+        return self._query(f"SELECT * FROM api.sources ORDER BY {self.text_order('id')}")
 
     def releases(self, limit: int) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.releases ORDER BY published_at DESC, id LIMIT %s", (limit,)
+            "SELECT * FROM api.releases ORDER BY published_at DESC, id LIMIT ?", (limit,)
         )
 
     def release(self, release_id: UUID) -> dict[str, Any] | None:
-        rows = self._query("SELECT * FROM api.releases WHERE id=%s", (release_id,))
+        rows = self._query("SELECT * FROM api.releases WHERE id=?", (release_id,))
         return rows[0] if rows else None
 
     def quality(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.quality WHERE release_id=%s ORDER BY check_name", (release_id,)
+            f"SELECT * FROM api.quality WHERE release_id=? "
+            f"ORDER BY {self.text_order('check_name')}",
+            (release_id,),
         )
 
     def observations(
         self, release_id: UUID, series: str, period: date, after: int, limit: int
     ) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.observations WHERE release_id=%s AND series_code=%s "
-            "AND period=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            "SELECT * FROM api.observations WHERE release_id=? AND series_code=? "
+            "AND period=? AND territory_id>? ORDER BY territory_id LIMIT ?",
             (release_id, series, period, after, limit),
         )
 
 
-class PostgresRepositoryV2(PostgresRepository):
+class SQLRepositoryV2(SQLRepository):
     def _ordered_page(
         self,
         view: str,
@@ -109,24 +104,7 @@ class PostgresRepositoryV2(PostgresRepository):
     ) -> list[dict[str, Any]]:
         # Identifiers/clauses are private constants selected by allowlists below.
         # Values, including the cursor's identity, are always bound parameters.
-        order, comparison = ("DESC", "<") if direction == "desc" else ("ASC", ">")
-        return self._query(
-            f"""WITH selected AS NOT MATERIALIZED (
-                SELECT *, {column} AS table_sort_value FROM {view} WHERE {where}
-            ), anchor AS (
-                SELECT table_sort_value AS sort_value, {identity} AS row_id
-                FROM selected WHERE {identity}=%s
-            )
-            SELECT o.* FROM selected o
-            WHERE (%s=0 OR EXISTS (
-                SELECT 1 FROM anchor a WHERE
-                (o.table_sort_value IS NULL AND a.sort_value IS NOT NULL)
-                OR o.table_sort_value {comparison} a.sort_value
-                OR (o.table_sort_value IS NOT DISTINCT FROM a.sort_value AND o.{identity}>a.row_id)
-            ))
-            ORDER BY o.table_sort_value {order} NULLS LAST, o.{identity} ASC LIMIT %s""",
-            (*params, after, after, limit),
-        )
+        raise NotImplementedError
 
     def observation_table(
         self,
@@ -144,24 +122,26 @@ class PostgresRepositoryV2(PostgresRepository):
     ) -> list[dict[str, Any]]:
         column = {
             "territory_id": "territory_id",
-            "name": "territory_name",
-            "code": "territory_code",
+            "name": self.text_order("territory_name"),
+            "code": self.text_order("territory_code"),
             "value": "value",
-            "status": "CASE status WHEN 'demo' THEN 'Dimostrativo' "
-            "WHEN 'missing' THEN 'Mancante' WHEN 'observed' THEN 'Osservato' "
-            "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN '—' "
-            "WHEN 'estimated' THEN 'Stimato' END",
+            "status": self.text_order(
+                "CASE status WHEN 'demo' THEN 'Dimostrativo' "
+                "WHEN 'missing' THEN 'Mancante' WHEN 'observed' THEN 'Osservato' "
+                "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN '—' "
+                "WHEN 'estimated' THEN 'Stimato' END"
+            ),
         }[sort_by]
-        conditions = ["release_id=%s", "series_code=%s", "period=%s"]
+        conditions = ["release_id=?", "series_code=?", "period=?"]
         params: list[Any] = [release_id, series, period]
         for field, value in (("level", level), ("parent_code", parent_code), ("status", status)):
             if value is not None:
-                conditions.append(f"{field}=%s")
+                conditions.append(f"{field}=?")
                 params.append(value)
         if search:
             conditions.append(
-                "(strpos(lower(territory_name),lower(%s))>0 "
-                "OR strpos(lower(territory_code),lower(%s))>0)"
+                "(strpos(lower(territory_name),lower(?))>0 "
+                "OR strpos(lower(territory_code),lower(?))>0)"
             )
             params.extend([search, search])
         return self._ordered_page(
@@ -188,16 +168,16 @@ class PostgresRepositoryV2(PostgresRepository):
         column = {
             "id": "id",
             "date": "effective_date",
-            "description": "description",
-            "from_code": "from_code",
-            "to_code": "to_code",
-            "usage": "weight_basis",
+            "description": self.text_order("description"),
+            "from_code": self.text_order("from_code"),
+            "to_code": self.text_order("to_code"),
+            "usage": self.text_order("weight_basis"),
         }[sort_by]
-        conditions = ["release_id=%s"]
+        conditions = ["release_id=?"]
         params: list[Any] = [release_id]
         for field, value in (("kind", kind), ("weight_basis", weight_basis)):
             if value is not None:
-                conditions.append(f"{field}=%s")
+                conditions.append(f"{field}=?")
                 params.append(value)
         return self._ordered_page(
             "api.crosswalks_v2",
@@ -211,50 +191,44 @@ class PostgresRepositoryV2(PostgresRepository):
         )
 
     def ping(self) -> None:
-        # Resolve every public view and check reader privileges without scanning data.
-        self._query("""SELECT
-            (SELECT metadata_sha256 FROM api.releases_v2 LIMIT 0),
-            (SELECT series_code FROM api.releases_v2 LIMIT 0),
-            (SELECT value FROM api.observations_v2 LIMIT 0),
-            (SELECT passed FROM api.quality_v2 LIMIT 0),
-            (SELECT kind FROM api.artifacts_v2 LIMIT 0),
-            (SELECT series_code FROM api.coverage_v2 LIMIT 0),
-            (SELECT territory_id FROM api.territories_v2 LIMIT 0),
-            (SELECT event_id FROM api.crosswalks_v2 LIMIT 0),
-            (SELECT geom FROM api.boundaries_v2 LIMIT 0)""")
+        # Resolve every public table without scanning data.
+        raise NotImplementedError
 
     def releases(self, limit: int) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.releases_v2 ORDER BY published_at DESC,id LIMIT %s", (limit,)
+            "SELECT * FROM api.releases_v2 ORDER BY published_at DESC,id LIMIT ?", (limit,)
         )
 
     def release(self, release_id: UUID) -> dict[str, Any] | None:
-        rows = self._query("SELECT * FROM api.releases_v2 WHERE id=%s", (release_id,))
+        rows = self._query("SELECT * FROM api.releases_v2 WHERE id=?", (release_id,))
         return rows[0] if rows else None
 
     def quality(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.quality_v2 WHERE release_id=%s ORDER BY check_name", (release_id,)
+            f"SELECT * FROM api.quality_v2 WHERE release_id=? "
+            f"ORDER BY {self.text_order('check_name')}",
+            (release_id,),
         )
 
     def artifacts(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.artifacts_v2 WHERE release_id=%s ORDER BY kind", (release_id,)
+            f"SELECT * FROM api.artifacts_v2 WHERE release_id=? ORDER BY {self.text_order('kind')}",
+            (release_id,),
         )
 
     def observations(
         self, release_id: UUID, series: str, period: date, after: int, limit: int
     ) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.observations_v2 WHERE release_id=%s AND series_code=%s "
-            "AND period=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            "SELECT * FROM api.observations_v2 WHERE release_id=? AND series_code=? "
+            "AND period=? AND territory_id>? ORDER BY territory_id LIMIT ?",
             (release_id, series, period, after, limit),
         )
 
     def coverage(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.coverage_v2 WHERE release_id=%s "
-            "ORDER BY period,series_code LIMIT 500",
+            "SELECT * FROM api.coverage_v2 WHERE release_id=? "
+            f"ORDER BY period,{self.text_order('series_code')} LIMIT 500",
             (release_id,),
         )
 
@@ -262,33 +236,25 @@ class PostgresRepositoryV2(PostgresRepository):
         self, release_id: UUID, snapshot: date, level: str, after: int, limit: int
     ) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.territories_v2 WHERE release_id=%s AND snapshot=%s "
-            "AND level=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            "SELECT * FROM api.territories_v2 WHERE release_id=? AND snapshot=? "
+            "AND level=? AND territory_id>? ORDER BY territory_id LIMIT ?",
             (release_id, snapshot, level, after, limit),
         )
 
     def crosswalks(self, release_id: UUID, after: int, limit: int) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.crosswalks_v2 WHERE release_id=%s AND id>%s ORDER BY id LIMIT %s",
+            "SELECT * FROM api.crosswalks_v2 WHERE release_id=? AND id>? ORDER BY id LIMIT ?",
             (release_id, after, limit),
         )
 
     def boundary(self, release_id: UUID, territory_id: int) -> dict[str, Any] | None:
-        rows = self._query(
-            """SELECT release_id,territory_id,ST_AsGeoJSON(geom,5)::json AS geometry,
-            0.001 AS simplification_degrees FROM (
-            SELECT release_id,territory_id,ST_Multi(ST_SimplifyPreserveTopology(geom,0.001)) AS geom
-            FROM api.boundaries_v2 WHERE release_id=%s AND territory_id=%s) b
-            WHERE ST_NPoints(geom)<=20000""",
-            (release_id, territory_id),
-        )
-        return rows[0] if rows else None
+        raise NotImplementedError
 
     def observations_at_level(
         self, release_id: UUID, series: str, period: date, level: str, after: int, limit: int
     ) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.observations_v2 WHERE release_id=%s AND series_code=%s "
-            "AND period=%s AND level=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
+            "SELECT * FROM api.observations_v2 WHERE release_id=? AND series_code=? "
+            "AND period=? AND level=? AND territory_id>? ORDER BY territory_id LIMIT ?",
             (release_id, series, period, level, after, limit),
         )

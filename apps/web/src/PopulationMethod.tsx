@@ -145,8 +145,8 @@ export function PopulationMethod({
         </div>
         <p>
           Confronto tra i vincoli ammessi dalle fonti e le distribuzioni calcolate dopo il
-          caricamento degli individui e delle famiglie in PostgreSQL. L’uguaglianza verifica la
-          calibrazione; la composizione familiare resta un’assunzione del modello.
+          caricamento degli individui e delle famiglie nell’archivio di preparazione. L’uguaglianza
+          verifica la calibrazione; la composizione familiare resta un’assunzione del modello.
         </p>
         {validation.loading && <p role="status">Calcolo dei confronti…</p>}
         {validation.error && (

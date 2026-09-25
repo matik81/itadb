@@ -20,7 +20,7 @@ from itadb.synthesis.citizenship_models import CitizenshipInput, CitizenshipRefe
 from itadb.synthesis.national_models import NationalInput, ResourceBudget, batches
 from itadb.synthesis.national_runner import canonical, check_files, file_inventory, verify_national
 from itadb.synthesis.national_runtime import RunMonitor
-from itadb.synthesis.runner import _commit, implementation
+from itadb.synthesis.provenance import _commit, implementation
 
 
 def snapshot_files(count: int) -> set[str]:

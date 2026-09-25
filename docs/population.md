@@ -74,7 +74,7 @@ classi dimensionali e integrità familiare. Confronta ogni attributo
 individuale prima e dopo il quarto passaggio, inclusa la cittadinanza:
 anche uno scambio che conservi i totali deve essere rifiutato.
 Il riordino conserva la regola casuale familiare; non introduce correlazioni
-familiari osservate. [Metodo e compatibilità](adr/0014-ordered-population.md).
+familiari osservate. [Architettura](architecture.md).
 
 Da root, acquisire gli inventari fissati nei contratti (gli originali già verificati
 vengono riusati), poi usare i percorsi stampati nei comandi successivi:
@@ -97,17 +97,10 @@ L'identità del run include anche il checksum del codice archiviato: una modific
 dei sorgenti, anche strutturale, produce una nuova identità per una nuova esecuzione.
 Gli snapshot precedenti restano verificabili senza rigenerarli.
 
-Il benchmark corrente è `uv run python -m scripts.benchmarks.population --population
-1000000` oppure `10000000`, con `--recovery` e `--reverse-order` per le prove
-di ripresa e riproduzione. Sono fixture inventate, distinte dal run nazionale.
-
 Il run nazionale corrente è
 `24a56e3bdb58fb1af523ea1b6019e8de04292ecdf11105fc6885cacc4903b76c`:
 58.943.464 individui, 26.670.169 famiglie, 107 batch e 321 Parquet, inclusi
-quelli prima delle famiglie. La generazione e l'audit inline hanno richiesto
-267,99 s monitorati, con picco RSS 1,64 GiB; l'audit successivo 35,47 s.
-I margini osservati hanno errore zero e la fase familiare conserva tutti
-gli attributi precedenti. [Verifiche eseguite](validation.md#integrità-della-popolazione).
+quelli prima delle famiglie. [Verifiche eseguite](validation.md).
 
 
 ## Pubblicazione applicativa dello snapshot verificato
@@ -118,17 +111,16 @@ Il prodotto corrente aggiunge un passaggio esplicito dopo la generazione:
 uv run python scripts/run_logged.py --label "Pubblicazione popolazione" --log .tools/population-publication.log -- uv run itadb publish-population --run data/curated/population/RUN_ID
 ```
 
-Il comando verifica lo snapshot e i contratti delle fonti archiviati, carica
-individui e famiglie completi in PostgreSQL e ne ricalcola le distribuzioni.
-Solo la versione verificata diventa visibile nelle API v3 e nel frontend.
-La pubblicazione è atomica e idempotente; il log e i rapporti sono conservati
-in `data/reports/population-publication/`. Un errore produce rollback e
-quarantena. L'importatore applicativo rifiuta le fixture inventate.
+Il comando ripete l'audit, verifica i contratti delle fonti archiviati e importa
+individui e famiglie direttamente in un nuovo archivio DuckDB. Ricalcola distribuzioni,
+relazioni e cartografia prima di pubblicare. Il retry è idempotente; un errore conserva
+la versione precedente e una quarantena. Le fixture inventate sono rifiutate.
 
-Gli snapshot Parquet e il campo `public_release=false` restano
-immutabili. Il catalogo applicativo è una nuova evidenza di pubblicazione,
-collegata a run ID e checksum. La pubblicazione applicativa segue l’[ADR 0015](adr/0015-population-product.md).
+I Parquet e il campo `public_release=false` restano immutabili: descrivono la
+generazione. La pubblicazione ha una propria identità legata al run e al checksum.
+I confini di regioni, province e comuni sono preparati insieme allo snapshot;
+i marcatori rappresentano territori, non residenze individuali.
 
-La mappa corrente usa la geografia 2025 degli stessi input. Gli aggregati statistici
-conservano le proprie geografie 2020/2021/2024. I marcatori rappresentano comuni; nessuna coordinata di
-residenza viene assegnata implicitamente ai singoli individui.
+Prima della prima pubblicazione cartografica eseguire `uv run itadb prepare-spatial`.
+Poi distribuire con `export-serving`, `verify-serving`, `install-serving --activate`
+e riavviare l'API. [Procedura completa](deployment.md).

@@ -249,7 +249,6 @@ def test_cli_checks_sample_without_database(
 ) -> None:
     inputs = _inputs(tmp_path)
     monkeypatch.setenv("ITADB_DATA_DIR", str(tmp_path))
-    monkeypatch.setenv("ITADB_ADMIN_DATABASE_URL", "postgresql://unused.invalid/no_database")
     result = CliRunner().invoke(
         app,
         [

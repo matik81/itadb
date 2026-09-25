@@ -1,7 +1,6 @@
 .env
 .env.*
 !.env.example
-!.env.test.example
 .venv/
 .tools/
 compose.override.yaml
@@ -23,7 +22,9 @@ data/quarantine/
 data/state/
 data/reports/
 data/benchmarks/
+data/serving/
 *.log
 .DS_Store
 .codex/config.local.toml
 *.tsbuildinfo
+data/published/

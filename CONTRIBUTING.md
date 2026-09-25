@@ -5,7 +5,7 @@ decisioni che cambiano il modello; proporre una PR circoscritta con problema, ri
 verifiche eseguite e limiti. Non sono richiesti servizi cloud per contribuire.
 
 Usare Python 3.13/uv e Node 24/npm. Conservare uv.lock e package-lock.json. Eseguire i
-controlli del README; le modifiche a schema/pipeline devono passare anche la CI PostGIS.
+controlli del README; le modifiche a schema/pipeline devono passare anche la CI di pubblicazione DuckDB.
 Non modificare a mano i tipi generati. Non importare dati reali nel repository.
 
 Le fixture devono essere piccole, inventate oppure redistribuibili con licenza e fonte.

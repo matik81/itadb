@@ -79,7 +79,7 @@ def inventory(directory: Path) -> dict[str, str]:
     }
 
 
-def test_real_order_and_legacy_equivalence(
+def test_real_order_and_component_equivalence(
     tmp_path: Path,
     constraints: PopulationInput,
     monkeypatch: pytest.MonkeyPatch,
@@ -105,8 +105,8 @@ def test_real_order_and_legacy_equivalence(
     assert len(seen) == 2
     manifest = verify_population(result)
     assert manifest["descriptor"]["execution_order"] == list(PRIORITY_ORDER)
-    base = run_national(tmp_path / "legacy", constraints.national)
-    enriched = run_citizenship(tmp_path / "legacy", base, constraints.citizenship)
+    base = run_national(tmp_path / "components", constraints.national)
+    enriched = run_citizenship(tmp_path / "components", base, constraints.citizenship)
     verify_national(base)
     verify_citizenship(enriched, base)
     with duckdb.connect() as con:

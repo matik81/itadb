@@ -29,7 +29,7 @@ def test_invalid_annual_age_inputs_are_rejected(
         age_at_year_start(year, birth_year=birth_year, birth_year_upper_bound=upper_bound)
 
 
-def test_birth_years_are_not_limited_to_pilot_cohorts() -> None:
+def test_birth_years_cover_the_complete_age_range() -> None:
     assert age_at_year_start(2031, birth_year=2030) == AnnualAge(0, False)
     assert age_at_year_start(2032, birth_year=2030) == AnnualAge(1, False)
     assert cohort_reference_year("2031-01-01") == 2030

@@ -88,7 +88,7 @@ uv run python scripts/run_logged.py --label "Pubblicazione aggregati" -- uv run 
 soltanto l'inventario contrattuale, con limite dimensionale e intervallo ISTAT
 di 15 secondi. Modifiche della fonte vengono archiviate e bloccate per revisione.
 I controlli e l'importazione successivi non accedono alla rete. Per Docker usare
-gli stessi comandi dentro `docker compose run --rm pipeline`, così originali,
+gli stessi comandi dentro `docker compose --profile offline run --rm pipeline`, così originali,
 manifest e artefatti restano nel volume condiviso `itadb_evidence`.
 
 Retry sullo stesso inventario restituisce lo stesso UUID. Una nuova acquisizione
@@ -101,3 +101,6 @@ release parzialmente visibili.
 
 Questa pipeline pubblica aggregati statistici. Per generare individui e famiglie
 sintetiche seguire il [workflow della popolazione](../population.md).
+
+Dopo la pubblicazione locale, esportare e attivare una nuova release DuckDB
+per aggiornare le API online. [Procedura](../deployment.md).

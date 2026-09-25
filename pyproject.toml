@@ -10,11 +10,15 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 license = "Apache-2.0"
 dependencies = [
-  "alembic>=1.16,<2", "duckdb>=1.4,<2", "fastapi>=0.116,<1",
-  "filelock>=3.19,<4", "httpx>=0.28,<1", "psycopg[binary,pool]>=3.2,<4",
-  "pydantic-settings>=2.10,<3", "sqlalchemy>=2.0,<3", "typer>=0.16,<1",
+  "duckdb>=1.4,<2",
+  "fastapi>=0.116,<1",
+  "filelock>=3.19,<4",
+  "httpx>=0.28,<1",
+  "pydantic-settings>=2.10,<3",
+  "typer>=0.16,<1",
   "pyshp>=3.1.6,<4",
   "uvicorn[standard]>=0.35,<1",
+  "pytz>=2025.2",
 ]
 
 [project.scripts]
@@ -33,7 +37,7 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["integration: requires a disposable PostgreSQL/PostGIS database"]
+markers = ["integration: end-to-end publication and cartography with DuckDB spatial"]
 addopts = "-ra"
 [tool.mypy]
 python_version = "3.13"

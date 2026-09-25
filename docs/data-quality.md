@@ -12,17 +12,18 @@ workflow riproducibile è descritto in [population.md](population.md).
 | Ammissione | Provenienza, licenza, schema, territori, periodi e riconciliazioni coerenti | Input ammessi e rapporti di ammissione |
 | Generazione | Congiunte demografiche e margini STR/RCS esatti; budget e vincoli familiari | Parquet e checkpoint per batch |
 | Audit indipendente | Rilettura SQL, schemi, ID, relazioni, margini, hash e invarianza degli attributi prima/dopo le famiglie | Manifest e rapporto dello snapshot |
-| Importazione | Audit ripetuto, originali verificati, COPY e confronto delle distribuzioni PostgreSQL | Controlli di pubblicazione nel database |
-| Servizio | Snapshot pubblicati, ruolo reader, query parametrizzate, filtri e limiti | Test API e PostgreSQL |
+| Importazione | Audit ripetuto, originali verificati, lettura Parquet e confronto delle distribuzioni DuckDB | Controlli di pubblicazione nel database |
+| Esportazione | Copia verificata, schema, conteggi e checksum | Manifest e SHA-256 dell’archivio DuckDB |
+| Servizio | Archivio verificato in sola lettura, query parametrizzate, filtri e limiti | Test DuckDB e avvio con archivio in sola lettura |
 
 I retry verificano gli artefatti esistenti. File inattesi, corruzioni, input
 incompatibili e gate falliti impediscono il completamento o la pubblicazione.
 Checkpoint, tentativi interrotti e quarantene restano evidenze; non vanno cancellati
 per forzare la ripresa. Gli snapshot completati sono immutabili.
 
-La pubblicazione nel DB è atomica e idempotente. Il filesystem non partecipa
-alla transazione PostgreSQL: un errore nel rapporto locale dopo il commit viene
-segnalato con `published=true` e snapshot ID; il retry riconosce il commit.
+La pubblicazione prepara una copia separata ed è idempotente. Solo dopo tutti i
+controlli viene aggiornato atomicamente `current`. Un errore nel rapporto dopo
+l’attivazione è segnalato con `published=true`; il retry riconosce la versione.
 [Recupero e operazioni](operations.md).
 
 ## Cosa dimostrano i controlli
@@ -32,7 +33,7 @@ costituisce validazione esterna della composizione familiare o dell'incrocio
 età–singola cittadinanza. Il modello dichiara ipotesi, residui e assenza di dati
 fuori calibrazione. Gli individui sono sintetici, senza corrispondenza con persone reali.
 
-Fixture e benchmark inventati verificano il software e i carichi; non sono dati
+Fixture e carichi inventati verificano il software e i carichi; non sono dati
 osservati. L'importatore applicativo rifiuta le fixture. La distribuzione pubblica
 resta soggetta alla [governance](../GOVERNANCE.md); il completamento tecnico non
 implica revisione scientifica esterna o deployment pubblico.
@@ -48,6 +49,6 @@ geometrie e riconciliazioni. I contratti e le procedure sono descritti nelle gui
 ## Verifiche di sviluppo
 
 La suite comprende casi di successo, retry, corruzione, input incompatibili,
-mancata pubblicazione, accesso reader e paginazione. Eseguire i controlli del
-[README](../README.md#verifiche-di-sviluppo) e i test su PostgreSQL isolato.
+mancata pubblicazione, lettura in sola lettura e paginazione. Eseguire i controlli del
+[README](../README.md#verifiche-di-sviluppo) e i test di pubblicazione DuckDB.
 Esiti recenti e limiti sono in [validation.md](validation.md).
