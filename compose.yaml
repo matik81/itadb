@@ -1,33 +1,8 @@
 name: itadb
 services:
-  db:
-    profiles: [offline]
-    image: postgis/postgis:17-3.5
-    environment:
-      POSTGRES_DB: itadb
-      POSTGRES_USER: itadb
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_only}
-    ports: ["127.0.0.1:5432:5432"]
-    volumes: ["postgres_data:/var/lib/postgresql/data"]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U itadb -d itadb"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    shm_size: 256mb
-  migrate:
-    profiles: [offline]
-    build: {context: ., dockerfile: infra/api.Dockerfile}
-    environment:
-      ITADB_ADMIN_DATABASE_URL: postgresql://itadb:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/itadb
-      API_DB_PASSWORD: ${API_DB_PASSWORD:-local_reader_only}
-    command: ["python", "scripts/migrate.py"]
-    depends_on:
-      db: {condition: service_healthy}
   api:
     build: {context: ., dockerfile: infra/api.Dockerfile}
     environment:
-      ITADB_SERVING_BACKEND: duckdb
       ITADB_SERVING_DIR: /app/serving
       ITADB_CORS_ORIGINS: '["http://localhost:8080","http://localhost:5173"]'
       ITADB_ROOT_PATH: /api
@@ -42,14 +17,6 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
-  pipeline:
-    build: {context: ., dockerfile: infra/api.Dockerfile}
-    profiles: [offline]
-    environment:
-      ITADB_ADMIN_DATABASE_URL: postgresql://itadb:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/itadb
-    volumes: ["evidence:/app/data"]
-    depends_on:
-      migrate: {condition: service_completed_successfully}
   web:
     build: {context: ., dockerfile: infra/web.Dockerfile}
     ports: ["127.0.0.1:8080:8080"]
@@ -57,6 +24,3 @@ services:
       api: {condition: service_healthy}
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-volumes:
-  postgres_data:
-  evidence:

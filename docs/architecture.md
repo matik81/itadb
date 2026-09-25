@@ -1,103 +1,78 @@
 # Architettura
 
-## Prodotto e workflow
-
-Il prodotto rende interrogabile la popolazione sintetica italiana. Un monolite
-Python contiene generazione, pubblicazione e API in moduli separati, eseguiti in
-processi diversi. Il servizio online è FastAPI con DuckDB incorporato su volume
-persistente e frontend statico. Nessun database remoto è necessario.
-[ADR 0017](adr/0017-duckdb-serving.md).
+Itadb usa **un solo database: DuckDB**. Python gestisce acquisizione, generazione,
+audit, pubblicazione e API; il frontend React/Vite è statico.
 
 ```mermaid
-flowchart TB
-  S[Fonti statistiche] --> C[Originali e contratti versionati]
-  C --> G[Generazione locale e audit indipendente]
-  G --> P[Snapshot Parquet immutabile]
-  P --> L[Pubblicazione offline PostgreSQL / PostGIS]
-  L --> X[Export consistente delle viste pubbliche]
-  X --> V[Checksum, schema, conteggi e attivazione]
-  V --> D[(Archivio DuckDB sul volume)]
-  D --> A[FastAPI v1 / v2 / v3]
-  A --> W[Frontend statico: Esplora / Metodo e verifiche]
+flowchart LR
+  S[Originali e contratti] --> G[Generazione e audit]
+  G --> P[Parquet immutabili]
+  P --> C[Nuovo archivio DuckDB verificato]
+  C --> V[Installazione su volume persistente]
+  V --> A[FastAPI v1/v2/v3]
+  A --> W[React su Vercel]
 ```
 
-L'archivio contiene tutti gli snapshot pubblicati, tutte le release v1/v2,
-provenienza, validazioni e geometrie. Non modifica il modello sintetico e non
-presenta gli individui come persone reali. Gli originali della generazione non
-sono richiesti dal server API.
+## Preparazione
 
-## Preparazione offline
+La generazione conserva input, algoritmo, seed, checkpoint e rapporti.
+La pubblicazione legge direttamente i Parquet e ricalcola distribuzioni e
+relazioni in DuckDB. I moduli `pipeline/` pubblicano gli aggregati; `population/`
+pubblica individui e famiglie. Tutti usano lo stesso meccanismo in
+`serving/publication.py`.
 
-Parquet/Zstandard conserva i risultati riproducibili. Il workflow locale esistente
-usa PostgreSQL 17/PostGIS 3.5 per importazione, vincoli, verifiche e cartografia.
-I record pubblicati sono immutabili; nuove revisioni non sovrascrivono le precedenti.
-Gli ID int64 delle persone e famiglie restano locali allo snapshot.
+Un file lock serializza le pubblicazioni sul computer di preparazione. Ogni
+tentativo lavora su una nuova copia dell'ultimo archivio completo, preservando
+le release già pubblicate. In assenza di un archivio di preparazione si usa
+quello del servizio, se disponibile; altrimenti si crea uno schema vuoto.
+Un archivio esistente ma corrotto impedisce la pubblicazione.
 
-L'importazione verifica per insiemi relazioni, coorti, margini e provenienza. Gli
-errori producono rollback e quarantena. Le migrazioni SQL applicate rimangono
-immutabili; questa migrazione non altera quelle revisioni.
-[Schema offline e archivio pubblico](data-model.md).
+Audit, provenienza, relazioni, conteggi e cartografia devono passare prima di
+chiudere il file, verificarlo e attivarlo in `data/published`. Un errore conserva
+il tentativo e la quarantena senza cambiare la versione pubblicata. L'installazione
+nel servizio è un passo separato: la preparazione non aggiorna l'app automaticamente.
 
-`export-serving` legge esclusivamente le viste `api.*` con ruolo reader in una
-transazione PostgreSQL REPEATABLE READ READ ONLY. I timeout brevi del reader sono
-sospesi soltanto nella sessione di esportazione, per consentire la scansione
-nazionale. Le geometrie vengono convertite offline in GeoJSON con gli stessi
-parametri usati dalle API PostgreSQL. L'esportazione conserva date, decimali,
-null, booleani e metadati JSON, senza inferenza dei tipi numerici.
+## Decisione cartografica
 
-## Archivio online
+L'estensione ufficiale `spatial` di DuckDB esegue trasformazione del sistema di
+coordinate, riparazioni ammesse, semplificazione e verifiche geometriche nella
+preparazione. Riutilizza il motore esistente e non introduce altri servizi o
+librerie Python geografiche. Si installa esplicitamente con `itadb prepare-spatial`;
+le pubblicazioni successive la caricano localmente. Versione del motore e checksum
+sono conservati nel manifest. L'applicazione riceve soltanto GeoJSON.
 
-Ogni release distribuibile contiene `application.duckdb` e `manifest.json`.
-Il manifest versiona il formato, registra conteggi e controlli del trasferimento,
-SHA-256 e dimensione del database. Lo schema pubblico è definito in
-`src/itadb/serving/schema.py`. Le tabelle colonnari usano ordinamenti territoriali
-per facilitare le selezioni; non vengono costruiti indici ART nazionali in RAM. La tabella `text_order`
-conserva ranghi calcolati dalla collation PostgreSQL, per mantenere lo stesso
-ordinamento di nomi, codici, etichette e metadati anche su sistemi diversi.
+Per la popolazione, la semplificazione e l'arrotondamento devono mantenere geometrie
+valide e una differenza simmetrica inferiore all'1% dell'area del confine originale.
+Quando superano questa soglia, si conserva il contorno originale, arrotondato solo
+se il controllo passa. Il controllo misura la fedeltà visiva in coordinate
+geografiche; non stima superfici catastali.
 
-Installazione e attivazione sono distinte: una copia verificata entra in una
-nuova directory `releases/SHA256`; soltanto dopo può diventare `current` tramite
-sostituzione atomica del collegamento. Installazioni ripetute riusano la stessa
-release verificata. Errori lasciano intatta quella attiva e conservano evidenze.
-Le copie precedenti permettono il rollback; il backup esterno resta necessario.
+## Archivio e API
 
-Il processo API verifica l'archivio e fissa una release all'avvio. Non segue
-`current` tra una query e la successiva. Il cambio versione richiede riavvio;
-non esistono scritture DuckDB durante le richieste. Un archivio assente o non
-valido produce readiness 503; la liveness resta disponibile. Un catalogo vuoto
-è possibile soltanto attraverso l'inizializzazione esplicita.
+Il pacchetto distribuibile contiene `application.duckdb` e `manifest.json`.
+Il manifest lega formato, schema, conteggi e SHA-256 al file. L'installazione crea
+`releases/SHA256`; l'attivazione aggiorna atomicamente il collegamento `current`.
+Le copie precedenti permettono il rollback. Il backup va conservato anche altrove.
 
-## API e risorse
+Ogni processo API verifica e fissa una release all'avvio. Le query non scrivono
+nel file e non cambiano archivio durante una risposta. Una nuova attivazione
+richiede riavvio. Archivio assente o corrotto: readiness e richieste dati 503;
+liveness disponibile. Il catalogo vuoto richiede inizializzazione esplicita.
 
-FastAPI/Pydantic conserva le route e gli schemi v1/v2/v3. Le query usano valori
-parametrizzati, identificatori scelti da allowlist, limiti e filtri obbligatori.
-Le pagine di individui/famiglie richiedono snapshot e comune, massimo 500 righe.
-L'ancora di paginazione viene letta una volta dalla stessa release immutabile;
-a parità di ordinamento l'ID crescente evita salti o duplicati. I null nelle
-tabelle v2 restano in fondo in entrambe le direzioni. Decimal resta una stringa JSON.
+Query parametrizzate, identificatori da allowlist, filtri obbligatori, pagine
+limitate e cursori stabili costituiscono il contratto pubblico. Decimal resta
+una stringa JSON; null, zero e dati soppressi rimangono distinti. I ranghi testuali
+sono memorizzati nell'archivio; le nuove pubblicazioni usano l'ordine DuckDB,
+indipendente dalla locale del sistema. I cursori valgono per la release selezionata.
 
-Un worker Uvicorn con connessione DuckDB condivisa e cursori per le query gestisce
-più richieste simultanee. I default sono 4 query concorrenti, 2 thread DuckDB,
-256 MB di memoria del motore e timeout di 5 secondi per attesa ed esecuzione.
-Il limite del motore non include tutta la RAM Python o le risposte HTTP. Il numero
-di worker moltiplica i budget: l'immagine ne avvia uno. L'accesso esterno e il
-caricamento automatico di estensioni DuckDB sono disabilitati.
+Un worker Uvicorn gestisce più richieste con lettori limitati: default 4 query,
+2 thread DuckDB, 256 MB per il motore e timeout di 5 secondi. Il limite DuckDB
+non comprende tutta la RAM Python. Caricamento di estensioni e accesso esterno
+sono disabilitati nel servizio. Gli errori pubblici non espongono percorsi o SQL.
 
-`ITADB_SERVING_BACKEND=duckdb` è il default. L'adattatore `postgres` è esplicito
-e serve al confronto e ai test del workflow locale; non è un fallback automatico.
-CORS e request ID restano invariati. Gli errori pubblici non riportano query,
-valori ricevuti, percorsi locali o credenziali.
+## Deployment
 
-## Frontend e deployment
-
-La web app React/Vite è statica e usa `VITE_API_BASE_URL`. La mappa offre Regioni,
-Province e Comuni con confini, marker territoriali e totali. Istogrammi ed elenchi
-sono filtrabili; Metodo conserva fonti e verifiche. Nessuna coordinata individuale
-è stata aggiunta. I componenti storici degli aggregati restano in
-`apps/web/src/evidence/`; le API v1/v2 continuano a funzionare.
-
-Compose avvia API e web con archivio montato in sola lettura. Il profilo `offline`
-contiene PostgreSQL/PostGIS, migrazioni e pipeline. La configurazione Railway
-prevede un servizio API con volume, senza Neon; frontend statico separato.
-[Avvio, backup e aggiornamenti](deployment.md). La configurazione nel repository
-non dimostra un deployment cloud già effettuato.
+Vercel ospita `apps/web/dist`; Railway esegue l'immagine API e monta il volume.
+Compose offre gli stessi due componenti in locale. Il frontend configura
+`VITE_API_BASE_URL`; il backend ammette l'origine tramite CORS.
+[Procedura completa](deployment.md), [verifiche](validation.md).

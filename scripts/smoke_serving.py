@@ -1,4 +1,4 @@
-"""Replay verified responses over HTTP, with no PostgreSQL access or source records."""
+"""Replay verified responses over HTTP, against an immutable archive."""
 
 import argparse
 import hashlib

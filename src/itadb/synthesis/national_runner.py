@@ -24,7 +24,7 @@ from itadb.synthesis.national_models import (
     batches,
 )
 from itadb.synthesis.national_runtime import RunMonitor
-from itadb.synthesis.runner import _commit, implementation
+from itadb.synthesis.provenance import _commit, implementation
 
 
 def canonical(value: Any) -> bytes:

@@ -1,13 +1,13 @@
-# Piani di implementazione
+# Piano corrente
 
-Completato: [migrazione completa a DuckDB](docs/plans/duckdb-serving.md).
+Obiettivo: versione pulita con DuckDB per preparazione e servizio, Python per
+pipeline/API e frontend statico React, pronta da distribuire su Vercel/Railway.
 
-Per un cambiamento che coinvolge più componenti, mantenere in `docs/plans/` un piano breve
-con: problema e risultato osservabile, ambito, decisioni, fasi, verifiche e rischi aperti.
-Aggiornare il piano quando cambia l'ambito; non mantenere liste di attività già obsolete.
-Un piano non sostituisce l'implementazione o i test. Consultare gli ADR per decisioni
-durature; registrare le misure in documenti riproducibili, mai come promesse prestazionali.
+- [x] Pubblicazione diretta dei Parquet e degli aggregati in nuovi archivi DuckDB.
+- [x] Un solo percorso di configurazione; rimozione di servizi e strumenti dismessi.
+- [x] Documentazione corrente; eliminazione di benchmark, piani ed esperimenti superati.
+- [x] Verifica di idempotenza, revisioni, quarantena, ripristino, cartografia e API.
+- [x] Pubblicazione nazionale verificata, build e prove locali di deployment.
 
-Completato: [confronto degli archivi e costi di deployment](docs/plans/storage-comparison.md).
-
-Completato: [modalità territoriali della mappa](docs/plans/map-territory-modes.md).
+[Esiti e limiti](docs/validation.md). Il deployment cloud e il backup remoto
+richiedono i progetti e i domini effettivi; non sono stati eseguiti in questa verifica.

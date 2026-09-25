@@ -1,7 +1,6 @@
 .env
 .env.*
 !.env.example
-!.env.test.example
 .venv/
 .tools/
 compose.override.yaml
@@ -28,4 +27,4 @@ data/serving/
 .DS_Store
 .codex/config.local.toml
 *.tsbuildinfo
-experiments/population-store/target/
+data/published/

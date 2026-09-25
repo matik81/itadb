@@ -6,11 +6,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from itadb.api.population import repository, router
-from itadb.api.population_repository import PopulationRepository
+from itadb.api.population_repository import PopulationQueries
 
 
 def test_distribution_province_filter_validation_and_forwarding() -> None:
-    repo = Mock(spec=PopulationRepository)
+    repo = Mock(spec=PopulationQueries)
     repo.snapshot.return_value = {"id": 1}
     repo.distributions.return_value = [{"age": 40, "sex": "F", "persons": 5}]
     app = FastAPI()
@@ -44,12 +44,12 @@ def test_distribution_province_filter_validation_and_forwarding() -> None:
 
 
 def test_distribution_province_query_is_parameterized_and_snapshot_scoped() -> None:
-    repo = object.__new__(PopulationRepository)
+    repo = object.__new__(PopulationQueries)
     repo._query = Mock(return_value=[])
     repo.distributions(7, None, "09", "F", "201", 20, 80, province="090")
     sql, params = repo._query.call_args.args
     assert "FROM api.population_cells" in sql
-    assert "snapshot_id=%s" in sql
-    assert "province_code=%s" in sql
+    assert "snapshot_id=?" in sql
+    assert "province_code=?" in sql
     assert "LIMIT 202" in sql
     assert params == (7, 20, 80, 9, 90, "F", 201)

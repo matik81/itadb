@@ -1,7 +1,7 @@
 # API della popolazione e delle evidenze
 
-Il backend predefinito usa DuckDB in sola lettura; endpoint e schemi sono invariati.
-Neon e PostgreSQL non sono necessari online. [Archivio e deployment](../deployment.md).
+Il backend usa DuckDB in sola lettura; endpoint e schemi sono invariati.
+[Archivio e deployment](../deployment.md).
 
 ## v3 — popolazione sintetica
 
@@ -34,8 +34,7 @@ La mappa restituisce `regions`, `provinces`, `municipality_boundaries` e
 non sono geometrie catastali. `region_code` filtra province, confini e marker
 comunali, mantenendo le regioni come contesto nazionale. Le liste geografiche
 sono limitate a 1.000 province e 10.000 comuni per snapshot. Le province
-degli snapshot precedenti alla migrazione cartografica vanno caricate con
-`publish-population-boundaries`; fino ad allora la relativa lista è vuota.
+vengono preparati insieme a ogni nuovo snapshot.
 
 La web app aggrega i conteggi comunali per le modalità Regioni e Province e
 mostra i confini del livello scelto e dei livelli superiori. Cambiando modalità
@@ -54,7 +53,7 @@ e schede territoriali riportano i totali senza filtri individuali.
 comune e il tipo `sex_age`, `foreign_age`, `citizenship` o `household_size`.
 Il rapporto originale della generazione mantiene il proprio storico
 `public_release=false`; la pubblicazione applicativa ha una propria identità
-e controlli distinti, descritti nell'[ADR 0015](../adr/0015-population-product.md).
+e controlli distinti, descritti nell'[architettura](../architecture.md).
 
 ## API degli aggregati v1 e v2
 
@@ -153,11 +152,10 @@ coincidono con acquisizione o pubblicazione Itadb. Una release sostituita rimane
 leggibile al proprio UUID; il client può seguire il predecessore dichiarato.
 
 Gli artefatti sono un inventario di provenienza; l'API non espone percorsi del
-filesystem né serve download arbitrari. Le viste v2 e il ruolo reader escludono
-sempre draft, artefatti e verifiche non pubblicati. La readiness verifica tutte le tabelle pubbliche dell’archivio DuckDB, incluse
+filesystem né serve download arbitrari. L’archivio contiene soltanto release, artefatti e verifiche pubblicati. La readiness verifica tutte le tabelle pubbliche dell’archivio DuckDB, incluse
 copertura, territori, crosswalk e confini. All’avvio si verificano anche checksum
-e conteggi. L’adattatore PostgreSQL di confronto controlla i permessi reader. Uno schema privo delle viste di copertura
-o una vista mancante produce 503 su `/health/ready`; `/health/live` resta indipendente.
+e conteggi. Uno schema privo delle tabelle di copertura
+o una tabella mancante produce 503 su `/health/ready`; `/health/live` resta indipendente.
 
 ## Copertura e geografie
 

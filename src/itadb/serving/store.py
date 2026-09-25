@@ -61,7 +61,7 @@ class ArchiveStore:
                 # DuckDB cursors are independent sessions: timezone is not inherited
                 # from SET on the parent connection. Keep timestamp JSON portable.
                 cursor.execute("SET TimeZone='UTC'")
-                result = cursor.execute(sql.replace("%s", "?"), params)
+                result = cursor.execute(sql, params)
                 description = result.description
                 rows = result.fetchall()
                 return [

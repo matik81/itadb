@@ -21,7 +21,7 @@ from itadb.synthesis.national_runtime import RunMonitor
 from itadb.synthesis.population_audit import AUDIT_VERSION, audit_population_batch
 from itadb.synthesis.population_generate import ALGORITHM_VERSION, generate_population_batch
 from itadb.synthesis.population_models import PRIORITY_ORDER, PopulationInput, PopulationReference
-from itadb.synthesis.runner import _commit, implementation
+from itadb.synthesis.provenance import _commit, implementation
 
 
 def snapshot_files(count: int) -> set[str]:

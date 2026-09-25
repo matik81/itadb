@@ -1,31 +1,23 @@
-# Roadmap del prodotto
+# Roadmap
 
-## Implementato
+## Prodotto corrente
 
-Il riferimento unico `population-reference/1` applica la graduatoria di fedeltà
-v5: **sesso/età → geografia → cittadinanza → famiglie**. Gli snapshot verificati
-contengono individui e famiglie completi, sono preparati in PostgreSQL offline e serviti
-da DuckDB tramite API v1/v2/v3 e web app, senza Neon online. Generazione, audit e pubblicazione sono passaggi
-espliciti, con checkpoint, quarantena e retry verificati.
+La popolazione sintetica segue il riferimento unico `population-reference/1`:
+sesso/età → geografia → cittadinanza → famiglie. Generazione e audit producono
+Parquet verificati; la pubblicazione prepara direttamente archivi DuckDB completi.
+Le API v1/v2 conservano gli aggregati e v3 espone individui, famiglie e verifiche.
 
-La web app offre una mappa con modalità Regioni, Province e Comuni, filtri,
-istogrammi, record paginati, famiglie e confronto tra conteggi di origine e
-sintetici. Confini, aggregati e selezione seguono il livello scelto; i punti
-rappresentano territori, senza coordinate residenziali individuali.
+La web app offre mappa per regioni, province e comuni, filtri, istogrammi,
+record paginati e metodo. Le coordinate rappresentano territori, non residenze.
 [Metodo](population.md), [architettura](architecture.md), [verifiche](validation.md).
 
-L’export completo, l’attivazione e la configurazione del deployment sono descritti
-nella [procedura senza Neon](deployment.md). Il deployment cloud resta da eseguire.
-
-## Prossimi incrementi
+## Prossimi passi
 
 | Obiettivo | Criterio di completamento |
 |---|---|
-| Densità e coordinate di residenza | Fonti ammesse, ipotesi versionate, nuovo riferimento e audit che conserva i margini prioritari |
-| Esplorazione spaziale degli individui | Query limitate all'area visibile, indici e benchmark su dati adeguati, rappresentazione esplicita per scala |
-| Deployment gestito | Provider scelto su capacità misurate, memoria/CPU e spazio, backup/restore e procedura Railway eseguita sul cloud |
-| Composizione familiare più fedele | Nuove evidenze di età/cittadinanza o relazioni familiari, confronto con il riferimento e conservazione dei vincoli adottati |
+| Deployment Vercel/Railway | Archivio sul volume, domini e CORS, backup esterno e ripristino verificati sul provider |
+| Densità e coordinate residenziali | Fonti ammesse, ipotesi versionate e nuovo snapshot con audit dei margini prioritari |
+| Composizione familiare più fedele | Nuove evidenze e confronto con il riferimento, mantenendo i vincoli adottati |
 
-Questi incrementi non sono dichiarati implementati. Lavoro, istruzione, servizi,
-dinamiche demografiche e scenari causali richiederanno obiettivi e priorità
+Lavoro, istruzione, servizi e dinamiche causali richiedono obiettivi e priorità
 espliciti; non sono proprietà dell'attuale popolazione.

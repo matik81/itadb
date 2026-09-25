@@ -1,34 +1,26 @@
-"""Atomically import verified population snapshots into the serving database."""
+"""Publish audited Parquet snapshots directly into a new immutable DuckDB archive."""
 
+import csv
 import json
 import time
 from collections.abc import Callable, Iterable
+from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from uuid import uuid4
 
 import duckdb
-import psycopg
-from psycopg import sql
-from psycopg.types.json import Jsonb
 
 from itadb.config import Settings
-from itadb.pipeline.geography import admin_code, shape_records
-from itadb.pipeline.storage import atomic_json, sha256_file
-from itadb.population.cartography import import_provinces
+from itadb.pipeline.storage import sha256_file
+from itadb.population.cartography import load_population_geography
+from itadb.serving.publication import insert, publication
+from itadb.serving.sql import row
 from itadb.synthesis.national_runner import check_files
 from itadb.synthesis.population_models import PopulationInput
 from itadb.synthesis.population_runner import verify_population
 
-PUBLISH_VERSION = "population-serving/1"
-TABLES = ("person", "household", "cell", "validation")
-
-
-def partition(kind: str, sid: int) -> sql.Identifier:
-    if kind not in TABLES or sid <= 0:
-        raise ValueError("Invalid population partition")
-    return sql.Identifier("population", f"{kind}_{sid}")
+PUBLISH_VERSION = "population-duckdb/1"
 
 
 def evidence(root: Path, inputs: PopulationInput) -> dict[str, Any]:
@@ -54,118 +46,6 @@ def evidence(root: Path, inputs: PopulationInput) -> dict[str, Any]:
     }
 
 
-def _geography(db: psycopg.Connection[Any], sid: int, root: Path, inputs: PopulationInput) -> None:
-    if inputs.national.evidence_kind == "invented_load_fixture":
-        rows = [
-            (
-                sid,
-                int(m.code),
-                f"Comune inventato {m.code}",
-                int(m.province),
-                "Provincia inventata",
-                int(m.region),
-                "Regione inventata",
-                m.population,
-                m.household_total,
-            )
-            for m in inputs.national.municipalities
-        ]
-    else:
-        digest = inputs.national.source_hashes["geography"]
-        path = root / "raw" / digest[:2] / digest / "payload"
-        if sha256_file(path) != digest:
-            raise ValueError("Geography checksum differs")
-        regions, provinces, localities = {}, {}, {}
-        db.execute(
-            "CREATE TEMP TABLE geometry_input(level text,code integer,shape text) ON COMMIT DROP"
-        )
-        with db.cursor().copy("COPY geometry_input FROM STDIN") as copy:
-            for level, record, shape in shape_records(path):
-                code = admin_code(level, record)
-                if level == "region":
-                    regions[code] = record["DEN_REG"]
-                elif level == "province":
-                    provinces[code] = record["DEN_UTS"]
-                else:
-                    localities[code] = record["COMUNE"]
-                if level != "province":
-                    copy.write_row((level, int(code), json.dumps(shape.__geo_interface__)))
-        rows = [
-            (
-                sid,
-                int(m.code),
-                localities[m.code],
-                int(m.province),
-                provinces[m.province],
-                int(m.region),
-                regions[m.region],
-                m.population,
-                m.household_total,
-            )
-            for m in inputs.national.municipalities
-        ]
-        for code, name in regions.items():
-            db.execute(
-                "INSERT INTO population.region(snapshot_id,code,name) VALUES(%s,%s,%s)",
-                (sid, int(code), name),
-            )
-        # Display geometries only; exact source bytes remain in the generation archive.
-        db.execute(
-            """UPDATE population.region r SET boundary=ST_Multi(ST_CollectionExtract(
-            ST_SimplifyPreserveTopology(ST_Transform(ST_MakeValid(ST_SetSRID(
-                ST_GeomFromGeoJSON(g.shape),32632)),4326),0.01),3))
-            FROM geometry_input g WHERE r.snapshot_id=%s AND g.level='region' AND r.code=g.code""",
-            (sid,),
-        )
-    with db.cursor().copy(
-        "COPY population.municipality(snapshot_id,code,name,province_code,province_name,"
-        "region_code,region_name,persons,households) FROM STDIN"
-    ) as copy:
-        for row in rows:
-            copy.write_row(row)
-    if inputs.national.evidence_kind != "invented_load_fixture":
-        db.execute(
-            """UPDATE population.municipality m SET
-            boundary=ST_Multi(ST_CollectionExtract(ST_SimplifyPreserveTopology(g.geom,0.002),3)),
-            center=ST_PointOnSurface(g.geom) FROM (
-                SELECT code,ST_Transform(
-                ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(shape),32632)),4326) geom
-                FROM geometry_input WHERE level='municipality') g
-            WHERE m.snapshot_id=%s AND m.code=g.code""",
-            (sid,),
-        )
-
-
-def _copy_parquet(
-    db: psycopg.Connection[Any], sid: int, kind: str, path: Path, scratch: Path
-) -> None:
-    fields = (
-        (
-            "person_id,household_id,municipality::INTEGER,sex,birth_year,birth_year_upper_bound,"
-            "citizenship_code::SMALLINT,reference_adult"
-        )
-        if kind == "person"
-        else ("household_id,municipality::INTEGER,size")
-    )
-    target = scratch / "batch.csv"
-    with duckdb.connect() as con:
-        con.execute("SET memory_limit='256MB'")
-        con.execute("SET threads=2")
-        con.read_parquet(str(path)).create_view("batch")
-        con.execute(
-            f"COPY (SELECT {sid},{fields} FROM batch) TO ? (FORMAT CSV,HEADER false)", [str(target)]
-        )
-    with (
-        db.cursor().copy(
-            sql.SQL("COPY {} FROM STDIN WITH (FORMAT CSV)").format(partition(kind, sid))
-        ) as copy,
-        target.open("rb") as stream,
-    ):
-        while block := stream.read(1024 * 1024):
-            copy.write(block)
-    target.unlink()
-
-
 def _expected(inputs: PopulationInput) -> Iterable[tuple[int, str, str, int, int]]:
     for m in inputs.national.municipalities:
         for sex, counts in [("M", m.male), ("F", m.female)]:
@@ -183,84 +63,117 @@ def _expected(inputs: PopulationInput) -> Iterable[tuple[int, str, str, int, int
 
 
 def _validate(
-    db: psycopg.Connection[Any], sid: int, inputs: PopulationInput, emit: Callable[[str], None]
+    db: duckdb.DuckDBPyConnection, sid: int, inputs: PopulationInput, emit: Callable[[str], None]
 ) -> dict[str, Any]:
-    year = int(inputs.national.population_reference[:4]) - 1
-    emit("Controllo delle relazioni fra persone, famiglie e territori")
+    emit("Controllo degli identificativi e delle relazioni")
+    for table, identity in (
+        ("population_persons", "person_id"),
+        ("population_households", "household_id"),
+    ):
+        if db.execute(
+            f"SELECT 1 FROM api.{table} WHERE snapshot_id=? GROUP BY {identity} "
+            f"HAVING count(*)<>1 OR {identity} IS NULL OR {identity}<1 LIMIT 1",
+            [sid],
+        ).fetchone():
+            raise ValueError("Invalid or duplicate record identity")
     invalid = db.execute(
-        """SELECT EXISTS(SELECT 1 FROM population.person p
-        LEFT JOIN population.municipality m ON m.snapshot_id=p.snapshot_id AND
-        m.code=p.municipality_code
-        WHERE p.snapshot_id=%s AND (m.code IS NULL OR
-        (p.birth_year IS NOT NULL AND p.birth_year NOT BETWEEN %s-99 AND %s) OR
-        (p.birth_year_upper_bound IS NOT NULL AND p.birth_year_upper_bound<>%s-100) OR
-        (coalesce(p.birth_year,p.birth_year_upper_bound)>%s-18 AND p.household_id IS NULL)))""",
-        (sid, year, year, year, year),
+        """SELECT 1 FROM api.population_persons p
+        LEFT JOIN api.population_municipalities m ON m.snapshot_id=p.snapshot_id
+        AND m.code=p.municipality_code WHERE p.snapshot_id=? AND
+        (m.code IS NULL OR p.sex IS NULL OR p.sex NOT IN ('M','F')
+        OR p.age NOT BETWEEN 0 AND 100 OR p.age IS NULL
+        OR p.citizenship_code IS NULL OR p.citizenship_code NOT BETWEEN 1 AND 999
+        OR p.reference_adult IS NULL OR p.reference_date IS DISTINCT FROM ?::DATE
+        OR p.data_kind IS DISTINCT FROM 'synthetic'
+        OR p.age_is_lower_bound IS DISTINCT FROM (p.birth_year IS NULL)
+        OR (p.birth_year IS NULL)=(p.birth_year_upper_bound IS NULL)
+        OR (p.birth_year_upper_bound IS NOT NULL AND p.age<>100)
+        OR (p.birth_year_upper_bound IS NOT NULL AND p.birth_year_upper_bound<>?)
+        OR (p.birth_year IS NOT NULL AND (p.age<>?-p.birth_year OR p.age>=100))
+        OR (p.household_id IS NULL AND (p.age<18 OR p.reference_adult))) LIMIT 1""",
+        [
+            sid,
+            inputs.national.population_reference,
+            int(inputs.national.population_reference[:4]) - 101,
+            int(inputs.national.population_reference[:4]) - 1,
+        ],
     ).fetchone()
-    if invalid != (False,):
-        raise ValueError("Invalid person geography, birth cohort or unassigned minor")
-    # Set-based relationship check: no foreign-key trigger for every copied person.
+    if invalid:
+        raise ValueError("Invalid person geography, cohort or unassigned minor")
     invalid = db.execute(
         """WITH members AS (
         SELECT household_id,count(*) n,min(municipality_code) lo,max(municipality_code) hi,
         count(*) FILTER(WHERE reference_adult) refs,
-        count(*) FILTER(WHERE reference_adult AND
-        coalesce(birth_year,birth_year_upper_bound)>%s-18) minors
-        FROM population.person WHERE snapshot_id=%s AND household_id IS NOT NULL GROUP BY
-        household_id)
-        SELECT EXISTS(SELECT 1 FROM (SELECT * FROM population.household WHERE snapshot_id=%s) h
-        FULL JOIN members p USING(household_id)
-        WHERE
-        (h.household_id IS NULL OR p.household_id IS NULL OR h.size<>p.n OR
-         h.municipality_code<>p.lo OR p.lo<>p.hi OR p.refs<>1 OR p.minors<>0))""",
-        (year, sid, sid),
+        count(*) FILTER(WHERE reference_adult AND age<18) minors
+        FROM api.population_persons WHERE snapshot_id=? AND household_id IS NOT NULL
+        GROUP BY household_id)
+        SELECT 1 FROM (SELECT * FROM api.population_households WHERE snapshot_id=?) h
+        FULL JOIN members p USING(household_id) WHERE
+        h.household_id IS NULL OR p.household_id IS NULL OR h.size IS NULL OR h.size<>p.n
+        OR h.municipality_code IS NULL OR h.municipality_code<>p.lo
+        OR h.data_kind IS DISTINCT FROM 'synthetic'
+        OR p.lo<>p.hi OR p.refs<>1 OR p.minors<>0 LIMIT 1""",
+        [sid, sid],
     ).fetchone()
-    if invalid != (False,):
+    if invalid:
         raise ValueError("Household relationships differ from snapshot constraints")
-    emit("Distribuzioni calcolate dai record PostgreSQL")
+    emit("Ricalcolo delle distribuzioni dai record DuckDB")
     db.execute(
-        sql.SQL("""INSERT INTO {} SELECT snapshot_id,municipality_code,sex,
-        coalesce(%s-birth_year,100),citizenship_code,count(*) FROM population.person
-        WHERE snapshot_id=%s
-        GROUP BY snapshot_id,municipality_code,sex,birth_year,citizenship_code""").format(
-            partition("cell", sid)
-        ),
-        (year, sid),
+        """INSERT INTO api.population_cells SELECT p.snapshot_id,p.municipality_code,
+        p.sex,p.age,p.citizenship_code,count(*),m.region_code,m.province_code
+        FROM api.population_persons p JOIN api.population_municipalities m
+        ON m.snapshot_id=p.snapshot_id AND m.code=p.municipality_code WHERE p.snapshot_id=?
+        GROUP BY ALL ORDER BY p.municipality_code,p.age,p.sex,p.citizenship_code""",
+        [sid],
     )
+    with TemporaryDirectory(prefix="itadb-expected-") as temporary:
+        path = Path(temporary) / "expected.csv"
+        with path.open("w", newline="") as stream:
+            csv.writer(stream).writerows(_expected(inputs))
+        db.execute(
+            """CREATE TEMP TABLE expected AS SELECT * FROM read_csv(?,header=false,
+            columns={'municipality_code':'INTEGER','kind':'VARCHAR','sex':'VARCHAR',
+                     'category':'SMALLINT','n':'BIGINT'})""",
+            [str(path)],
+        )
     db.execute(
-        "CREATE TEMP TABLE expected(municipality_code integer,kind text,sex "
-        "text,category smallint,n bigint) ON COMMIT DROP"
-    )
-    with db.cursor().copy("COPY expected FROM STDIN") as copy:
-        for row in _expected(inputs):
-            copy.write_row(row)
-    db.execute(
-        """CREATE TEMP TABLE actual ON COMMIT DROP AS
-        SELECT municipality_code,'sex_age'::text kind,sex,age category,sum(persons)::bigint n
-        FROM population.cell WHERE snapshot_id=%s GROUP BY municipality_code,sex,age
+        """CREATE TEMP TABLE actual AS
+        SELECT municipality_code,'sex_age' kind,sex,age category,sum(persons)::bigint n
+        FROM api.population_cells WHERE snapshot_id=? GROUP BY municipality_code,sex,age
         UNION ALL SELECT municipality_code,'foreign_age',sex,age,sum(persons)::bigint
-        FROM population.cell WHERE snapshot_id=%s AND citizenship_code<>100 GROUP BY
-        municipality_code,sex,age
+        FROM api.population_cells WHERE snapshot_id=? AND citizenship_code<>100
+        GROUP BY municipality_code,sex,age
         UNION ALL SELECT municipality_code,'citizenship',sex,citizenship_code,sum(persons)::bigint
-        FROM population.cell WHERE snapshot_id=%s GROUP BY municipality_code,sex,citizenship_code
+        FROM api.population_cells WHERE snapshot_id=? GROUP BY
+        municipality_code,sex,citizenship_code
         UNION ALL SELECT municipality_code,'household_size','*',size,count(*)
-        FROM population.household WHERE snapshot_id=%s GROUP BY municipality_code,size""",
-        (sid, sid, sid, sid),
+        FROM api.population_households WHERE snapshot_id=? GROUP BY municipality_code,size""",
+        [sid] * 4,
     )
-    emit("Confronto integrale con i vincoli demografici, STR/RCS e familiari")
+    emit("Confronto integrale dei vincoli demografici e familiari")
     db.execute(
-        sql.SQL("""INSERT INTO {} SELECT %s,coalesce(e.municipality_code,a.municipality_code),
-        coalesce(e.kind,a.kind),coalesce(e.sex,a.sex),coalesce(e.category,a.category),
-        coalesce(e.n,0),coalesce(a.n,0) FROM expected e FULL JOIN actual a
-        USING(municipality_code,kind,sex,category)""").format(partition("validation", sid)),
-        (sid,),
+        """INSERT INTO api.population_validation
+        SELECT ?,coalesce(e.municipality_code,a.municipality_code),coalesce(e.kind,a.kind),
+        coalesce(e.sex,a.sex),coalesce(e.category,a.category),coalesce(e.n,0),coalesce(a.n,0)
+        FROM expected e FULL JOIN actual a USING(municipality_code,kind,sex,category)
+        ORDER BY 2,3,5,4""",
+        [sid],
     )
     result = db.execute(
-        "SELECT count(*),max(abs(expected-actual)) FROM population.validation WHERE snapshot_id=%s",
-        (sid,),
+        "SELECT count(*),max(abs(expected-actual)) FROM api.population_validation "
+        "WHERE snapshot_id=?",
+        [sid],
     ).fetchone()
     if result is None or result[1] != 0:
         raise ValueError("Database distributions differ from admitted source counts")
+    for table, expected_count in [
+        ("population_persons", sum(m.population for m in inputs.national.municipalities)),
+        ("population_households", sum(m.household_total for m in inputs.national.municipalities)),
+    ]:
+        if db.execute(
+            f"SELECT count(*) FROM api.{table} WHERE snapshot_id=?", [sid]
+        ).fetchone() != (expected_count,):
+            raise ValueError("Imported record count differs")
     return {
         "snapshot_audit": True,
         "database_constraints": True,
@@ -273,20 +186,13 @@ def _validate(
 
 def publish_population(settings: Settings, directory: Path, *, allow_fixture: bool = False) -> int:
     started = time.monotonic()
-    committed_id: int | None = None
-    attempt = uuid4().hex
-    reports = settings.data_dir / "reports" / "population-publication"
-    reports.mkdir(parents=True, exist_ok=True)
-    log = reports / f"{attempt}.log"
 
     def emit(message: str) -> None:
-        line = f"Pubblicazione popolazione · {time.monotonic() - started:.1f}s · {message}"
-        print(line, flush=True)
-        with log.open("a") as stream:
-            stream.write(line + "\n")
+        print(f"Pubblicazione · {time.monotonic() - started:.1f}s · {message}", flush=True)
 
-    try:
-        emit("Audit indipendente dello snapshot prima di accedere al database")
+    with publication(settings) as writer:
+        db = writer.db
+        emit("Audit indipendente dello snapshot")
         manifest = verify_population(directory)
         inputs = PopulationInput.model_validate_json((directory / "input.json").read_bytes())
         fixture = inputs.national.evidence_kind == "invented_load_fixture"
@@ -294,6 +200,16 @@ def publish_population(settings: Settings, directory: Path, *, allow_fixture: bo
             raise ValueError(
                 "The application importer requires an official-input population snapshot"
             )
+        checksum = sha256_file(directory / "manifest.json")
+        existing = db.execute(
+            "SELECT id,manifest_sha256 FROM api.population_snapshots WHERE run_id=?",
+            [manifest["run_id"]],
+        ).fetchone()
+        if existing:
+            if existing[1] != checksum:
+                raise ValueError("Existing snapshot identity differs")
+            emit(f"Snapshot {existing[0]} già pubblicato")
+            return int(existing[0])
         provenance = (
             {
                 "sources": [],
@@ -303,112 +219,62 @@ def publish_population(settings: Settings, directory: Path, *, allow_fixture: bo
             if fixture
             else evidence(settings.data_dir, inputs)
         )
-        provenance["model"] = manifest["descriptor"]["reference"]
-        provenance["execution_order"] = manifest["descriptor"]["execution_order"]
-        provenance["algorithm"] = manifest["descriptor"]["algorithm"]
-        provenance["input_sha256"] = manifest["descriptor"]["input_sha256"]
-        report = json.loads((directory / "report.json").read_bytes())
-        checksum = sha256_file(directory / "manifest.json")
-        with (
-            psycopg.connect(settings.admin_database_url) as db,
-            TemporaryDirectory(prefix="itadb-publish-") as temporary,
-        ):
-            db.execute("SELECT pg_advisory_xact_lock(%s)", (int(manifest["run_id"][:15], 16),))
-            existing = db.execute(
-                "SELECT id,manifest_sha256,status FROM population.snapshot WHERE run_id=%s",
-                (manifest["run_id"],),
-            ).fetchone()
-            if existing:
-                if existing[1:] != (checksum, "published"):
-                    raise ValueError("Existing serving snapshot identity differs")
-                emit(f"Esito: snapshot {existing[0]} già pubblicato, nessun duplicato")
-                return int(existing[0])
-            row = db.execute(
-                """INSERT INTO population.snapshot(run_id,manifest_sha256,reference_date,
-                household_reference,persons,households,municipalities,is_fixture,report,provenance)
-                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
-                (
-                    manifest["run_id"],
-                    checksum,
-                    inputs.national.population_reference,
-                    inputs.national.household_reference,
-                    report["persons"],
-                    report["households"],
-                    len(inputs.national.municipalities),
-                    fixture,
-                    Jsonb(report),
-                    Jsonb(provenance),
-                ),
-            ).fetchone()
-            assert row is not None
-            sid = int(row[0])
-            for kind in TABLES:
-                db.execute(
-                    sql.SQL("CREATE TABLE {} PARTITION OF {} FOR VALUES IN ({})").format(
-                        partition(kind, sid), sql.Identifier("population", kind), sql.Literal(sid)
-                    )
-                )
-                db.execute(
-                    sql.SQL(
-                        "CREATE TRIGGER immutable_partition BEFORE INSERT OR UPDATE OR "
-                        "DELETE OR TRUNCATE ON {} FOR EACH STATEMENT EXECUTE FUNCTION "
-                        "population.guard_partition({})"
-                    ).format(partition(kind, sid), sql.Literal(str(sid)))
-                )
-            emit("Geografia e provenienza dello stesso riferimento della popolazione")
-            _geography(db, sid, settings.data_dir, inputs)
-            import_provinces(db, sid, settings.data_dir)
-            folders = sorted(directory.glob("batch-*"))
-            for index, folder in enumerate(folders, 1):
-                emit(f"COPY batch {index}/{len(folders)}: famiglie e individui")
-                _copy_parquet(db, sid, "household", folder / "households.parquet", Path(temporary))
-                _copy_parquet(db, sid, "person", folder / "persons.parquet", Path(temporary))
-            emit("Aggiornamento statistiche degli indici")
-            for kind in ("person", "household"):
-                db.execute(sql.SQL("ANALYZE {}").format(partition(kind, sid)))
-            checks = _validate(db, sid, inputs, emit)
-            # Reject source changes even if they occur between audit and COPY.
-            check_files(directory, manifest["files"], "manifest.json")
-            if sha256_file(directory / "manifest.json") != checksum:
-                raise ValueError("Snapshot changed during publication")
-            db.execute(
-                (
-                    "UPDATE population.snapshot SET publication_checks=%s,"
-                    "status='published',published_at=now() WHERE id=%s"
-                ),
-                (Jsonb(checks), sid),
-            )
-            db.commit()
-            committed_id = sid
-            emit(
-                f"Esito: snapshot {sid} pubblicato, {report['persons']:,} individui "
-                f"e {report['households']:,} famiglie"
-            )
-            atomic_json(
-                reports / f"{attempt}.json",
-                {
-                    "snapshot_id": sid,
-                    "run_id": manifest["run_id"],
-                    "persons": report["persons"],
-                    "households": report["households"],
-                    "elapsed_seconds": time.monotonic() - started,
-                    "checks": checks,
-                },
-            )
-            return sid
-    except Exception as error:
-        outcome = (
-            "pubblicazione annullata"
-            if committed_id is None
-            else f"snapshot {committed_id} pubblicato; rapporto locale non completato"
-        )
-        emit(f"Esito: {outcome} ({type(error).__name__})")
-        atomic_json(
-            settings.data_dir / "quarantine" / f"population-publication-{attempt}.json",
+        provenance.update(
             {
-                "published": committed_id is not None,
-                "snapshot_id": committed_id,
-                "error_type": type(error).__name__,
+                key: manifest["descriptor"][key]
+                for key in ("execution_order", "algorithm", "input_sha256")
+            }
+        )
+        provenance["model"] = manifest["descriptor"]["reference"]
+        report = json.loads((directory / "report.json").read_bytes())
+        sid = int(row(db.execute("SELECT coalesce(max(id),0)+1 FROM api.population_snapshots"))[0])
+        insert(
+            db,
+            "population_snapshots",
+            {
+                "id": sid,
+                "run_id": manifest["run_id"],
+                "manifest_sha256": checksum,
+                "reference_date": inputs.national.population_reference,
+                "household_reference": inputs.national.household_reference,
+                "persons": report["persons"],
+                "households": report["households"],
+                "municipalities": len(inputs.national.municipalities),
+                "is_fixture": fixture,
+                "published_at": datetime.now(UTC),
+                "data_kind": "synthetic",
+                "located_persons": 0,
+                "report": json.dumps(report),
+                "provenance": json.dumps(provenance),
             },
         )
-        raise
+        load_population_geography(db, sid, settings.data_dir, inputs)
+        folders = sorted(directory.glob("batch-*"))
+        year = int(inputs.national.population_reference[:4]) - 1
+        for index, folder in enumerate(folders, 1):
+            emit(f"Importazione Parquet {index}/{len(folders)}")
+            db.execute(
+                """INSERT INTO api.population_households SELECT ?,household_id,
+                municipality::INTEGER,size,'synthetic' FROM read_parquet(?) ORDER BY
+        household_id""",
+                [sid, str(folder / "households.parquet")],
+            )
+            db.execute(
+                """INSERT INTO api.population_persons SELECT ?,person_id,household_id,
+municipality::INTEGER,sex,birth_year,birth_year_upper_bound,citizenship_code::SMALLINT,
+                reference_adult,?::DATE,coalesce(?-birth_year,100),birth_year IS NULL,'synthetic'
+                FROM read_parquet(?) ORDER BY municipality,person_id""",
+                [sid, inputs.national.population_reference, year, str(folder / "persons.parquet")],
+            )
+        checks = _validate(db, sid, inputs, emit)
+        check_files(directory, manifest["files"], "manifest.json")
+        if sha256_file(directory / "manifest.json") != checksum:
+            raise ValueError("Snapshot changed during publication")
+        db.execute(
+            "UPDATE api.population_snapshots SET publication_checks=? WHERE id=?",
+            [json.dumps(checks), sid],
+        )
+        writer.changed = True
+        emit(f"Verificati {report['persons']:,} individui e {report['households']:,} famiglie")
+    emit(f"Snapshot {sid} pubblicato nell'archivio di preparazione")
+    return sid

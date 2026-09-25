@@ -1,8 +1,8 @@
-"""Bounded queries against published synthetic population views only."""
+"""Bounded queries against published synthetic population tables only."""
 
 from typing import Any
 
-from itadb.api.repository import PostgresExecutor, SQLRepository
+from itadb.api.repository import SQLRepository
 
 PERSON_FIELDS = (
     "person_id,household_id,lpad(municipality_code::text,6,'0') "
@@ -12,12 +12,6 @@ PERSON_FIELDS = (
 )
 HOUSEHOLD_FIELDS = (
     "household_id,lpad(municipality_code::text,6,'0') municipality_code,size,data_kind"
-)
-MUNICIPALITY_FIELDS = (
-    "lpad(code::text,6,'0') code,name,lpad(province_code::text,3,'0') "
-    "province_code,province_name,lpad(region_code::text,2,'0') "
-    "region_code,region_name,persons,households,ST_X(center) longitude,"
-    "ST_Y(center) latitude"
 )
 
 
@@ -40,62 +34,28 @@ class PopulationQueries(SQLRepository):
                 "SELECT id,run_id,manifest_sha256,reference_date,household_reference,"
                 "persons,households,municipalities,located_persons,is_fixture,"
                 "data_kind,published_at FROM api.population_snapshots ORDER BY "
-                "published_at DESC,id DESC LIMIT %s"
+                "published_at DESC,id DESC LIMIT ?"
             ),
             (limit,),
         )
 
     def snapshot(self, sid: int) -> dict[str, Any] | None:
-        rows = self._query("SELECT * FROM api.population_snapshots WHERE id=%s", (sid,))
+        rows = self._query("SELECT * FROM api.population_snapshots WHERE id=?", (sid,))
         return rows[0] if rows else None
 
     def municipalities(
         self, sid: int, region: str | None, search: str | None, after: int, limit: int
     ) -> list[dict[str, Any]]:
-        conditions = ["snapshot_id=%s", "code>%s"]
-        params: list[Any] = [sid, after]
-        if region:
-            conditions.append("region_code=%s")
-            params.append(int(region))
-        if search:
-            conditions.append(
-                "(strpos(lower(name),lower(%s))>0 OR strpos(lpad(code::text,6,'0'),%s)>0)"
-            )
-            params += [search, search]
-        return self._query(
-            f"SELECT {MUNICIPALITY_FIELDS} "
-            f"FROM api.population_municipalities "
-            f"WHERE {' AND '.join(conditions)} "
-            f"ORDER BY code LIMIT %s",
-            (*params, limit),
-        )
+        raise NotImplementedError
 
     def regions(self, sid: int) -> list[dict[str, Any]]:
-        return self._query(
-            """SELECT lpad(r.code::text,2,'0') code,r.name,
-            t.persons,t.households,ST_AsGeoJSON(r.boundary,5)::json geometry
-            FROM api.population_regions r JOIN (SELECT region_code,sum(persons)::bigint persons,
-            sum(households)::bigint households FROM api.population_municipalities
-            WHERE snapshot_id=%s GROUP BY region_code) t ON t.region_code=r.code
-            WHERE r.snapshot_id=%s ORDER BY r.code""",
-            (sid, sid),
-        )
+        raise NotImplementedError
 
     def province_boundaries(self, sid: int, region: str | None) -> list[dict[str, Any]]:
-        return self._query(
-            """SELECT lpad(code::text,3,'0') code,ST_AsGeoJSON(boundary,5)::json geometry
-            FROM api.population_provinces WHERE snapshot_id=%s
-            AND (%s::smallint IS NULL OR region_code=%s) ORDER BY code LIMIT 1000""",
-            (sid, int(region) if region else None, int(region) if region else None),
-        )
+        raise NotImplementedError
 
     def municipality_boundaries(self, sid: int, region: str | None) -> list[dict[str, Any]]:
-        return self._query(
-            """SELECT lpad(code::text,6,'0') code,ST_AsGeoJSON(boundary,5)::json geometry
-            FROM api.population_municipalities WHERE snapshot_id=%s AND boundary IS NOT NULL
-            AND (%s::smallint IS NULL OR region_code=%s) ORDER BY code LIMIT 10000""",
-            (sid, int(region) if region else None, int(region) if region else None),
-        )
+        raise NotImplementedError
 
     def _page(
         self,
@@ -110,17 +70,7 @@ class PopulationQueries(SQLRepository):
         limit: int,
     ) -> list[dict[str, Any]]:
         # All identifiers and ordering expressions are selected internally.
-        order, comparison = ("DESC", "<") if direction == "desc" else ("ASC", ">")
-        return self._query(
-            f"""WITH selected AS NOT MATERIALIZED (
-            SELECT *,{column} sort_value FROM {view} WHERE {" AND ".join(conditions)}),
-            anchor AS (SELECT sort_value,{identity} FROM selected WHERE {identity}=%s)
-            SELECT {fields} FROM selected p WHERE (%s=0 OR EXISTS(SELECT 1 FROM anchor a
-                WHERE p.sort_value {comparison} a.sort_value OR
-                (p.sort_value=a.sort_value AND p.{identity}>a.{identity})))
-            ORDER BY sort_value {order},{identity} ASC LIMIT %s""",
-            (*params, after, after, limit),
-        )
+        raise NotImplementedError
 
     def persons(
         self,
@@ -135,13 +85,13 @@ class PopulationQueries(SQLRepository):
         after: int,
         limit: int,
     ) -> list[dict[str, Any]]:
-        conditions = ["snapshot_id=%s", "municipality_code=%s", "age BETWEEN %s AND %s"]
+        conditions = ["snapshot_id=?", "municipality_code=?", "age BETWEEN ? AND ?"]
         params: list[Any] = [sid, int(municipality), age_min, age_max]
         if sex:
-            conditions.append("sex=%s")
+            conditions.append("sex=?")
             params.append(sex)
         if citizenship:
-            conditions.append("citizenship_code=%s")
+            conditions.append("citizenship_code=?")
             params.append(int(citizenship))
         column = {
             "person_id": "person_id",
@@ -166,7 +116,7 @@ class PopulationQueries(SQLRepository):
         rows = self._query(
             f"SELECT {PERSON_FIELDS} "
             f"FROM api.population_persons "
-            f"WHERE snapshot_id=%s AND person_id=%s",
+            f"WHERE snapshot_id=? AND person_id=?",
             (sid, pid),
         )
         return rows[0] if rows else None
@@ -181,10 +131,10 @@ class PopulationQueries(SQLRepository):
         after: int,
         limit: int,
     ) -> list[dict[str, Any]]:
-        conditions = ["snapshot_id=%s", "municipality_code=%s"]
+        conditions = ["snapshot_id=?", "municipality_code=?"]
         params: list[Any] = [sid, int(municipality)]
         if size:
-            conditions.append("size=%s")
+            conditions.append("size=?")
             params.append(size)
         return self._page(
             "api.population_households",
@@ -202,7 +152,7 @@ class PopulationQueries(SQLRepository):
         rows = self._query(
             f"SELECT {HOUSEHOLD_FIELDS} "
             f"FROM api.population_households "
-            f"WHERE snapshot_id=%s AND household_id=%s",
+            f"WHERE snapshot_id=? AND household_id=?",
             (sid, hid),
         )
         if not rows:
@@ -212,7 +162,7 @@ class PopulationQueries(SQLRepository):
             "members": self._query(
                 f"SELECT {PERSON_FIELDS} "
                 f"FROM api.population_persons "
-                f"WHERE snapshot_id=%s AND household_id=%s "
+                f"WHERE snapshot_id=? AND household_id=? "
                 f"ORDER BY person_id LIMIT 6",
                 (sid, hid),
             ),
@@ -229,7 +179,7 @@ class PopulationQueries(SQLRepository):
         age_max: int,
         province: str | None = None,
     ) -> list[dict[str, Any]]:
-        conditions = ["snapshot_id=%s", "age BETWEEN %s AND %s"]
+        conditions = ["snapshot_id=?", "age BETWEEN ? AND ?"]
         params: list[Any] = [sid, age_min, age_max]
         for field, value in [
             ("municipality_code", municipality),
@@ -239,7 +189,7 @@ class PopulationQueries(SQLRepository):
             ("citizenship_code", citizenship),
         ]:
             if value is not None:
-                conditions.append(f"{field}=%s")
+                conditions.append(f"{field}=?")
                 params.append(value if field == "sex" else int(value))
         return self._query(
             f"SELECT age,sex,sum(persons)::bigint persons "
@@ -250,9 +200,9 @@ class PopulationQueries(SQLRepository):
         )
 
     def validation(self, sid: int, municipality: str | None) -> list[dict[str, Any]]:
-        where, params = "snapshot_id=%s", [sid]
+        where, params = "snapshot_id=?", [sid]
         if municipality:
-            where += " AND municipality_code=%s"
+            where += " AND municipality_code=?"
             params.append(int(municipality))
         return self._query(
             f"""SELECT kind,count(*) cells,sum(expected)::bigint expected,sum(actual)::bigint
@@ -268,12 +218,8 @@ class PopulationQueries(SQLRepository):
         return self._query(
             (
                 "SELECT kind,sex,category,expected,actual FROM "
-                "api.population_validation WHERE snapshot_id=%s AND "
-                "municipality_code=%s AND kind=%s ORDER BY category,sex LIMIT 2000"
+                "api.population_validation WHERE snapshot_id=? AND "
+                "municipality_code=? AND kind=? ORDER BY category,sex LIMIT 2000"
             ),
             (sid, int(municipality), kind),
         )
-
-
-class PopulationRepository(PostgresExecutor, PopulationQueries):
-    pass

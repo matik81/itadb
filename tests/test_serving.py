@@ -61,15 +61,12 @@ def fixture_archive(path: Path, label: str = "Inventato") -> Path:
 def settings(tmp_path: Path) -> Settings:
     root = tmp_path / "serving"
     activate_archive(root, install_archive(fixture_archive(tmp_path / "archive"), root))
-    return Settings(
-        serving_dir=root, database_url="postgresql://invalid.invalid/unused", _env_file=None
-    )
+    return Settings(serving_dir=root, _env_file=None)
 
 
-def test_serving_never_connects_postgres_and_preserves_openapi(settings: Settings) -> None:
+def test_serving_never_uses_network_and_preserves_openapi(settings: Settings) -> None:
     with (
-        patch("psycopg.connect", side_effect=AssertionError("PostgreSQL used")),
-        patch("itadb.api.app.ConnectionPool", side_effect=AssertionError("Pool used")),
+        patch("socket.create_connection", side_effect=AssertionError("Network used")),
         TestClient(create_app(settings)) as client,
     ):
         assert client.get("/health/ready").status_code == 200

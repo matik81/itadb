@@ -232,97 +232,7 @@ SCHEMA: dict[str, dict[str, str]] = {
     },
 }
 
-EXPORT_QUERIES: dict[str, str] = {
-    "artifacts_v2": ('SELECT "release_id","kind","sha256","byte_size" FROM api.artifacts_v2'),
-    "boundaries_v2": (
-        "SELECT release_id,territory_id,ST_AsGeoJSON(geom,5)::json AS geometry,0.001"
-        "::double precision AS simplification_degrees FROM (SELECT release_id,territ"
-        "ory_id,ST_Multi(ST_SimplifyPreserveTopology(geom,0.001)) AS geom FROM api.b"
-        "oundaries_v2) b WHERE ST_NPoints(geom)<=20000"
-    ),
-    "coverage_v2": (
-        'SELECT "release_id","series_code","title","unit","dimensions","period","sch'
-        'eme","territory_snapshot","row_count" FROM api.coverage_v2'
-    ),
-    "crosswalks_v2": (
-        'SELECT "id","release_id","event_id","kind","effective_date","source_url","e'
-        'vidence_sha256","description","from_code","from_scheme","to_code","to_schem'
-        'e","allocation_weight","weight_basis" FROM api.crosswalks_v2'
-    ),
-    "observations": (
-        'SELECT "release_id","series_code","unit","territory_id","territory_code","t'
-        'erritory_name","scheme","period","value","status" FROM api.observations'
-    ),
-    "observations_v2": (
-        'SELECT "release_id","series_code","unit","territory_id","territory_code","t'
-        'erritory_name","scheme","period","value","status","level","parent_code","up'
-        'stream_status","upstream_note","upstream_unit","upstream_unit_multiplier" F'
-        "ROM api.observations_v2"
-    ),
-    "population_cells": (
-        'SELECT "snapshot_id","municipality_code","sex","age","citizenship_code","pe'
-        'rsons","region_code","province_code" FROM api.population_cells'
-    ),
-    "population_households": (
-        'SELECT "snapshot_id","household_id","municipality_code","size","data_kind" '
-        "FROM api.population_households"
-    ),
-    "population_municipalities": (
-        'SELECT "snapshot_id","code","name","province_code","province_name","region_'
-        'code","region_name","persons","households",ST_AsGeoJSON(boundary,5)::json A'
-        "S geometry,ST_X(center) AS longitude,ST_Y(center) AS latitude FROM api.popu"
-        "lation_municipalities"
-    ),
-    "population_persons": (
-        'SELECT "snapshot_id","person_id","household_id","municipality_code","sex","'
-        'birth_year","birth_year_upper_bound","citizenship_code","reference_adult","'
-        'reference_date","age","age_is_lower_bound","data_kind" FROM api.population_'
-        "persons"
-    ),
-    "population_provinces": (
-        'SELECT "snapshot_id","code","region_code","name","source_sha256",ST_AsGeoJS'
-        "ON(boundary,5)::json AS geometry FROM api.population_provinces"
-    ),
-    "population_regions": (
-        'SELECT "snapshot_id","code","name",ST_AsGeoJSON(boundary,5)::json AS geomet'
-        "ry FROM api.population_regions"
-    ),
-    "population_snapshots": (
-        'SELECT "id","run_id","manifest_sha256","reference_date","household_referenc'
-        'e","persons","households","municipalities","is_fixture","published_at","dat'
-        'a_kind","located_persons","report","provenance","publication_checks" FROM a'
-        "pi.population_snapshots"
-    ),
-    "population_validation": (
-        'SELECT "snapshot_id","municipality_code","kind","sex","category","expected"'
-        ',"actual" FROM api.population_validation'
-    ),
-    "quality": ('SELECT "release_id","check_name","passed","details" FROM api.quality'),
-    "quality_v2": ('SELECT "release_id","check_name","passed","details" FROM api.quality_v2'),
-    "releases": (
-        'SELECT "id","dataset_id","title","limitations","source_id","is_demo","refer'
-        'ence_period","retrieved_at","published_at","upstream_url","raw_sha256","tra'
-        'nsform_version","contract_sha256","license_url","row_count" FROM api.releas'
-        "es"
-    ),
-    "releases_v2": (
-        'SELECT "id","dataset_id","title","limitations","source_id","is_demo","refer'
-        'ence_period","retrieved_at","published_at","upstream_url","raw_sha256","tra'
-        'nsform_version","contract_sha256","license_url","row_count","metadata_sha25'
-        '6","upstream_last_update","upstream_published_at","supersedes_release_id","'
-        'revision_reason","territory_snapshot","series_code","attribution" FROM api.'
-        "releases_v2"
-    ),
-    "sources": ('SELECT "id","name","homepage","license_url","is_demo" FROM api.sources'),
-    "territories_v2": (
-        'SELECT "release_id","territory_id","scheme","code","name","level","valid_fr'
-        'om","valid_to","parent_code","snapshot","has_boundary" FROM api.territories'
-        "_v2"
-    ),
-}
-
-# Preserve the source database's textual ordering, including punctuation and accents,
-# independently of libc/ICU versions and the deployment host's locale.
+# Stable text ordering is part of each immutable archive.
 SCHEMA["text_order"] = {"value": "VARCHAR", "ordinal": "BIGINT"}
 TEXT_ORDER_INPUTS = (
     "SELECT id AS value FROM api.sources",
@@ -338,9 +248,4 @@ TEXT_ORDER_INPUTS = (
     "SELECT weight_basis FROM api.crosswalks_v2",
     "SELECT DISTINCT kind FROM api.population_validation",
     "SELECT unnest(ARRAY['Dimostrativo','Mancante','Osservato','Riservato','—','Stimato'])",
-)
-EXPORT_QUERIES["text_order"] = (
-    "SELECT value,dense_rank() OVER (ORDER BY value)::bigint ordinal FROM ("
-    + " UNION ".join(TEXT_ORDER_INPUTS)
-    + ") strings WHERE value IS NOT NULL"
 )

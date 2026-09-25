@@ -31,7 +31,7 @@ class DuckDBRepositoryV2(DuckDBExecutor, SQLRepositoryV2):
 
     def boundary(self, release_id: UUID, territory_id: int) -> dict[str, Any] | None:
         rows = self._query(
-            "SELECT * FROM api.boundaries_v2 WHERE release_id=%s AND territory_id=%s",
+            "SELECT * FROM api.boundaries_v2 WHERE release_id=? AND territory_id=?",
             (release_id, territory_id),
         )
         return rows[0] if rows else None
@@ -76,29 +76,29 @@ def ordered_page(
     *,
     nulls_last: bool = False,
 ) -> list[dict[str, Any]]:
-    # Resolve the anchor once; correlated EXISTS in the original PostgreSQL plan is
-    # expensive for DuckDB. Both queries see the same immutable archive.
+    # Resolve the anchor once to avoid a correlated scan of the selected rows.
+    # Both queries see the same immutable archive.
     order, comparison = ("DESC", "<") if direction == "desc" else ("ASC", ">")
     if after:
         anchors = repo._query(
-            f"SELECT {column} AS anchor FROM {view} WHERE {where} AND {identity}=%s",
+            f"SELECT {column} AS anchor FROM {view} WHERE {where} AND {identity}=?",
             (*params, after),
         )
         if not anchors:
             return []
         anchor = anchors[0]["anchor"]
         if anchor is None:
-            where += f" AND ({column} IS NULL AND {identity}>%s)"
+            where += f" AND ({column} IS NULL AND {identity}>?)"
             params = (*params, after)
         else:
-            where += f" AND ({column} {comparison} %s OR ({column}=%s AND {identity}>%s)"
+            where += f" AND ({column} {comparison} ? OR ({column}=? AND {identity}>?)"
             if nulls_last:
                 where += f" OR {column} IS NULL"
             where += ")"
             params = (*params, anchor, anchor, after)
     return repo._query(
         f"SELECT {fields} FROM {view} WHERE {where} "
-        f"ORDER BY {column} {order} NULLS LAST,{identity} ASC LIMIT %s",
+        f"ORDER BY {column} {order} NULLS LAST,{identity} ASC LIMIT ?",
         (*params, limit),
     )
 
@@ -112,20 +112,20 @@ class DuckDBPopulationRepository(DuckDBExecutor, PopulationQueries):
         after: int,
         limit: int,
     ) -> list[dict[str, Any]]:
-        where = "snapshot_id=%s AND code>%s"
+        where = "snapshot_id=? AND code>?"
         params: list[Any] = [sid, after]
         if region:
-            where += " AND region_code=%s"
+            where += " AND region_code=?"
             params.append(int(region))
         if search:
-            where += " AND (strpos(lower(name),lower(%s))>0 OR strpos(lpad(code::text,6,'0'),%s)>0)"
+            where += " AND (strpos(lower(name),lower(?))>0 OR strpos(lpad(code::text,6,'0'),?)>0)"
             params.extend([search, search])
         return self._query(
             "SELECT lpad(code::text,6,'0') code,name,lpad(province_code::text,3,'0') province_code,"
             "province_name,lpad(region_code::text,2,'0') region_code,region_name,"
             "persons,households,"
             "longitude,latitude FROM api.population_municipalities "
-            f"WHERE {where} ORDER BY code LIMIT %s",
+            f"WHERE {where} ORDER BY code LIMIT ?",
             (*params, limit),
         )
 
@@ -134,8 +134,8 @@ class DuckDBPopulationRepository(DuckDBExecutor, PopulationQueries):
             "SELECT lpad(r.code::text,2,'0') code,r.name,t.persons,t.households,r.geometry "
             "FROM api.population_regions r JOIN (SELECT region_code,sum(persons)::bigint persons,"
             "sum(households)::bigint households FROM api.population_municipalities "
-            "WHERE snapshot_id=%s "
-            "GROUP BY region_code) t ON t.region_code=r.code WHERE r.snapshot_id=%s "
+            "WHERE snapshot_id=? "
+            "GROUP BY region_code) t ON t.region_code=r.code WHERE r.snapshot_id=? "
             "ORDER BY r.code",
             (sid, sid),
         )
@@ -143,8 +143,8 @@ class DuckDBPopulationRepository(DuckDBExecutor, PopulationQueries):
     def province_boundaries(self, sid: int, region: str | None) -> list[dict[str, Any]]:
         return self._query(
             "SELECT lpad(code::text,3,'0') code,geometry FROM api.population_provinces "
-            "WHERE snapshot_id=%s AND (%s::smallint IS NULL "
-            "OR region_code=%s) "
+            "WHERE snapshot_id=? AND (?::smallint IS NULL "
+            "OR region_code=?) "
             "ORDER BY code LIMIT 1000",
             (sid, int(region) if region else None, int(region) if region else None),
         )
@@ -152,8 +152,8 @@ class DuckDBPopulationRepository(DuckDBExecutor, PopulationQueries):
     def municipality_boundaries(self, sid: int, region: str | None) -> list[dict[str, Any]]:
         return self._query(
             "SELECT lpad(code::text,6,'0') code,geometry FROM api.population_municipalities "
-            "WHERE snapshot_id=%s AND geometry IS NOT NULL AND (%s::smallint IS NULL "
-            "OR region_code=%s) "
+            "WHERE snapshot_id=? AND geometry IS NOT NULL AND (?::smallint IS NULL "
+            "OR region_code=?) "
             "ORDER BY code LIMIT 10000",
             (sid, int(region) if region else None, int(region) if region else None),
         )

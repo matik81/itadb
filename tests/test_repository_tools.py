@@ -3,8 +3,6 @@
 import hashlib
 import json
 import runpy
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -19,7 +17,6 @@ ROOT = Path(__file__).resolve().parents[1]
     ("command", "family"),
     [
         ("fetch-national-inputs", "istat-m4-national"),
-        ("fetch-pilot-inputs", "istat-m3-valle-aosta"),
         ("fetch-territorial-aggregates", "istat-m2"),
     ],
 )
@@ -51,30 +48,6 @@ def test_acquisition_cli_retries_reuse_archives(
     assert inventories[0] != inventories[1]
     assert all(json.loads(p.read_text()) == {"fixture": str(acquisition)} for p in inventories)
     assert (folder / "payload").read_bytes() == payload
-
-
-@pytest.mark.parametrize(
-    "entrypoint",
-    [
-        ["scripts/benchmark_population_api.py"],
-        ["-m", "scripts.benchmarks.population_api"],
-    ],
-)
-def test_query_benchmark_refuses_to_overwrite_evidence(
-    tmp_path: Path, entrypoint: list[str]
-) -> None:
-    output = tmp_path / "measurement.json"
-    output.write_bytes(b"previous measurement")
-    result = subprocess.run(
-        [sys.executable, *entrypoint, "--snapshot", "1", "--output", str(output)],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    assert result.returncode == 2
-    assert "output already exists" in result.stderr
-    assert output.read_bytes() == b"previous measurement"
 
 
 def test_documentation_checker_detects_broken_moves_and_anchors(tmp_path: Path) -> None:

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-import psycopg
+import duckdb
 from fastapi.testclient import TestClient
 
 from itadb.api.app import create_app
@@ -78,7 +78,7 @@ def test_query_guards_and_problem_details() -> None:
 def test_readiness_detects_db_failure_without_leaking_details() -> None:
     class Broken(MemoryRepository):
         def ping(self) -> None:
-            raise psycopg.OperationalError("secret postgres URL")
+            raise duckdb.IOException("secret archive path")
 
     with TestClient(create_app(repo=Broken())) as client:
         assert client.get("/health/live").status_code == 200

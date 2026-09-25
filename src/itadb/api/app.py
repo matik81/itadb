@@ -8,13 +8,11 @@ from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 import duckdb
-import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi import Path as ApiPath
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from psycopg_pool import ConnectionPool, PoolTimeout
 from starlette.responses import Response
 
 from itadb import __version__
@@ -38,8 +36,8 @@ from itadb.api.models import (
     TerritoryPage,
 )
 from itadb.api.population import router as population_router
-from itadb.api.population_repository import PopulationQueries, PopulationRepository
-from itadb.api.repository import PostgresRepository, PostgresRepositoryV2, Repository, RepositoryV2
+from itadb.api.population_repository import PopulationQueries
+from itadb.api.repository import Repository, RepositoryV2
 from itadb.config import Settings
 from itadb.serving.archive import ArchiveUnavailable
 from itadb.serving.store import ArchiveStore
@@ -85,32 +83,14 @@ def create_app(
             application.state.repository_v2 = repo_v2 or repo
             yield
             return
-        if settings.serving_backend == "duckdb":
-            store = ArchiveStore(settings)
-            application.state.population_repository = DuckDBPopulationRepository(store)
-            application.state.repository = DuckDBRepository(store)
-            application.state.repository_v2 = DuckDBRepositoryV2(store)
-            try:
-                yield
-            finally:
-                store.close()
-            return
-        pool = ConnectionPool(
-            settings.database_url,
-            min_size=settings.pool_min_size,
-            max_size=settings.pool_max_size,
-            timeout=5,
-            open=False,
-            kwargs={"connect_timeout": 5, "application_name": "itadb-api"},
-        )
-        pool.open(wait=False)
-        application.state.population_repository = population_repo or PopulationRepository(pool)
-        application.state.repository = PostgresRepository(pool)
-        application.state.repository_v2 = PostgresRepositoryV2(pool)
+        store = ArchiveStore(settings)
+        application.state.population_repository = DuckDBPopulationRepository(store)
+        application.state.repository = DuckDBRepository(store)
+        application.state.repository_v2 = DuckDBRepositoryV2(store)
         try:
             yield
         finally:
-            pool.close()
+            store.close()
 
     app = FastAPI(
         title="Itadb — popolazione sintetica",
@@ -181,8 +161,6 @@ def create_app(
     async def database_error(request: Request, exc: Exception) -> JSONResponse:
         return problem(request, 503, "Service unavailable", "Database temporarily unavailable")
 
-    app.add_exception_handler(psycopg.Error, database_error)
-    app.add_exception_handler(PoolTimeout, database_error)
     app.add_exception_handler(duckdb.Error, database_error)
     app.add_exception_handler(ArchiveUnavailable, database_error)
 

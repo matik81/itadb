@@ -2,7 +2,7 @@
 
 Versione 5, adottata il 24 settembre 2026. Riferimento corrente unico:
 `population-reference/1`. Ordine: **sesso/età → geografia → cittadinanza → famiglie**.
-[Decisione eseguibile](adr/0014-ordered-population.md).
+[Pipeline corrente](population.md).
 
 | Priorità | Proprietà | Fedeltà verificata | Limite |
 |---|---|---|---|
@@ -46,7 +46,7 @@ precedenti dopo il raggruppamento.
 L'età al 1° gennaio precede i compleanni: `Y - birth_year - 1`. Per 100+ l'anno
 esatto è nullo e `birth_year_upper_bound` conserva l'ultimo anno possibile.
 La coorte resta stabile; non vengono implementate dinamiche demografiche né
-una distribuzione non osservata della coda. [ADR 0011](adr/0011-stable-birth-cohorts.md).
+una distribuzione non osservata della coda. [Modello dati](data-model.md).
 
 Ogni assunzione nuova deve indicare la conseguenza misurabile e quale evidenza
 permetterebbe di superarla. Lavoro, istruzione e abitazione non hanno ancora una

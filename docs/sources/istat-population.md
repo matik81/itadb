@@ -119,7 +119,7 @@ uv run itadb check-istat-population --acquisition "$sample_manifest" \
   --structure "$dsd_manifest" --dataflow "$flow_manifest"
 ```
 
-L'ultimo comando lavora senza rete né PostgreSQL. I tre argomenti indicano i
+L'ultimo comando lavora senza rete. I tre argomenti indicano i
 **manifest**, non i payload. Il report di successo è in `data/reports/`;
 la sua identità dipende da originali, manifest, contratto e versione del controllo.
 Una ripetizione con gli stessi input verifica e riusa lo stesso file senza
@@ -155,7 +155,7 @@ pagina scaricata può avere bytes differenti: non aggiornare il checksum alla ci
 revisionare l'evidenza e versionare i contratti prima della pubblicazione.
 
 La pipeline ricalcola i gate sugli originali, crea Parquet/Zstandard e carica
-21 righe via COPY. Controlla nuovamente somma e conteggio in PostgreSQL, registra
+21 righe in DuckDB. Controlla nuovamente somma e conteggio, registra
 12 artefatti e pubblica in transazione. Retry identici riusano la stessa release.
 Un errore conserva run e quarantena senza pubblicare dati parziali.
 Le API v2 preservano `unflagged_upstream` e mostrano il livello territoriale;

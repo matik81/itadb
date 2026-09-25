@@ -1,61 +1,69 @@
-# Verifiche del progetto
+# Verifiche della versione corrente
 
-I comandi riproducibili sono nel [README](../README.md#verifiche-di-sviluppo)
-e nella [guida PostgreSQL isolata](local-environment.md#postgresql-dedicato-ai-test).
-I controlli verificano il software e la conservazione dei vincoli; i limiti
-scientifici sono descritti nelle [priorità di fedeltà](model-fidelity.md).
+Controlli locali eseguiti il 25 settembre 2026. La preparazione e il servizio usano
+DuckDB; Compose contiene soltanto API e web. Il deployment cloud non è stato eseguito.
 
-## Migrazione completa DuckDB — 25 settembre 2026
+## Archivio nazionale
 
-La [relazione della migrazione](benchmarks/duckdb-migration-2026-09-25.md) documenta
-l'export completo, 404 confronti API identici e 404 verifiche HTTP senza rete né
-PostgreSQL, sullo snapshot nazionale ripristinato. Archivio: 321.400.832 byte.
-Con 1 CPU e 512 MiB disponibili, il picco API + client è stato 288,4 MiB, senza OOM.
+La pubblicazione diretta dei 107 batch Parquet ha ripetuto l'audit indipendente,
+importato tutti i record e ricalcolato i vincoli prima dell'attivazione.
 
-Sono passati 353 test Python (inclusi 44 PostgreSQL/migrazione), 43 frontend e 3 Rust,
-nessuno saltato, oltre a lint, tipi, OpenAPI, build e smoke Compose. Frontend e mappe
-funzionano tramite proxy con PostgreSQL fermo. La configurazione Railway è pronta;
-il deployment e il backup remoto cloud non sono stati eseguiti. I controlli del
-24 settembre seguenti rimangono evidenze storiche del workflow di preparazione.
+| Contenuto | Quantità verificata |
+|---|---:|
+| Individui sintetici | 58.943.464 |
+| Famiglie sintetiche | 26.670.169 |
+| Comuni / province / regioni | 7.896 / 107 / 20 |
+| Celle demografiche | 3.943.689 |
+| Confronti con i vincoli ammessi | 3.733.338, tutti con errore zero |
+| Release di aggregati v2 / osservazioni | 4 / 22.723 |
 
-## Controlli del repository
+Conteggi e impronte delle righe sono stati confrontati sull'intero archivio:
+attributi individuali, famiglie, distribuzioni, metadati territoriali e aggregati
+corrispondono. Report e provenienza coincidono come oggetti JSON. I dati non
+corrispondono a persone reali.
 
-La verifica del 24 settembre 2026 ha eseguito:
+I confini sono ricalcolati dalle fonti: tutti gli 8.023 poligoni visualizzati sono
+validi. La differenza simmetrica rispetto alle fonti rimane sotto l'1% dell'area;
+le semplificazioni eccessive vengono scartate. Le geometrie visualizzate possono
+quindi differire dalla copia precedente, soprattutto nei comuni piccoli.
+I punti territoriali differiscono al massimo di circa `1,51e-13` gradi.
+Data di pubblicazione, rapporto dei controlli e ranghi testuali sono propri
+del nuovo archivio; non si dichiara uguaglianza binaria dei due pacchetti.
 
-- 290 test Python e 43 test su PostgreSQL/PostGIS isolato, senza test selezionati saltati.
-- 25 test frontend, TypeScript, Prettier e build Vite.
-- Ruff, formattazione, mypy e controllo dei link Markdown locali.
-- Installazione dai lockfile e rigenerazione di OpenAPI/tipi client senza differenze.
-- Audit dipendenze Python/npm, senza vulnerabilità note segnalate.
-- Build container API/web e controllo degli ingressi CLI e degli asset.
+Il file corrente misura 396.111.872 byte. SHA-256:
+`59624e74ebfc797ad9794d738aa9d6560dcda2f53cf2f75b13ee385dcd8c832f`.
+È installato in `data/published` e `data/serving`; la copia precedente è conservata.
+Un retry nazionale ha restituito lo stesso snapshot e lo stesso checksum.
+Sono stati eseguiti anche `EXPLAIN ANALYZE` su individui, famiglie e distribuzioni
+nazionali: i piani applicano i filtri e i limiti delle query.
 
-I log sono locali in `.tools/repository-review/` e `.tools/documentation-current/`.
-Restano avvisi di deprecazione delle dipendenze di test. Non è stata eseguita
-una nuova prova visiva interattiva del browser o una verifica scientifica esterna.
+## Software e distribuzione locale
 
-## Integrità della popolazione
+- **263 test Python passati**, inclusi 24 test di integrazione, nessuno saltato.
+  Coprono pubblicazione, retry, concorrenza, revisioni, quarantena, integrità,
+  cartografia, esportazione, ripristino, paginazione e indisponibilità dell'archivio.
+  Rimangono due avvisi di deprecazione nelle dipendenze del client di test.
+- **43 test frontend passati**; typecheck, formattazione e build riusciti.
+- Ruff, mypy e verifica dei link di 32 documenti passati.
+- OpenAPI e tipi TypeScript rigenerati senza cambiamenti del contratto.
+- **404 risposte API verificate** sull'archivio aggiornato e ripetute via HTTP
+  nell'immagine applicativa, con otto client, una CPU, limite 512 MiB, filesystem
+  in sola lettura, utente 10001 e rete esterna disabilitata. Nessun OOM, ma il
+  cgroup ha raggiunto il limite con recupero di memoria: 512 MiB non danno margine.
+- Immagini API/web costruite; Compose riavviato sull'archivio corrente.
+  Verificati readiness, CORS e installazione del pacchetto tramite CLI nel container.
+- Build con configurazione Vercel riuscita con URL API HTTPS; l'assenza dell'URL
+  blocca correttamente la build.
 
-Il riferimento verificato contiene **58.943.464 individui e 26.670.169 famiglie**,
-in 107 batch, con run ID
-`24a56e3bdb58fb1af523ea1b6019e8de04292ecdf11105fc6885cacc4903b76c`.
-L'audit del 24 settembre 2026 ha riletto tutti i batch, verificando hash,
-rapporti, margini e invarianza degli attributi prima/dopo le famiglie.
-Sono passate anche le richieste del codice corrente sul database applicativo,
-con ruolo reader: readiness, cataloghi v1/v2/v3, individui, famiglie,
-confronto dei vincoli e geografia.
+I log dettagliati restano locali in `.tools/`: `clean-final-tests.log`,
+`clean-frontend.log`, `national-duckdb-final.log`, `national-comparison-final.log`,
+`national-retry.log`, `production-final.log`, `vercel-build.log` e `compose-final.log`.
+I risultati dell'audit nazionale e i piani sono in `.tools/national-duckdb-final/`.
 
-I test coprono retry, checkpoint, input incompatibili, corruzioni, immutabilità,
-paginazione, rollback, rifiuto delle fixture e distinzione degli errori dopo
-il commit. Gli originali e gli snapshot verificati restano nell'archivio dati.
+## Prontezza al deployment
 
-## Prestazioni misurate
-
-| Ambito | Evidenza |
-|---|---|
-| Generazione, recupero e riproduzione a 1M/10M e volume nazionale | [Misure della pipeline](benchmarks/population-order-2026-09-24.json) |
-| Query sul database nazionale | [Misure del servizio](benchmarks/population-serving-2026-09-24.json) |
-
-I benchmark riportano ambiente, quantità e limiti della singola esecuzione.
-Le prove con fixture inventate non rappresentano statistiche osservate.
-La rilettura di uno snapshot non misura il costo di rigenerarlo; i risultati
-locali non costituiscono un benchmark di concorrenza o di un servizio gestito.
+Codice, pacchetto dati e configurazione sono pronti per un primo deployment
+Vercel/Railway seguendo la [procedura](deployment.md). Restano da eseguire sul
+provider il caricamento sul volume, la configurazione di domini e CORS, il backup
+esterno e una prova di ripristino. Prestazioni e consumo sotto carico vanno
+verificati in quell'ambiente: le prove locali non sono promesse prestazionali.
