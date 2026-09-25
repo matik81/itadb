@@ -54,7 +54,7 @@ class RepositoryV2(Repository, Protocol):
     ) -> list[dict[str, Any]]: ...
 
 
-class PostgresRepository:
+class PostgresExecutor:
     def __init__(self, pool: ConnectionPool[Any]):
         self.pool = pool
 
@@ -65,11 +65,19 @@ class PostgresRepository:
             cursor.execute(sql, params)
             return list(cursor.fetchall())
 
+
+class SQLRepository:
+    def text_order(self, expression: str) -> str:
+        return expression
+
+    def _query(self, sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
     def ping(self) -> None:
         self._query("SELECT 1 FROM api.sources LIMIT 1")
 
     def sources(self) -> list[dict[str, Any]]:
-        return self._query("SELECT * FROM api.sources ORDER BY id")
+        return self._query(f"SELECT * FROM api.sources ORDER BY {self.text_order('id')}")
 
     def releases(self, limit: int) -> list[dict[str, Any]]:
         return self._query(
@@ -82,7 +90,9 @@ class PostgresRepository:
 
     def quality(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.quality WHERE release_id=%s ORDER BY check_name", (release_id,)
+            f"SELECT * FROM api.quality WHERE release_id=%s "
+            f"ORDER BY {self.text_order('check_name')}",
+            (release_id,),
         )
 
     def observations(
@@ -95,7 +105,7 @@ class PostgresRepository:
         )
 
 
-class PostgresRepositoryV2(PostgresRepository):
+class SQLRepositoryV2(SQLRepository):
     def _ordered_page(
         self,
         view: str,
@@ -144,13 +154,15 @@ class PostgresRepositoryV2(PostgresRepository):
     ) -> list[dict[str, Any]]:
         column = {
             "territory_id": "territory_id",
-            "name": "territory_name",
-            "code": "territory_code",
+            "name": self.text_order("territory_name"),
+            "code": self.text_order("territory_code"),
             "value": "value",
-            "status": "CASE status WHEN 'demo' THEN 'Dimostrativo' "
-            "WHEN 'missing' THEN 'Mancante' WHEN 'observed' THEN 'Osservato' "
-            "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN '—' "
-            "WHEN 'estimated' THEN 'Stimato' END",
+            "status": self.text_order(
+                "CASE status WHEN 'demo' THEN 'Dimostrativo' "
+                "WHEN 'missing' THEN 'Mancante' WHEN 'observed' THEN 'Osservato' "
+                "WHEN 'suppressed' THEN 'Riservato' WHEN 'unflagged_upstream' THEN '—' "
+                "WHEN 'estimated' THEN 'Stimato' END"
+            ),
         }[sort_by]
         conditions = ["release_id=%s", "series_code=%s", "period=%s"]
         params: list[Any] = [release_id, series, period]
@@ -188,10 +200,10 @@ class PostgresRepositoryV2(PostgresRepository):
         column = {
             "id": "id",
             "date": "effective_date",
-            "description": "description",
-            "from_code": "from_code",
-            "to_code": "to_code",
-            "usage": "weight_basis",
+            "description": self.text_order("description"),
+            "from_code": self.text_order("from_code"),
+            "to_code": self.text_order("to_code"),
+            "usage": self.text_order("weight_basis"),
         }[sort_by]
         conditions = ["release_id=%s"]
         params: list[Any] = [release_id]
@@ -234,12 +246,16 @@ class PostgresRepositoryV2(PostgresRepository):
 
     def quality(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.quality_v2 WHERE release_id=%s ORDER BY check_name", (release_id,)
+            f"SELECT * FROM api.quality_v2 WHERE release_id=%s "
+            f"ORDER BY {self.text_order('check_name')}",
+            (release_id,),
         )
 
     def artifacts(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
-            "SELECT * FROM api.artifacts_v2 WHERE release_id=%s ORDER BY kind", (release_id,)
+            f"SELECT * FROM api.artifacts_v2 WHERE release_id=%s "
+            f"ORDER BY {self.text_order('kind')}",
+            (release_id,),
         )
 
     def observations(
@@ -254,7 +270,7 @@ class PostgresRepositoryV2(PostgresRepository):
     def coverage(self, release_id: UUID) -> list[dict[str, Any]]:
         return self._query(
             "SELECT * FROM api.coverage_v2 WHERE release_id=%s "
-            "ORDER BY period,series_code LIMIT 500",
+            f"ORDER BY period,{self.text_order('series_code')} LIMIT 500",
             (release_id,),
         )
 
@@ -292,3 +308,11 @@ class PostgresRepositoryV2(PostgresRepository):
             "AND period=%s AND level=%s AND territory_id>%s ORDER BY territory_id LIMIT %s",
             (release_id, series, period, level, after, limit),
         )
+
+
+class PostgresRepository(PostgresExecutor, SQLRepository):
+    pass
+
+
+class PostgresRepositoryV2(PostgresExecutor, SQLRepositoryV2):
+    pass

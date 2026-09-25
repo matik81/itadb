@@ -3,97 +3,101 @@
 ## Prodotto e workflow
 
 Il prodotto rende interrogabile la popolazione sintetica italiana. Un monolite
-Python contiene generazione, pubblicazione e API come moduli separati; sono
-eseguiti in processi diversi. La generazione è un workflow CLI consultabile su
-GitHub. Database, API e frontend costituiscono l'applicazione da distribuire.
-[ADR 0015](adr/0015-population-product.md).
+Python contiene generazione, pubblicazione e API in moduli separati, eseguiti in
+processi diversi. Il servizio online è FastAPI con DuckDB incorporato su volume
+persistente e frontend statico. Nessun database remoto è necessario.
+[ADR 0017](adr/0017-duckdb-serving.md).
 
 ```mermaid
 flowchart TB
-  S[Fonti statistiche] --> C[Acquisizione: originali e checksum]
-  C --> I[Ammissione tramite contratti versionati]
-  I --> G[Generazione: sesso/età, geografia, cittadinanza, famiglie]
-  G --> Q[Audit indipendente dei Parquet]
-  Q --> P[Snapshot immutabile con manifest e rapporto]
-  P --> L[Importatore: audit, COPY e confronti PostgreSQL]
-  L --> D[(Database della popolazione)]
-  D --> A[API v3 di sola lettura]
-  A --> W[Web: mappa, individui, famiglie]
-  A --> E[Web: fonti, metodo, verifiche]
-  A -. futuro .-> M[App mobile]
+  S[Fonti statistiche] --> C[Originali e contratti versionati]
+  C --> G[Generazione locale e audit indipendente]
+  G --> P[Snapshot Parquet immutabile]
+  P --> L[Pubblicazione offline PostgreSQL / PostGIS]
+  L --> X[Export consistente delle viste pubbliche]
+  X --> V[Checksum, schema, conteggi e attivazione]
+  V --> D[(Archivio DuckDB sul volume)]
+  D --> A[FastAPI v1 / v2 / v3]
+  A --> W[Frontend statico: Esplora / Metodo e verifiche]
 ```
 
-Le API v1/v2 servono gli aggregati statistici e le loro evidenze.
-L’importatore della popolazione usa la geografia e i contratti dello stesso
-snapshot 2025, indipendentemente dagli aggregati di altri anni.
+L'archivio contiene tutti gli snapshot pubblicati, tutte le release v1/v2,
+provenienza, validazioni e geometrie. Non modifica il modello sintetico e non
+presenta gli individui come persone reali. Gli originali della generazione non
+sono richiesti dal server API.
 
-## Archivio e database
+## Preparazione offline
 
-Parquet/Zstandard conserva i risultati riproducibili. PostgreSQL 17/PostGIS 3.5
-conserva **tutti** gli individui e le famiglie pubblicati. Gli identificativi
-int64 sono locali allo snapshot; ogni chiave include `snapshot_id`. Gli
-attributi individuali sono colonne tipizzate, non documenti JSON.
+Parquet/Zstandard conserva i risultati riproducibili. Il workflow locale esistente
+usa PostgreSQL 17/PostGIS 3.5 per importazione, vincoli, verifiche e cartografia.
+I record pubblicati sono immutabili; nuove revisioni non sovrascrivono le precedenti.
+Gli ID int64 delle persone e famiglie restano locali allo snapshot.
 
-Persone, famiglie, celle statistiche e confronti sono partizionati per
-snapshot. Il catalogo usa un ID bigint compatto e conserva run ID SHA-256 e
-checksum del manifest per collegarlo all'archivio. Gli indici servono lettura
-per ID, selezione comunale e componenti di una famiglia. Eventuali indici
-aggiuntivi devono essere giustificati da piani e misure delle query reali.
+L'importazione verifica per insiemi relazioni, coorti, margini e provenienza. Gli
+errori producono rollback e quarantena. Le migrazioni SQL applicate rimangono
+immutabili; questa migrazione non altera quelle revisioni.
+[Schema offline e archivio pubblico](data-model.md).
 
-L'importazione è una transazione: COPY a blocchi territoriali, verifica delle
-relazioni e delle coorti, distribuzioni calcolate dai record PostgreSQL e
-confronto con gli input ammessi. Non si carica la popolazione nazionale in
-liste Python. Gli errori lasciano rapporti di quarantena, nessuno snapshot
-parzialmente visibile. Un lock transazionale serializza i retry del run.
+`export-serving` legge esclusivamente le viste `api.*` con ruolo reader in una
+transazione PostgreSQL REPEATABLE READ READ ONLY. I timeout brevi del reader sono
+sospesi soltanto nella sessione di esportazione, per consentire la scansione
+nazionale. Le geometrie vengono convertite offline in GeoJSON con gli stessi
+parametri usati dalle API PostgreSQL. L'esportazione conserva date, decimali,
+null, booleani e metadati JSON, senza inferenza dei tipi numerici.
 
-I record pubblicati sono protetti da trigger per istruzione sulle partizioni,
-per evitare un controllo per ciascuno dei milioni di individui importati.
-Il controllo delle relazioni è per insiemi durante la pubblicazione; non è
-un insieme di foreign key eseguite riga per riga durante COPY. Il ruolo reader
-vede esclusivamente le viste `api.*`; l'importatore usa il ruolo amministrativo
-locale. L'immutabilità applicativa non protegge da un amministratore che
-rimuova i trigger. [Schema e garanzie](data-model.md).
+## Archivio online
 
-## API e frontend
+Ogni release distribuibile contiene `application.duckdb` e `manifest.json`.
+Il manifest versiona il formato, registra conteggi e controlli del trasferimento,
+SHA-256 e dimensione del database. Lo schema pubblico è definito in
+`src/itadb/serving/schema.py`. Le tabelle colonnari usano ordinamenti territoriali
+per facilitare le selezioni; non vengono costruiti indici ART nazionali in RAM. La tabella `text_order`
+conserva ranghi calcolati dalla collation PostgreSQL, per mantenere lo stesso
+ordinamento di nomi, codici, etichette e metadati anche su sistemi diversi.
 
-FastAPI/Pydantic espone un contratto OpenAPI da cui sono generati i tipi
-TypeScript. Le API non leggono file della generazione e non eseguono calcoli
-di sintesi. Le query usano parametri, filtri e limiti; le liste di individui e
-famiglie richiedono snapshot e comune, usano cursori e al massimo 500 righe.
-I confronti e gli istogrammi nazionali leggono distribuzioni derivate dai
-record importati, senza riscansionare 59 milioni di righe a ogni richiesta.
+Installazione e attivazione sono distinte: una copia verificata entra in una
+nuova directory `releases/SHA256`; soltanto dopo può diventare `current` tramite
+sostituzione atomica del collegamento. Installazioni ripetute riusano la stessa
+release verificata. Errori lasciano intatta quella attiva e conservano evidenze.
+Le copie precedenti permettono il rollback; il backup esterno resta necessario.
 
-Il pool è configurabile tramite `ITADB_POOL_MIN_SIZE` e `ITADB_POOL_MAX_SIZE`,
-con default 1–8 connessioni per processo. Timeout connessione e SQL: 5 secondi.
-Il budget totale va dimensionato come repliche × processi × pool massimo.
-La readiness verifica anche le viste della popolazione. Errori e access log
-non riportano credenziali, query string o valori ricevuti.
+Il processo API verifica l'archivio e fissa una release all'avvio. Non segue
+`current` tra una query e la successiva. Il cambio versione richiede riavvio;
+non esistono scritture DuckDB durante le richieste. Un archivio assente o non
+valido produce readiness 503; la liveness resta disponibile. Un catalogo vuoto
+è possibile soltanto attraverso l'inizializzazione esplicita.
 
-La web app React/Vite è statica. La mappa usa SVG per i confini regionali e
-Canvas per i punti comunali, con zoom, trascinamento, controlli da tastiera e
-ricerca territoriale alternativa. Istogrammi ed elenchi sono moduli sovrapposti.
-La sezione Metodo collega fonti, modello e verifiche allo snapshot selezionato.
+## API e risorse
 
-I componenti dell’esploratore degli aggregati e i relativi test sono
-raccolti in `apps/web/src/evidence/`. Non sono montati dalla web app corrente;
-le API v1/v2 rimangono disponibili per l'archivio degli aggregati.
+FastAPI/Pydantic conserva le route e gli schemi v1/v2/v3. Le query usano valori
+parametrizzati, identificatori scelti da allowlist, limiti e filtri obbligatori.
+Le pagine di individui/famiglie richiedono snapshot e comune, massimo 500 righe.
+L'ancora di paginazione viene letta una volta dalla stessa release immutabile;
+a parità di ordinamento l'ID crescente evita salti o duplicati. I null nelle
+tabelle v2 restano in fondo in entrambe le direzioni. Decimal resta una stringa JSON.
 
-Il riferimento corrente assegna comuni ma non coordinate individuali. I
-punti comunali sono rappresentativi dei territori e dichiarati aggregati.
-La futura residenza latitudine/longitudine richiederà una nuova integrazione,
-un nuovo snapshot, indici spaziali e query per area visibile. La mappa dovrà
-modulare punti e aggregazioni al variare dello zoom, senza trasferire tutta
-la popolazione nazionale al browser a ogni richiesta.
+Un worker Uvicorn con connessione DuckDB condivisa e cursori per le query gestisce
+più richieste simultanee. I default sono 4 query concorrenti, 2 thread DuckDB,
+256 MB di memoria del motore e timeout di 5 secondi per attesa ed esecuzione.
+Il limite del motore non include tutta la RAM Python o le risposte HTTP. Il numero
+di worker moltiplica i budget: l'immagine ne avvia uno. L'accesso esterno e il
+caricamento automatico di estensioni DuckDB sono disabilitati.
 
-## Destinazione gestita
+`ITADB_SERVING_BACKEND=duckdb` è il default. L'adattatore `postgres` è esplicito
+e serve al confronto e ai test del workflow locale; non è un fallback automatico.
+CORS e request ID restano invariati. Gli errori pubblici non riportano query,
+valori ricevuti, percorsi locali o credenziali.
 
-La destinazione richiesta è nell'ecosistema Vercel, Neon, Railway e Cloudflare.
-Non è stato configurato un deployment. Il frontend usa `VITE_API_BASE_URL`;
-l'API usa `ITADB_DATABASE_URL`, CORS esplicito e un pool limitato. Il workflow
-locale non è necessario sui server dell'applicazione. I requisiti PostGIS,
-spazio reale, budget connessioni e query misurate guideranno la scelta dei
-servizi; nominarli non implica compatibilità o capacità già verificate.
+## Frontend e deployment
 
-Compose resta uno strumento di sviluppo locale. Nessun microservizio,
-scheduler, sistema email o dipendenza cartografica è stato aggiunto.
-Le misure nazionali e i limiti effettivi sono in [validation.md](validation.md).
+La web app React/Vite è statica e usa `VITE_API_BASE_URL`. La mappa offre Regioni,
+Province e Comuni con confini, marker territoriali e totali. Istogrammi ed elenchi
+sono filtrabili; Metodo conserva fonti e verifiche. Nessuna coordinata individuale
+è stata aggiunta. I componenti storici degli aggregati restano in
+`apps/web/src/evidence/`; le API v1/v2 continuano a funzionare.
+
+Compose avvia API e web con archivio montato in sola lettura. Il profilo `offline`
+contiene PostgreSQL/PostGIS, migrazioni e pipeline. La configurazione Railway
+prevede un servizio API con volume, senza Neon; frontend statico separato.
+[Avvio, backup e aggiornamenti](deployment.md). La configurazione nel repository
+non dimostra un deployment cloud già effettuato.

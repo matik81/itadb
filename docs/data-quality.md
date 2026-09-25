@@ -13,7 +13,8 @@ workflow riproducibile è descritto in [population.md](population.md).
 | Generazione | Congiunte demografiche e margini STR/RCS esatti; budget e vincoli familiari | Parquet e checkpoint per batch |
 | Audit indipendente | Rilettura SQL, schemi, ID, relazioni, margini, hash e invarianza degli attributi prima/dopo le famiglie | Manifest e rapporto dello snapshot |
 | Importazione | Audit ripetuto, originali verificati, COPY e confronto delle distribuzioni PostgreSQL | Controlli di pubblicazione nel database |
-| Servizio | Snapshot pubblicati, ruolo reader, query parametrizzate, filtri e limiti | Test API e PostgreSQL |
+| Esportazione | Snapshot consistente, tipi espliciti, conteggi e fingerprint di tutti i campi | Manifest e SHA-256 dell’archivio DuckDB |
+| Servizio | Archivio verificato in sola lettura, query parametrizzate, filtri e limiti | Parità API, test DuckDB e avvio senza PostgreSQL |
 
 I retry verificano gli artefatti esistenti. File inattesi, corruzioni, input
 incompatibili e gate falliti impediscono il completamento o la pubblicazione.

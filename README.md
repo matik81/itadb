@@ -9,8 +9,8 @@ corrispondono a persone reali; le relazioni generate sono proprietà del modello
 
 ## Il prodotto
 
-La popolazione verificata viene caricata **integralmente in PostgreSQL** e
-interrogata tramite API. La web app ha due parti:
+La popolazione verificata viene servita **integralmente da DuckDB in sola lettura**
+tramite API. Neon e PostgreSQL non sono richiesti online. La web app ha due parti:
 
 - **Esplora:** mappa scura a schermo intero con modalità Regioni, Province e
   Comuni. Ogni modalità adatta confini, aggregati, ricerca e selezione territoriale.
@@ -42,9 +42,10 @@ flowchart LR
   S[Fonti ISTAT / altre fonti] --> R[Originali e contratti versionati]
   R --> G[Generazione locale e verifica indipendente]
   G --> P[Snapshot Parquet immutabile]
-  P --> I[Importazione e verifica nel DB]
-  I --> D[(PostgreSQL / PostGIS)]
-  D --> A[API popolazione v3]
+  P --> I[Pubblicazione e verifica offline PostgreSQL / PostGIS]
+  I --> E[Esportazione completa e verificata]
+  E --> D[(DuckDB sul volume persistente)]
+  D --> A[API v1 / v2 / v3]
   A --> W[Web: Esplora / Metodo e verifiche]
   A -. futuro .-> M[App mobile]
 ```
@@ -52,37 +53,42 @@ flowchart LR
 La generazione è un workflow CLI documentato nel repository. L'applicazione
 serve solo snapshot pubblicati e non avvia generazioni durante le richieste.
 API e frontend non hanno bisogno dell'archivio locale degli originali.
-PostgreSQL conserva i record completi; Parquet conserva la riproduzione del run.
+DuckDB conserva tutti i dati pubblici, comprese geografia e verifiche. PostgreSQL
+resta nel workflow locale di preparazione; Parquet conserva la riproduzione del run.
 
 | Componente | Tecnologia |
 |---|---|
-| Database | PostgreSQL 17 + PostGIS 3.5; record tipizzati, partizioni per snapshot |
-| Backend | Python 3.13, FastAPI, Pydantic, Psycopg pool, OpenAPI |
+| Archivio online | DuckDB immutabile, tipizzato, con tutte le release e geometrie GeoJSON |
+| Preparazione offline | PostgreSQL 17 + PostGIS 3.5, generazione e audit separati |
+| Backend | Python 3.13, FastAPI, Pydantic, lettori DuckDB limitati, OpenAPI |
 | Workflow | Python, DuckDB, Parquet/Zstandard, CLI Typer |
 | Frontend | React, TypeScript, Vite; mappa vettoriale SVG/Canvas |
 | Verifiche | pytest, Ruff, mypy, Vitest, test PostgreSQL reali |
 
-La destinazione prevista è un'infrastruttura gestita (ad esempio Vercel,
-Neon, Railway, Cloudflare). Il provider e il deployment sono passi successivi:
-frontend statico, API stateless e PostgreSQL accessibile tramite URL sono già
-confini separati. [Decisione di prodotto](docs/adr/0015-population-product.md).
+La destinazione è un frontend statico e FastAPI su Railway con volume persistente,
+senza Neon. Il repository include la configurazione; il deployment cloud non è
+ancora eseguito. [Procedura completa](docs/deployment.md),
+[decisione architetturale](docs/adr/0017-duckdb-serving.md).
 
 Il [confronto PostgreSQL/DuckDB/Rust](docs/benchmarks/storage-comparison-2026-09-25.md)
-misura gli archivi nazionali e i costi ipotizzati di deployment. È un esperimento
-isolato; non modifica l'architettura applicativa descritta sopra.
+conserva le misure dell'esperimento che ha motivato la migrazione.
+Il [report della migrazione completa](docs/benchmarks/duckdb-migration-2026-09-25.md)
+documenta archivio, parità API e prove senza PostgreSQL.
 
 ## Avvio locale
 
 Ambiente supportato: Linux, con Ubuntu/WSL2 come riferimento. Vedi la
 [guida locale](docs/local-environment.md).
 
-Per database creati con le revisioni precedenti al consolidamento, seguire
-prima il [passaggio alla baseline](docs/operations.md#baseline-consolidata).
+Solo per la preparazione PostgreSQL locale: i database precedenti al
+consolidamento richiedono il [passaggio alla baseline](docs/operations.md#baseline-consolidata).
 
 Avvio con Docker Compose:
 
 ```sh
 cp -n .env.example .env
+uv sync --locked
+uv run itadb init-serving  # solo prima installazione, catalogo vuoto esplicito
 docker compose up --build -d --wait
 ```
 
@@ -91,8 +97,10 @@ docker compose up --build -d --wait
 - Swagger: <http://localhost:8080/api/docs>
 - Contratto: [OpenAPI versionata](docs/api/openapi.json)
 
-Finché non è stato pubblicato uno snapshot, l'applicazione mostra un catalogo
-vuoto. Non sostituisce dati assenti o errori con una popolazione dimostrativa.
+Per usare i dati esistenti, esportare e installare l’archivio seguendo la
+[guida deployment](docs/deployment.md), senza eseguire `init-serving`.
+L'inizializzazione esplicita mostra un catalogo vuoto. L'applicazione non
+sostituisce dati assenti o errori con una popolazione dimostrativa.
 
 Per sviluppo senza container applicativi:
 
@@ -119,6 +127,10 @@ e individui con COPY, confronta le distribuzioni PostgreSQL con i vincoli e
 pubblica atomicamente. Errori producono rollback e rapporto di quarantena.
 Un retry identico riusa lo snapshot pubblicato. Le evidenze precedenti non
 vengono sovrascritte. [Operazioni e misure](docs/operations.md).
+
+Questo passaggio prepara il database **locale**. Per aggiornare il prodotto,
+eseguire poi `export-serving`, `install-serving --activate` e riavviare l’API,
+come descritto nella [procedura](docs/deployment.md).
 
 ## Verifiche di sviluppo
 
@@ -147,7 +159,8 @@ Non usare il server applicativo. [Procedura](docs/local-environment.md#postgresq
 ```text
 src/itadb/connectors/    acquisizione limitata delle fonti
 src/itadb/synthesis/     generazione e audit riproducibili
-src/itadb/population/    pubblicazione degli snapshot nel database
+src/itadb/population/    pubblicazione offline degli snapshot in PostgreSQL
+src/itadb/serving/       esportazione, integrità e lettori dell’archivio DuckDB
 src/itadb/api/           API della popolazione e delle evidenze
 apps/web/               mappa, esplorazione, metodo e verifiche
 contracts/              contratti versionati e indice per funzione

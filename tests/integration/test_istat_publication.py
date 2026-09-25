@@ -66,6 +66,7 @@ def _database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
             )
         )
     return Settings(
+        serving_backend="postgres",
         admin_database_url=isolated_admin,
         database_url=isolated_reader,
         data_dir=tmp_path,

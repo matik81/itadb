@@ -20,4 +20,4 @@ RUN mkdir /app/data && chown itadb:itadb /app/data
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 USER itadb
 EXPOSE 8000
-CMD ["uvicorn", "itadb.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+CMD ["sh", "-c", "exec uvicorn itadb.api.app:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --no-access-log"]

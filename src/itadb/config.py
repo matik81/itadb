@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,3 +14,9 @@ class Settings(BaseSettings):
     pool_min_size: int = 1
     pool_max_size: int = 8
     root_path: str = ""
+    serving_backend: Literal["duckdb", "postgres"] = "duckdb"
+    serving_dir: Path = Path("data/serving")
+    duckdb_memory_mb: int = Field(default=256, ge=64, le=65536)
+    duckdb_threads: int = Field(default=2, ge=1, le=32)
+    serving_concurrency: int = Field(default=4, ge=1, le=32)
+    serving_timeout_seconds: float = Field(default=5, gt=0, le=60)

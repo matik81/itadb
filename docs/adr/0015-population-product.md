@@ -1,5 +1,8 @@
 # ADR 0015 — popolazione interrogabile come prodotto
 
+La scelta del database online è sostituita dall’[ADR 0017](0017-duckdb-serving.md).
+Restano valide le decisioni sul prodotto, sul modello e sul workflow separato.
+
 Data: 24 settembre 2026. Stato: adottata su richiesta esplicita dell'utente.
 
 ## Decisione

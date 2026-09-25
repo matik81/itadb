@@ -7,6 +7,7 @@ from datetime import date
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
+import duckdb
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi import Path as ApiPath
@@ -17,6 +18,11 @@ from psycopg_pool import ConnectionPool, PoolTimeout
 from starlette.responses import Response
 
 from itadb import __version__
+from itadb.api.duckdb_repository import (
+    DuckDBPopulationRepository,
+    DuckDBRepository,
+    DuckDBRepositoryV2,
+)
 from itadb.api.models import (
     Artifact,
     BoundaryItem,
@@ -32,9 +38,11 @@ from itadb.api.models import (
     TerritoryPage,
 )
 from itadb.api.population import router as population_router
-from itadb.api.population_repository import PopulationRepository
+from itadb.api.population_repository import PopulationQueries, PopulationRepository
 from itadb.api.repository import PostgresRepository, PostgresRepositoryV2, Repository, RepositoryV2
 from itadb.config import Settings
+from itadb.serving.archive import ArchiveUnavailable
+from itadb.serving.store import ArchiveStore
 
 logger = logging.getLogger("itadb.api")
 if not logger.handlers:
@@ -65,7 +73,7 @@ def create_app(
     settings: Settings | None = None,
     repo: Repository | None = None,
     repo_v2: RepositoryV2 | None = None,
-    population_repo: PopulationRepository | None = None,
+    population_repo: PopulationQueries | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
 
@@ -76,6 +84,16 @@ def create_app(
             application.state.repository = repo
             application.state.repository_v2 = repo_v2 or repo
             yield
+            return
+        if settings.serving_backend == "duckdb":
+            store = ArchiveStore(settings)
+            application.state.population_repository = DuckDBPopulationRepository(store)
+            application.state.repository = DuckDBRepository(store)
+            application.state.repository_v2 = DuckDBRepositoryV2(store)
+            try:
+                yield
+            finally:
+                store.close()
             return
         pool = ConnectionPool(
             settings.database_url,
@@ -165,6 +183,8 @@ def create_app(
 
     app.add_exception_handler(psycopg.Error, database_error)
     app.add_exception_handler(PoolTimeout, database_error)
+    app.add_exception_handler(duckdb.Error, database_error)
+    app.add_exception_handler(ArchiveUnavailable, database_error)
 
     @app.get("/health/live", tags=["health"])
     def live() -> dict[str, str]:

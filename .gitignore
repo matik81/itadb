@@ -23,6 +23,7 @@ data/quarantine/
 data/state/
 data/reports/
 data/benchmarks/
+data/serving/
 *.log
 .DS_Store
 .codex/config.local.toml

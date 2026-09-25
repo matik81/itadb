@@ -143,7 +143,7 @@ uv run itadb ingest-istat-population --acquisition "$sample_manifest" \
   --license-evidence PERCORSO_HTML_LICENZA
 ```
 
-Nel Compose eseguire il comando con `docker compose run --rm pipeline itadb ...`
+Nel Compose eseguire il comando con `docker compose --profile offline run --rm pipeline itadb ...`
 e percorsi interni all'archivio `/app/data`. Gli originali acquisiti sull’host
 vanno prima copiati nel volume `evidence` del worker, conservando byte, hash
 e manifest. Tutti i worker di uno stesso catalogo devono condividere l’archivio.
@@ -185,3 +185,6 @@ fuori validità. Confini, crosswalk e fusioni/scissioni su altri periodi richied
 la [copertura territoriale](territorial-aggregates.md); non sono dedotti da questa selezione. La data di pubblicazione upstream
 rimane non accertata. Nessuna prova di prestazioni su scala nazionale o di
 popolazione sintetica è stata eseguita.
+
+Dopo la pubblicazione locale, esportare e attivare una nuova release DuckDB
+per aggiornare le API online. [Procedura](../deployment.md).

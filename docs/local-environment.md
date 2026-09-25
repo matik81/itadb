@@ -18,7 +18,8 @@ virtualenv, dipendenze e dati nel filesystem Linux.
 
 Docker deve essere accessibile dall’utente della shell; in WSL2 abilitare
 l’integrazione del motore con la distribuzione Ubuntu. PostgreSQL/PostGIS
-sono forniti dal container: non occorre installarli sull’host. GitHub CLI
+sono forniti dal profilo Docker `offline` e servono soltanto alla preparazione,
+non all’avvio di API e frontend. GitHub CLI
 è facoltativa e non serve per build, test o avvio.
 
 Verificare gli strumenti senza cambiare il sistema:
@@ -35,23 +36,26 @@ Dopo il clone, dalla root:
 cp -n .env.example .env
 uv sync --locked
 npm --prefix apps/web ci
+uv run itadb init-serving  # solo installazione nuova, catalogo vuoto esplicito
 docker compose up -d --build --wait
 ```
 
-Il catalogo iniziale della popolazione è vuoto. Per popolarlo seguire il
-[workflow della popolazione](population.md), quindi pubblicare lo snapshot
-verificato con `uv run itadb publish-population --run PERCORSO`. Il comando
-usa gli originali e i contratti in `ITADB_DATA_DIR`. Le fixture degli
-aggregati inventati restano testabili via CLI/API v1 e non popolano la nuova web app.
-Web: <http://localhost:8080>. API: <http://localhost:8080/api/docs>.
-Le credenziali di esempio servono esclusivamente allo sviluppo locale.
+Il catalogo iniziale è vuoto. Per usare la popolazione già pubblicata, saltare
+`init-serving` e seguire [export e installazione](deployment.md). Dopo ogni nuova
+pubblicazione locale, esportare e attivare una nuova release DuckDB e riavviare
+l'API. Web: <http://localhost:8080>. API: <http://localhost:8080/api/docs>.
 
-Per lavorare sui processi applicativi nell’host, avviare solo il database:
+Per lavorare sui processi applicativi nell'host è sufficiente l'archivio installato:
 
 ```sh
-docker compose up -d --wait db
-docker compose run --rm migrate
 uv run itadb serve
+```
+
+Solo per preparare nuovi dati e migrare il PostgreSQL locale:
+
+```sh
+docker compose --profile offline up -d --wait db
+docker compose --profile offline run --rm migrate
 ```
 
 In un secondo terminale, dalla root, eseguire

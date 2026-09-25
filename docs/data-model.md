@@ -1,6 +1,20 @@
 # Modello dati
 
-## Popolazione sintetica — prodotto corrente
+## Archivio di consultazione DuckDB
+
+Il servizio online legge lo schema `api` di un archivio DuckDB immutabile.
+`src/itadb/serving/schema.py` definisce nomi, colonne e tipi di tutte le API v1/v2/v3.
+I record completi, gli ID per snapshot, null, decimali e metadati sono conservati.
+Confini e coordinate sono GeoJSON e DOUBLE calcolati offline: il serving non
+richiede PostGIS. Il manifest esterno lega schema, conteggi e SHA-256 al file.
+[Lifecycle delle release](deployment.md), [ADR 0017](adr/0017-duckdb-serving.md).
+
+Le sezioni seguenti descrivono il **database di preparazione offline**, dal quale
+vengono esportate soltanto le viste pubbliche. Vincoli, trigger e partizioni
+restano responsabilità di quel workflow, non vengono simulati come scritture
+nel servizio DuckDB di sola lettura.
+
+## Popolazione sintetica — preparazione offline
 
 La baseline `migrations/sql/0001_baseline.sql` definisce lo schema `population`
 insieme all’archivio degli aggregati. Per l’upgrade dei database esistenti
@@ -27,7 +41,7 @@ versione e indici compatti evitano hash testuali ripetuti per ogni individuo.
 Il caricamento verifica per insiemi appartenenza territoriale, riferimenti
 familiari, dimensioni, adulto di riferimento e minori assegnati. I trigger
 per istruzione bloccano modifiche alle partizioni pubblicate. Le viste
-`api.population_*` mostrano solo versioni pubblicate. L'API legge queste
+`api.population_*` mostrano solo versioni pubblicate. L’esportatore e l’adattatore PostgreSQL leggono queste
 viste con ruolo reader; non accede allo schema `population` direttamente.
 
 L'età è derivata alla data dello snapshot secondo `year-start-cohort/1`;
@@ -92,8 +106,8 @@ specifico della misura (un tasso di variazione può essere negativo, una popolaz
 
 Le osservazioni pubblicate, i loro artefatti e controlli non sono modificabili. Le dimensioni
 già referenziate non vengono aggiornate in place: produrre una nuova versione/codifica.
-Il ruolo API legge solo le viste `api.*`. La pipeline usa ancora il ruolo owner nel
-workflow locale: un ruolo writer con grant minimi è un requisito prima della produzione.
+Il reader PostgreSQL legge solo le viste `api.*`. La pipeline usa ancora il ruolo owner nel
+workflow locale: un ruolo writer con grant minimi resta un requisito per un’eventuale esecuzione condivisa della pipeline.
 I proprietari/superuser possono cambiare trigger o troncare tabelle; immutabilità applicativa
 non significa storage WORM contro amministratori privilegiati.
 

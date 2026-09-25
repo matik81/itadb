@@ -3,9 +3,17 @@
 ## Ambiente e avvio
 
 Usare la [guida Linux](local-environment.md) per avvio, migrazione e test isolati.
-Compose è un ambiente locale. API e frontend leggono il database; la generazione
+Compose è un ambiente locale. API e frontend leggono l’archivio DuckDB; la generazione
 usa un archivio separato scelto da `ITADB_DATA_DIR`. Il filesystem host `data/`
 e il volume Compose `evidence` sono distinti.
+
+## Archivio di consultazione
+
+La [guida deployment](deployment.md) descrive export completo, verifica,
+installazione, attivazione atomica e ripristino. Il serving non usa Neon o
+PostgreSQL; tutte le procedure PostgreSQL seguenti appartengono al workflow
+locale. Dopo una pubblicazione o un completamento geografico, esportare una
+nuova release DuckDB per renderla visibile online. Il cambio richiede riavvio.
 
 ## Generazione, audit e pubblicazione
 
@@ -82,12 +90,12 @@ print("Registro Alembic allineato alla baseline; dati applicativi invariati")
 PY
 ```
 
-Eseguire quindi `scripts/migrate.py` e verificare `/health/ready`, catalogo
+Eseguire quindi `scripts/migrate.py` e verificare con `ITADB_SERVING_BACKEND=postgres` `/health/ready`, catalogo
 popolazioni e query individuali. L'allineamento non importa, cancella o
 riscrive record applicativi. Non è una verifica automatica di eventuali
 modifiche manuali al DDL.
 Con Compose ricostruire l'immagine del servizio `migrate` prima di eseguirlo,
-così che contenga la nuova storia: `docker compose build migrate`.
+così che contenga la nuova storia: `docker compose --profile offline build migrate`.
 
 **Database a 0001–0005:** completare prima l'upgrade a 0006 da un checkout
 del commit `9cd934a`, poi seguire il passaggio sopra. Non marcare come baseline
@@ -122,10 +130,12 @@ Workflow e protezioni GitHub sono cose distinte: i file YAML non dimostrano che
 branch protection o secret scanning siano attivi. Consultare il
 [registro delle verifiche](validation.md) per ciò che è stato effettivamente controllato.
 
-## Deployment futuro
+## Deployment
 
-Nessun deployment pubblico è configurato. La scelta dei servizi gestiti deve
-comprendere capacità PostGIS e disco misurate, budget delle connessioni, TLS,
-segreti fuori Git, ruoli separati, backup con restore provato e RPO/RTO concordati.
-Le immagini fissano versioni di linea; digest, scan e SBOM saranno parte della
-release produttiva. Il file lock delle acquisizioni è locale e non coordina host diversi.
+La configurazione Railway e la [procedura di rilascio](deployment.md) usano
+FastAPI, volume persistente e frontend statico. Non serve un servizio PostgreSQL
+online. Conservare backup esterni verificati degli archivi e provare il restore;
+una release precedente sullo stesso disco non copre la perdita del volume.
+Il deployment cloud non è stato eseguito. Le immagini fissano versioni di linea;
+digest, scan e SBOM appartengono alla release produttiva. Il file lock delle
+acquisizioni è locale e non coordina host diversi.

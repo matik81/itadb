@@ -70,7 +70,11 @@ def serving(tmp_path: Path) -> tuple[Settings, Path]:
     )
     directory = run_population(tmp_path, inputs)
     return Settings(
-        admin_database_url=admin, database_url=reader, data_dir=tmp_path, _env_file=None
+        serving_backend="postgres",
+        admin_database_url=admin,
+        database_url=reader,
+        data_dir=tmp_path,
+        _env_file=None,
     ), directory
 
 
@@ -334,3 +338,110 @@ def test_postcommit_report_error_does_not_claim_rollback(
     )
     assert report["published"] is True
     assert report["snapshot_id"] is not None
+
+
+def test_complete_archive_export_preserves_public_apis_and_failure_atomicity(
+    serving: tuple[Settings, Path], coverage_bundle: tuple, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from itadb.pipeline.publish_coverage import publish_coverage
+    from itadb.pipeline.runner import ingest_demo
+    from itadb.serving.archive import DATABASE, activate_archive, install_archive, verify_archive
+    from itadb.serving.export import export_archive
+
+    settings, directory = serving
+    sid = publish_population(settings, directory, allow_fixture=True)
+    rid = ingest_demo(
+        settings,
+        Path("tests/fixtures/population-demo.csv"),
+        Path("contracts/population-demo-v1.json"),
+    )
+    bundle, contract = coverage_bundle
+    coverage_id = publish_coverage(settings, bundle, contract)
+    with psycopg.connect(settings.admin_database_url) as db:
+        for prefix in ("data_manifest", "dataflow"):
+            db.execute(
+                "INSERT INTO catalog.source(id,name,homepage,license_url,is_demo) "
+                "VALUES (%s,%s,%s,%s,true)",
+                (prefix + uuid4().hex, "\\N", 'https://example.org/à,"\n', ""),
+            )
+    output = settings.data_dir / "complete-archive"
+    evidence = settings.data_dir / "export-evidence"
+    assert export_archive(settings, output, evidence) == output
+    original = (output / DATABASE).read_bytes()
+    assert export_archive(settings, output, evidence) == output
+    assert (output / DATABASE).read_bytes() == original
+    assert verify_archive(output)["tables"]["population_persons"]["rows"] >= 15
+    root = settings.data_dir / "serving"
+    installed = install_archive(output, root)
+    activate_archive(root, installed)
+    duck_settings = settings.model_copy(
+        update={
+            "serving_backend": "duckdb",
+            "serving_dir": root,
+            "database_url": "postgresql://unreachable.invalid/unused",
+        }
+    )
+    paths = [
+        "/health/ready",
+        "/v1/sources",
+        "/v2/sources",
+        "/v1/releases",
+        "/v2/releases",
+        f"/v1/releases/{rid}",
+        f"/v1/releases/{rid}/quality",
+        f"/v1/observations?release_id={rid}&period=2025-01-01&limit=2",
+        f"/v2/releases/{coverage_id}",
+        f"/v2/releases/{coverage_id}/coverage",
+        f"/v2/releases/{coverage_id}/quality",
+        f"/v2/releases/{coverage_id}/artifacts",
+        f"/v2/territories?release_id={coverage_id}&snapshot=2021-01-01&level=municipality",
+        f"/v2/crosswalks?release_id={coverage_id}",
+        "/v3/populations",
+        f"/v3/populations/{sid}",
+        f"/v3/populations/{sid}/map",
+        f"/v3/populations/{sid}/municipalities",
+        f"/v3/populations/{sid}/validation",
+        f"/v3/populations/{sid}/comparison?municipality_code=900001&kind=sex_age",
+        f"/v3/populations/{sid}/distributions?province_code=900",
+        f"/v3/populations/{sid}/persons/1",
+        f"/v3/populations/{sid}/households/1",
+    ]
+    for sort in ["age", "person_id", "sex", "citizenship_code", "household_id"]:
+        for direction in ["asc", "desc"]:
+            paths.append(
+                f"/v3/populations/{sid}/persons?municipality_code=900001&limit=3&sort_by={sort}&direction={direction}&after=2"
+            )
+    for sort in ["value", "name", "code", "status", "territory_id"]:
+        for direction in ["asc", "desc"]:
+            paths.append(
+                f"/v2/observations?release_id={coverage_id}&series=m2_test_total&period=2021-01-01&sort_by={sort}&direction={direction}&limit=2"
+            )
+    with (
+        TestClient(create_app(settings)) as postgres,
+        TestClient(create_app(duck_settings)) as duck,
+    ):
+        territories = postgres.get(
+            f"/v2/territories?release_id={coverage_id}&snapshot=2021-01-01&level=municipality"
+        ).json()["items"]
+        paths += [
+            f"/v2/releases/{coverage_id}/territories/{item['territory_id']}/boundary"
+            for item in territories
+        ]
+        for path in paths:
+            expected, actual = postgres.get(path), duck.get(path)
+            assert actual.status_code == expected.status_code == 200, path
+            assert actual.json() == expected.json(), path
+    # A failed fresh export must leave an existing active archive untouched.
+    import itadb.serving.export as exporter
+
+    def fail(*args, **kwargs):
+        raise ValueError("Invented export failure")
+
+    monkeypatch.setattr(exporter, "seal_archive", fail)
+    with pytest.raises(ValueError, match="Invented"):
+        export_archive(
+            settings, settings.data_dir / "failed-export", settings.data_dir / "failed-evidence"
+        )
+    assert (root / "current").resolve() == installed.resolve()
+    assert not (settings.data_dir / "failed-export" / "manifest.json").exists()
+    assert (settings.data_dir / "failed-evidence" / "failure.json").exists()

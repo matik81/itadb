@@ -17,7 +17,7 @@ from itadb.api.population_models import (
     SyntheticPerson,
     SyntheticPersonPage,
 )
-from itadb.api.population_repository import PopulationRepository
+from itadb.api.population_repository import PopulationQueries
 
 router = APIRouter(prefix="/v3/populations", tags=["Popolazione sintetica"])
 SnapshotID = Annotated[int, Path(ge=1, le=9223372036854775807)]
@@ -34,14 +34,14 @@ Direction = Literal["asc", "desc"]
 Kind = Literal["sex_age", "foreign_age", "citizenship", "household_size"]
 
 
-def repository(request: Request) -> PopulationRepository:
-    repo: PopulationRepository | None = getattr(request.app.state, "population_repository", None)
+def repository(request: Request) -> PopulationQueries:
+    repo: PopulationQueries | None = getattr(request.app.state, "population_repository", None)
     if repo is None:
         raise HTTPException(503, "Population database temporarily unavailable")
     return repo
 
 
-Repo = Annotated[PopulationRepository, Depends(repository)]
+Repo = Annotated[PopulationQueries, Depends(repository)]
 
 
 def published(snapshot_id: SnapshotID, db: Repo) -> int:

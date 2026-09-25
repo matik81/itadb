@@ -1,5 +1,10 @@
 # PostgreSQL, DuckDB e archivio Rust: costo ed efficienza
 
+Nota successiva: questo documento conserva il perimetro e le misure dell’esperimento.
+La migrazione applicativa completa è descritta nell’[ADR 0017](../adr/0017-duckdb-serving.md)
+e nella [guida deployment](../deployment.md); i suoi scenari ibridi con Neon non
+rappresentano l’architettura finale.
+
 25 settembre 2026 — branch `experiment/population-storage-costs`.
 Esperimento concluso sullo snapshot nazionale completo. Nessuna migrazione
 dell'applicazione o pubblicazione cloud eseguita.

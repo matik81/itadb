@@ -24,3 +24,12 @@ questa contiene a sua volta raw/curated/state/reports/quarantine. I rapporti
 condivisibili sono in `docs/benchmarks/`. Le fixture ridotte versionate sono
 in `tests/fixtures/`, inventate e marcate come tali. Nessun dump, Parquet o
 record individuale entra in Git.
+
+## Archivio del servizio
+
+`data/serving/` (escluso da Git) contiene `releases/SHA256/application.duckdb`,
+manifest, cronologia delle attivazioni e collegamento `current`. Include tutto
+il prodotto pubblico: popolazione, aggregati, verifiche e geografia. Il volume
+Compose monta questa directory in sola lettura nell’API. Esportazioni e CSV di
+verifica restano in directory separate sotto `data/state/`, fuori dal pacchetto
+online. [Installazione e backup](../docs/deployment.md).

@@ -119,7 +119,7 @@ uv run python scripts/run_logged.py --label "Pubblicazione popolazione" --log .t
 ```
 
 Il comando verifica lo snapshot e i contratti delle fonti archiviati, carica
-individui e famiglie completi in PostgreSQL e ne ricalcola le distribuzioni.
+individui e famiglie completi nel PostgreSQL locale di preparazione e ne ricalcola le distribuzioni.
 Solo la versione verificata diventa visibile nelle API v3 e nel frontend.
 La pubblicazione è atomica e idempotente; il log e i rapporti sono conservati
 in `data/reports/population-publication/`. Un errore produce rollback e
@@ -132,3 +132,11 @@ collegata a run ID e checksum. La pubblicazione applicativa segue l’[ADR 0015]
 La mappa corrente usa la geografia 2025 degli stessi input. Gli aggregati statistici
 conservano le proprie geografie 2020/2021/2024. I marcatori rappresentano comuni; nessuna coordinata di
 residenza viene assegnata implicitamente ai singoli individui.
+
+## Pubblicazione nel servizio DuckDB
+
+Dopo `publish-population` e l’eventuale completamento dei confini, usare
+`export-serving`, `verify-serving`, `install-serving --activate` e riavviare il
+backend. Il [workflow di distribuzione](deployment.md) include tutti i dati
+pubblici e tutte le release. Il server online non esegue generazioni e non
+richiede Neon né PostgreSQL. Il modello e gli audit scientifici restano invariati.

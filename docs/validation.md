@@ -5,6 +5,19 @@ e nella [guida PostgreSQL isolata](local-environment.md#postgresql-dedicato-ai-t
 I controlli verificano il software e la conservazione dei vincoli; i limiti
 scientifici sono descritti nelle [priorità di fedeltà](model-fidelity.md).
 
+## Migrazione completa DuckDB — 25 settembre 2026
+
+La [relazione della migrazione](benchmarks/duckdb-migration-2026-09-25.md) documenta
+l'export completo, 404 confronti API identici e 404 verifiche HTTP senza rete né
+PostgreSQL, sullo snapshot nazionale ripristinato. Archivio: 321.400.832 byte.
+Con 1 CPU e 512 MiB disponibili, il picco API + client è stato 288,4 MiB, senza OOM.
+
+Sono passati 353 test Python (inclusi 44 PostgreSQL/migrazione), 43 frontend e 3 Rust,
+nessuno saltato, oltre a lint, tipi, OpenAPI, build e smoke Compose. Frontend e mappe
+funzionano tramite proxy con PostgreSQL fermo. La configurazione Railway è pronta;
+il deployment e il backup remoto cloud non sono stati eseguiti. I controlli del
+24 settembre seguenti rimangono evidenze storiche del workflow di preparazione.
+
 ## Controlli del repository
 
 La verifica del 24 settembre 2026 ha eseguito:

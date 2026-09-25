@@ -83,10 +83,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          version: '0.12.17'
+      - run: uv sync --locked && uv run itadb init-serving
       - run: docker compose config --quiet
       - run: docker compose up --build -d --wait --wait-timeout 180
-      - run: docker compose run --rm pipeline itadb ingest-demo
       - run: curl --fail http://localhost:8080/ && curl --fail http://localhost:8080/api/v3/populations && curl --fail http://localhost:8080/api/v1/releases
+      - run: test "$(docker compose ps --services --status running | sort | tr '\n' ' ')" = "api web "
+      - run: docker compose up -d --force-recreate --wait --wait-timeout 120 api
+      - run: curl --retry 5 --retry-delay 2 --retry-all-errors --fail http://localhost:8080/api/health/ready
       - if: failure()
         run: docker compose logs --no-color
       - if: always()

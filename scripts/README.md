@@ -7,6 +7,8 @@ Usare Bash, `uv` e `npm` nel PATH. Gli script non richiedono di cambiare directo
 | Controllo ambiente, senza modifiche | `bash scripts/doctor.sh` |
 | Migrazioni e ruolo reader | `uv run python scripts/migrate.py` |
 | Avanzamento e log persistente | `uv run python scripts/run_logged.py --label "Fase" -- COMANDO` |
+| Parità nazionale API PostgreSQL/DuckDB | `uv run python scripts/verify_serving.py --help` |
+| Replay HTTP senza PostgreSQL | `uv run python scripts/smoke_serving.py --help` |
 | Coerenza dei link locali Markdown | `uv run python scripts/check_docs.py` |
 | Carico della popolazione corrente | `uv run python -m scripts.benchmarks.population --help` |
 | Query della popolazione pubblicata | `uv run python -m scripts.benchmarks.population_api --help` |
@@ -30,7 +32,7 @@ i parametri. Il workflow del prodotto è:
 1. `fetch-national-inputs` e `fetch-citizenship`: acquisizione degli inventari ammessi.
 2. `synthesize-population`: generazione dei quattro passaggi del modello.
 3. `verify-population`: audit indipendente dello snapshot.
-4. `publish-population`: pubblicazione nel database applicativo.
+4. `publish-population`: pubblicazione nel PostgreSQL locale di preparazione.
 
 Per gli aggregati statistici usare `fetch-territorial-aggregates`,
 `check-territorial-aggregates` e `ingest-territorial-aggregates`.
@@ -40,3 +42,7 @@ e `verify-national`. Questi strumenti non sostituiscono il riferimento del prodo
 
 I contratti sono nell'[indice per funzione](../contracts/README.md); la procedura
 completa è nella [guida della popolazione](../docs/population.md).
+
+Per distribuire il risultato usare `itadb export-serving`, `verify-serving`,
+`install-serving --activate` e `activate-serving` per il ripristino. Questi comandi
+esportano l'intera applicazione v1/v2/v3. [Procedura](../docs/deployment.md).

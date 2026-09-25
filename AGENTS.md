@@ -2,7 +2,8 @@
 
 ## Contesto e obiettivo
 Leggi README.md e docs/roadmap.md prima di cambiare l'architettura. Il prodotto serve
-la popolazione sintetica verificata in PostgreSQL, API e frontend; la generazione
+la popolazione sintetica verificata tramite DuckDB, API e frontend; PostgreSQL/PostGIS
+resta nel workflow offline e non è richiesto online. La generazione
 è un workflow separato. Le API v1/v2 conservano gli aggregati storici. Non presentare
 fixture, stime, scenari o record virtuali come dati osservati o persone reali.
 Per sintesi e attributi degli agenti applica `docs/model-fidelity.md`: priorità

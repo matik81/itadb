@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from itadb.api.repository import PostgresRepository
+from itadb.api.repository import PostgresExecutor, SQLRepository
 
 PERSON_FIELDS = (
     "person_id,household_id,lpad(municipality_code::text,6,'0') "
@@ -21,7 +21,7 @@ MUNICIPALITY_FIELDS = (
 )
 
 
-class PopulationRepository(PostgresRepository):
+class PopulationQueries(SQLRepository):
     def ping(self) -> None:
         self._query(
             "SELECT (SELECT id FROM api.population_snapshots LIMIT 0),"
@@ -259,7 +259,8 @@ class PopulationRepository(PostgresRepository):
             actual,
             count(*) FILTER(WHERE expected<>actual) mismatched_cells,max(abs(expected-actual))
             max_absolute_error
-            FROM api.population_validation WHERE {where} GROUP BY kind ORDER BY kind LIMIT 4""",
+            FROM api.population_validation WHERE {where} GROUP BY kind
+            ORDER BY {self.text_order("kind")} LIMIT 4""",
             tuple(params),
         )
 
@@ -272,3 +273,7 @@ class PopulationRepository(PostgresRepository):
             ),
             (sid, int(municipality), kind),
         )
+
+
+class PopulationRepository(PostgresExecutor, PopulationQueries):
+    pass

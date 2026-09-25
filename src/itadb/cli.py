@@ -388,3 +388,65 @@ def publish_population_boundaries_command(
 
     count = publish_boundaries(Settings(), snapshot_id)
     typer.echo(json.dumps({"snapshot_id": snapshot_id, "provinces": count}))
+
+
+@app.command("export-serving")
+def export_serving(
+    output: Annotated[Path, typer.Option()],
+    evidence: Annotated[Path, typer.Option()],
+) -> None:
+    """Esporta tutte le API pubblicate dal PostgreSQL locale; non attiva la release."""
+    from itadb.serving.export import export_archive
+
+    export_archive(Settings(), output, evidence)
+    typer.echo(json.dumps({"archive": str(output), "verified": True}))
+
+
+@app.command("verify-serving")
+def verify_serving(archive: Annotated[Path, typer.Option(exists=True, file_okay=False)]) -> None:
+    """Verifica checksum, schema e conteggi dell'intero archivio."""
+    from itadb.serving.archive import verify_archive
+
+    manifest = verify_archive(archive)
+    typer.echo(json.dumps({"verified": True, "database": manifest["database"]}))
+
+
+@app.command("install-serving")
+def install_serving(
+    archive: Annotated[Path, typer.Option(exists=True, file_okay=False)],
+    activate: Annotated[bool, typer.Option()] = False,
+) -> None:
+    """Installa una copia verificata; --activate aggiorna current. Riavviare l'API."""
+    from itadb.serving.archive import activate_archive, install_archive
+
+    root = Settings().serving_dir
+    installed = install_archive(archive, root)
+    if activate:
+        activate_archive(root, installed)
+    typer.echo(json.dumps({"release": installed.name, "activated": activate}))
+
+
+@app.command("activate-serving")
+def activate_serving(release: Annotated[str, typer.Option()]) -> None:
+    """Attiva o ripristina una release installata, senza cancellarne altre."""
+    from itadb.serving.archive import activate_archive
+
+    root = Settings().serving_dir
+    activate_archive(root, root / "releases" / release)
+    typer.echo(json.dumps({"release": release, "restart_required": True}))
+
+
+@app.command("init-serving")
+def init_serving() -> None:
+    """Crea un catalogo vuoto esplicito solo su una nuova installazione."""
+    from uuid import uuid4
+
+    from itadb.serving.archive import activate_archive, empty_archive, install_archive
+
+    root = Settings().serving_dir
+    if (root / "current").is_symlink() or (root / "current").exists():
+        raise typer.BadParameter("An archive is already active")
+    archive = empty_archive(root / ("empty-" + uuid4().hex))
+    installed = install_archive(archive, root)
+    activate_archive(root, installed)
+    typer.echo(json.dumps({"release": installed.name, "empty": True}))

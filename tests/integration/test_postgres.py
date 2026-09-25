@@ -23,7 +23,11 @@ def settings(tmp_path: Path) -> Settings:
     if not admin or not reader:
         pytest.skip("Explicit disposable PostgreSQL admin and reader URLs required")
     return Settings(
-        admin_database_url=admin, database_url=reader, data_dir=tmp_path, _env_file=None
+        serving_backend="postgres",
+        admin_database_url=admin,
+        database_url=reader,
+        data_dir=tmp_path,
+        _env_file=None,
     )
 
 
