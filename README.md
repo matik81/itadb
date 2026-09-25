@@ -67,6 +67,10 @@ Neon, Railway, Cloudflare). Il provider e il deployment sono passi successivi:
 frontend statico, API stateless e PostgreSQL accessibile tramite URL sono già
 confini separati. [Decisione di prodotto](docs/adr/0015-population-product.md).
 
+Il [confronto PostgreSQL/DuckDB/Rust](docs/benchmarks/storage-comparison-2026-09-25.md)
+misura gli archivi nazionali e i costi ipotizzati di deployment. È un esperimento
+isolato; non modifica l'architettura applicativa descritta sopra.
+
 ## Avvio locale
 
 Ambiente supportato: Linux, con Ubuntu/WSL2 come riferimento. Vedi la

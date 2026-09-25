@@ -27,3 +27,4 @@ data/benchmarks/
 .DS_Store
 .codex/config.local.toml
 *.tsbuildinfo
+experiments/population-store/target/

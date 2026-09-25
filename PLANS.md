@@ -6,6 +6,6 @@ Aggiornare il piano quando cambia l'ambito; non mantenere liste di attività gi�
 Un piano non sostituisce l'implementazione o i test. Consultare gli ADR per decisioni
 durature; registrare le misure in documenti riproducibili, mai come promesse prestazionali.
 
-Piani attivi: nessuno.
+Completato: [confronto degli archivi e costi di deployment](docs/plans/storage-comparison.md).
 
 Completato: [modalità territoriali della mappa](docs/plans/map-territory-modes.md).
