@@ -1,4 +1,4 @@
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.12.17 /uv /uvx /bin/
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
@@ -6,7 +6,7 @@ COPY pyproject.toml uv.lock README.md LICENSE NOTICE ./
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
-FROM python:3.13-slim
+FROM python:3.14-slim
 RUN groupadd --gid 10001 itadb && useradd --uid 10001 --gid itadb --create-home itadb
 WORKDIR /app
 COPY --from=builder --chown=itadb:itadb /app/.venv /app/.venv
