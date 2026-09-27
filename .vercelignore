@@ -1,0 +1,11 @@
+# Il frontend è l'unico contenuto da inviare a Vercel.
+/*
+!apps
+/apps/*
+!/apps/web
+apps/web/node_modules
+apps/web/dist
+apps/web/coverage
+apps/web/.env*
+apps/web/.vercel
+apps/web/*.tsbuildinfo

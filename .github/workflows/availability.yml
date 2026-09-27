@@ -1,0 +1,22 @@
+name: Deployment availability
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deployment-availability
+  cancel-in-progress: false
+jobs:
+  availability:
+    name: Public deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check frontend, API and CORS
+        env:
+          ITADB_API_URL: ${{ vars.ITADB_API_URL }}
+          ITADB_WEB_URL: ${{ vars.ITADB_WEB_URL }}
+        run: python3 scripts/check_deployment.py

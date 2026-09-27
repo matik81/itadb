@@ -5,6 +5,11 @@ nel filesystem Linux. Servono Python 3.13, uv 0.12.17, Node.js 24 e npm.
 Docker Desktop con integrazione WSL è necessario soltanto per Compose.
 `bash scripts/doctor.sh` verifica gli strumenti senza cambiare il sistema.
 
+Per il deployment servono anche le CLI globali Railway e Vercel. Installazione,
+accesso dal browser e collegamento ai progetti sono nella
+[guida deployment](deployment.md#cli-e-accesso). Le sessioni rimangono locali;
+non occorre ripetere il login se `railway whoami` e `vercel whoami` riescono.
+
 ## Sviluppo
 
 ```sh
