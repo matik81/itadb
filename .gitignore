@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 .venv/
+.vercel/
 .tools/
 compose.override.yaml
 compose.override.yml

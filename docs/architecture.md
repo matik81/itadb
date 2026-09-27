@@ -52,7 +52,8 @@ geografiche; non stima superfici catastali.
 Il pacchetto distribuibile contiene `application.duckdb` e `manifest.json`.
 Il manifest lega formato, schema, conteggi e SHA-256 al file. L'installazione crea
 `releases/SHA256`; l'attivazione aggiorna atomicamente il collegamento `current`.
-Le copie precedenti permettono il rollback. Il backup va conservato anche altrove.
+Le copie precedenti permettono il rollback. Il recupero del volume cloud usa
+la popolazione preparata localmente o la rigenerazione con il metodo versionato.
 
 Ogni processo API verifica e fissa una release all'avvio. Le query non scrivono
 nel file e non cambiano archivio durante una risposta. Una nuova attivazione

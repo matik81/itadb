@@ -1,7 +1,7 @@
 # Verifiche della versione corrente
 
-Controlli locali eseguiti il 25 settembre 2026. La preparazione e il servizio usano
-DuckDB; Compose contiene soltanto API e web. Il deployment cloud non è stato eseguito.
+Controlli locali e primo deployment cloud eseguiti il 25 settembre 2026.
+La preparazione e il servizio usano DuckDB; Compose contiene soltanto API e web.
 
 ## Archivio nazionale
 
@@ -62,8 +62,76 @@ I risultati dell'audit nazionale e i piani sono in `.tools/national-duckdb-final
 
 ## Prontezza al deployment
 
-Codice, pacchetto dati e configurazione sono pronti per un primo deployment
-Vercel/Railway seguendo la [procedura](deployment.md). Restano da eseguire sul
-provider il caricamento sul volume, la configurazione di domini e CORS, il backup
-esterno e una prova di ripristino. Prestazioni e consumo sotto carico vanno
-verificati in quell'ambiente: le prove locali non sono promesse prestazionali.
+Il 25 settembre 2026 sono state installate e verificate Railway CLI **5.62.1** e
+Vercel CLI **60.0.1**. Su entrambe sono riusciti il login, il controllo della
+sessione e la lettura dei progetti accessibili. Identità, credenziali e inventario
+degli account restano fuori dalla documentazione.
+
+I progetti sono stati creati e configurati tramite CLI. Sono state eseguite:
+
+- **Railway:** build dal repository GitHub, volume da 5 GB in Europa montato a
+  `/app/serving`, una replica con limite di 1 GB e una CPU. Il database di
+  396.111.872 byte e il manifest sono stati trasferiti, verificati e installati;
+  la release attiva coincide con il checksum nazionale riportato sopra.
+- **Processo API:** Uvicorn come PID 1 con UID/GID 10001, un worker, porta 8000,
+  healthcheck `/health/ready` e dominio HTTPS. Rimosso l'override root usato durante
+  l'installazione. La shell SSH usa root, ma il processo applicativo è non privilegiato.
+- **Vercel:** build Production completata con Node.js 24, root `apps/web`, Vite e
+  URL HTTPS dell'API. Il filtro `.vercelignore` è stato verificato con `--dry`:
+  37 file frontend per 358.029 byte; esclusi dati, file ambiente e dipendenze locali.
+  Un primo invio che includeva directory di dati è stato interrotto prima del
+  completamento del deployment e sostituito dall'invio filtrato.
+- **HTTP:** 17 richieste API con risposta 200 e CORS corretto, inclusi readiness,
+  conteggi nazionali, evidenze, mappa regionale, paginazione senza duplicati,
+  individuo, famiglia con componenti, distribuzioni, vincoli senza discordanze e
+  cataloghi v1/v2. Verificata l'assenza di autorizzazione CORS per un'origine estranea.
+  Homepage e due asset frontend rispondono 200; il bundle contiene l'URL API corretto.
+- **GitHub/Railway:** trigger su `main` con `checkSuites: true`; sorgente GitHub e
+  configurazione remota controllate. La build iniziale da GitHub è riuscita.
+
+Il **26 settembre 2026**, dopo l'autorizzazione della GitHub App, è riuscito
+`vercel git connect --yes`. La lettura della configurazione remota conferma
+provider GitHub, `productionBranch: main` e
+`gitProviderOptions.createDeployments: enabled`, senza comando di esclusione
+della build. Confermato anche il trigger Railway su `main` con attesa della CI.
+Il primo deployment Vercel è stato eseguito tramite upload CLI; la verifica di
+un aggiornamento di entrambi i provider da un nuovo push resta da eseguire al
+prossimo rilascio. Il collegamento non ha richiesto nuovi commit o push.
+
+## Consolidamento del 26 settembre 2026
+
+- Attivati quattro deployment check Vercel collegati ai job CI, con blocco
+  dell'assegnazione del dominio di produzione e timeout di 30 minuti.
+- Importate e applicate le impostazioni Railway tramite IaC; API e volume sono
+  assegnati al partial `itadb`. `config plan --detailed-exit-code` non rileva
+  differenze. Confermati via API riavvio `ON_FAILURE` con tre tentativi,
+  `sleepApplication=false`, healthcheck e assenza del file legacy remoto.
+  La CLI omette i due valori di default in lettura: nel file sono documentati
+  invece di produrre una differenza permanente a ogni piano.
+- Verificato il monitor su frontend, JavaScript, readiness, catalogo e CORS.
+  Il workflow schedulato ogni 15 minuti richiede la pubblicazione su `main`;
+  le variabili GitHub per i due domini sono state impostate. Dodici test del
+  monitor passano, inclusi indisponibilità, contenuti errati e retry esauriti.
+- Riprodotte **160 richieste con quattro client**, confrontando lo SHA-256 delle
+  risposte con la prova locale sullo stesso archivio: 160 corrispondenze, nessun
+  errore, durata 10,7 secondi. Latenze dal client: mediana 162 ms, p95 462 ms,
+  massimo 5.309 ms. La finestra comprende un deployment avviato dalla modifica
+  IaC: è una prova limitata, non un benchmark di capacità sostenuta.
+- Le metriche Railway della finestra di 15 minuti riportano 170 risposte 2xx,
+  nessun 4xx/5xx e memoria massima campionata di circa 469 MB. I campioni del
+  provider non dimostrano il picco istantaneo. Le metriche cgroup del processo
+  che esegue lo script locale non vengono attribuite al container cloud.
+
+Il backup cloud è escluso per scelta progettuale: i dati sono generati localmente
+con metodo versionato. Il recupero ricopia un pacchetto locale verificato o
+esegue nuovamente preparazione e pubblicazione. Restano fuori da questa verifica
+l'interazione completa nel browser e un test di carico prolungato.
+
+Log aggiuntivi locali: `.tools/cloud-load.log`, `.tools/cloud-load-results.json`,
+`.tools/cloud-metrics-after.json` e `.tools/railway-apply.json`.
+
+Evidenze locali, escluse da Git: `.tools/deploy-archive-verify.log`,
+`.tools/deploy-data-upload.log`, `.tools/deploy-data-install.log`,
+`.tools/deploy-api-build.log`, `.tools/deploy-api-start.log`,
+`.tools/deploy-web-production.log`, `.tools/deploy-http-checks.log` e
+`.tools/deploy-provider-checks.json`.

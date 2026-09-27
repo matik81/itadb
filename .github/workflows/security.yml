@@ -1,7 +1,7 @@
 name: Dependency security
 on:
   pull_request:
-    paths: ['uv.lock', 'apps/web/package-lock.json', '.github/workflows/security.yml']
+    paths: ['uv.lock', 'apps/web/package-lock.json', '.railway/package-lock.json', '.github/workflows/security.yml']
   schedule:
     - cron: '37 5 * * 1'
   workflow_dispatch:
@@ -22,3 +22,4 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --prefix apps/web && npm audit --prefix apps/web --audit-level=high
+      - run: npm ci --prefix .railway --ignore-scripts && npm audit --prefix .railway --audit-level=high

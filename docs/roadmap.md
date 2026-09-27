@@ -15,7 +15,7 @@ record paginati e metodo. Le coordinate rappresentano territori, non residenze.
 
 | Obiettivo | Criterio di completamento |
 |---|---|
-| Deployment Vercel/Railway | Archivio sul volume, domini e CORS, backup esterno e ripristino verificati sul provider |
+| Verificare i prossimi rilasci Vercel/Railway | Deploy GitHub con controlli CI, configurazione IaC e monitor periodico; verificare ogni rilascio e recuperare i dati dalla preparazione locale |
 | Densità e coordinate residenziali | Fonti ammesse, ipotesi versionate e nuovo snapshot con audit dei margini prioritari |
 | Composizione familiare più fedele | Nuove evidenze e confronto con il riferimento, mantenendo i vincoli adottati |
 

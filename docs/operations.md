@@ -33,6 +33,7 @@ Un archivio esistente ma corrotto provoca errore; non viene ignorato.
 
 `export-serving` copia l'archivio pubblicato dopo la verifica. Installazione,
 attivazione, riavvio e ripristino sono descritti in [deployment.md](deployment.md).
-Conservare un backup esterno di database e manifest, oltre agli input originali.
+Il backup cloud non è previsto: il recupero usa il pacchetto locale verificato o
+la rigenerazione con il metodo in Git. Conservare localmente input e manifest.
 Una nuova pubblicazione richiede spazio per archivio precedente, candidato e copia
 installata. Il servizio online non genera dati e non modifica l'archivio.

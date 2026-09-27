@@ -1,0 +1,50 @@
+[
+  {
+    "name": "CI: Python and contracts",
+    "requires": "none",
+    "blocks": "deployment-alias",
+    "targets": ["production"],
+    "source": {
+      "kind": "git-provider",
+      "provider": "github",
+      "externalCheckName": "Python and contracts"
+    },
+    "timeout": 1800
+  },
+  {
+    "name": "CI: DuckDB publication",
+    "requires": "none",
+    "blocks": "deployment-alias",
+    "targets": ["production"],
+    "source": {
+      "kind": "git-provider",
+      "provider": "github",
+      "externalCheckName": "DuckDB publication"
+    },
+    "timeout": 1800
+  },
+  {
+    "name": "CI: Web app",
+    "requires": "none",
+    "blocks": "deployment-alias",
+    "targets": ["production"],
+    "source": {
+      "kind": "git-provider",
+      "provider": "github",
+      "externalCheckName": "Web app"
+    },
+    "timeout": 1800
+  },
+  {
+    "name": "CI: Compose smoke",
+    "requires": "none",
+    "blocks": "deployment-alias",
+    "targets": ["production"],
+    "source": {
+      "kind": "git-provider",
+      "provider": "github",
+      "externalCheckName": "Compose smoke"
+    },
+    "timeout": 1800
+  }
+]
