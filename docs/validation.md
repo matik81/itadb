@@ -94,9 +94,9 @@ Il **26 settembre 2026**, dopo l'autorizzazione della GitHub App, è riuscito
 provider GitHub, `productionBranch: main` e
 `gitProviderOptions.createDeployments: enabled`, senza comando di esclusione
 della build. Confermato anche il trigger Railway su `main` con attesa della CI.
-Il primo deployment Vercel è stato eseguito tramite upload CLI; la verifica di
-un aggiornamento di entrambi i provider da un nuovo push resta da eseguire al
-prossimo rilascio. Il collegamento non ha richiesto nuovi commit o push.
+Il primo deployment Vercel è stato eseguito tramite upload CLI. Il collegamento
+non ha richiesto nuovi commit o push; l'aggiornamento automatico successivo è
+stato verificato il 27 settembre, come riportato sotto.
 
 ## Consolidamento del 26 settembre 2026
 
@@ -109,8 +109,8 @@ prossimo rilascio. Il collegamento non ha richiesto nuovi commit o push.
   La CLI omette i due valori di default in lettura: nel file sono documentati
   invece di produrre una differenza permanente a ogni piano.
 - Verificato il monitor su frontend, JavaScript, readiness, catalogo e CORS.
-  Il workflow schedulato ogni 15 minuti richiede la pubblicazione su `main`;
-  le variabili GitHub per i due domini sono state impostate. Dodici test del
+  Impostate le variabili GitHub per i due domini; il workflow ogni 15 minuti
+  è stato poi attivato con la pubblicazione su `main` del 27 settembre. Dodici test del
   monitor passano, inclusi indisponibilità, contenuti errati e retry esauriti.
 - Riprodotte **160 richieste con quattro client**, confrontando lo SHA-256 delle
   risposte con la prova locale sullo stesso archivio: 160 corrispondenze, nessun
@@ -129,6 +129,29 @@ l'interazione completa nel browser e un test di carico prolungato.
 
 Log aggiuntivi locali: `.tools/cloud-load.log`, `.tools/cloud-load-results.json`,
 `.tools/cloud-metrics-after.json` e `.tools/railway-apply.json`.
+
+## Verifica automatismi del 27 settembre 2026
+
+La PR di configurazione è entrata in `main` con commit `7a8de49b0e89` dopo
+il superamento dei quattro job CI e dell'audit delle dipendenze. Sono passati
+251 test Python non di integrazione, 24 di integrazione e 43 frontend, oltre
+a Ruff, mypy, contratti, build e smoke Compose. Nessun test saltato; i 24 test
+esclusi dalla prova locale non di integrazione sono stati eseguiti dal job dedicato.
+
+Entrambi i provider hanno avviato automaticamente il rilascio dello stesso commit.
+Vercel ha mantenuto il dominio sulla versione precedente mentre un controllo era
+ancora in corso, poi lo ha assegnato alla nuova build dopo i quattro esiti positivi.
+Railway ha atteso la CI, completato il deployment e superato il healthcheck.
+La lettura finale conferma `READY` con alias assegnato su Vercel e `SUCCESS`
+su Railway, entrambi sul commit indicato. Nessuna modifica Railway è rimasta
+in staging; il piano IaC non rileva differenze.
+
+Il workflow di disponibilità è attivo su `main`; l'esecuzione manuale su
+GitHub Actions ha verificato con successo API, catalogo, CORS, homepage e asset.
+Ripetuta anche la verifica HTTP pubblica dopo il rilascio. La consegna di
+notifiche email e l'esecuzione di ogni futura scadenza non sono oggetto della prova.
+Gli identificativi cloud e i dettagli del confronto restano in
+`.tools/cloud-release-final.json`, escluso da Git.
 
 Evidenze locali, escluse da Git: `.tools/deploy-archive-verify.log`,
 `.tools/deploy-data-upload.log`, `.tools/deploy-data-install.log`,
