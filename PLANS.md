@@ -16,7 +16,7 @@ nelle configurazioni locali escluse da Git.
 - [x] Collegare Railway a GitHub con deploy da `main` dopo i controlli CI.
 - [x] Collegare Vercel a GitHub con deploy automatici e branch di produzione `main`.
 - [x] Verificare configurazioni remote e risposte pubbliche; aggiornare la guida.
-- [ ] Al prossimo push, confrontare il commit dei deployment di entrambi i provider.
+- [x] Confrontare il commit dei deployment di entrambi i provider dopo il push.
 
 [Esiti e limiti](docs/validation.md). Registrare separatamente il collegamento
 GitHub, le prove HTTP e un aggiornamento effettivo da push.
@@ -24,9 +24,9 @@ GitHub, le prove HTTP e un aggiornamento effettivo da push.
 ## Consolidamento del deployment
 
 - [x] Abilitare i controlli CI prima della promozione Vercel in produzione.
-- [ ] Attivare monitoraggio periodico e verificare il carico con richieste limitate.
+- [x] Attivare monitoraggio periodico e verificare il carico con richieste limitate.
 - [x] Sostituire la configurazione Railway legacy con impostazioni versionate.
-- [ ] Verificare, pubblicare le modifiche e controllare i deployment automatici.
+- [x] Verificare, pubblicare le modifiche e controllare i deployment automatici.
 - [x] Aggiornare le guide senza dati personali o identificativi degli account.
 
 Il backup cloud non è previsto per decisione dell'utente: il recupero parte dalla
